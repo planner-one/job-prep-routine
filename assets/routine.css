@@ -552,6 +552,250 @@ textarea:focus-visible {
   border: 0 !important;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.roadmap-shell {
+  width: min(1240px, calc(100% - 40px));
+}
+
+.roadmap-paper {
+  padding: 32px;
+}
+
+.roadmap-header {
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.roadmap-actions {
+  display: flex;
+  flex: 1 1 700px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.roadmap-mode-bar {
+  flex-wrap: nowrap;
+}
+
+.roadmap-actions .pdf-button {
+  margin-left: 4px;
+}
+
+.roadmap-principles {
+  margin-bottom: 18px;
+}
+
+.roadmap-principles .focus-anchor {
+  position: relative;
+  min-height: 104px;
+  padding: 17px 18px 15px 54px;
+}
+
+.roadmap-principles .focus-anchor h2 {
+  color: var(--navy);
+}
+
+.roadmap-principles .focus-anchor p {
+  max-width: 34ch;
+  line-height: 1.55;
+}
+
+.principle-number {
+  position: absolute;
+  top: 16px;
+  left: 17px;
+  color: rgb(23 55 94 / 34%);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.roadmap-filter-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.roadmap-filter-band h2,
+.roadmap-filter-band p,
+.roadmap-learning-heading h2,
+.roadmap-learning-heading p,
+.learning-note p {
+  margin: 0;
+}
+
+.roadmap-filter-band h2 {
+  margin-top: 2px;
+  color: #43566d;
+  font-size: 0.9rem;
+}
+
+.category-filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.category-filters button {
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid #d4deea;
+  border-radius: 999px;
+  background: var(--white);
+  color: #52647a;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.category-filters button[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+  box-shadow: 0 5px 14px rgb(23 55 94 / 14%);
+}
+
+.roadmap-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 276px;
+  align-items: start;
+  gap: 20px;
+}
+
+.roadmap-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.schedule-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+#roadmap-schedule {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+#roadmap-schedule .schedule-period {
+  margin: 0;
+}
+
+#roadmap-schedule .schedule-period--morning {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#roadmap-schedule .schedule-period--afternoon {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+#roadmap-schedule .schedule-period--evening {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#roadmap-schedule .schedule-period--night {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#roadmap-schedule .schedule-item {
+  grid-template-columns: 22px 102px minmax(0, 1fr);
+  min-height: 40px;
+  padding: 7px 11px;
+}
+
+#roadmap-schedule .schedule-time {
+  font-size: 0.74rem;
+}
+
+#roadmap-schedule .schedule-label {
+  font-size: 0.8rem;
+}
+
+.roadmap-learning-panel {
+  position: sticky;
+  top: 18px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border-color: #d9e7df;
+  background: linear-gradient(180deg, #fbfefc 0%, var(--white) 100%);
+}
+
+.roadmap-learning-heading {
+  padding: 17px;
+  border-bottom: 1px solid #deebe3;
+  background: var(--green-soft);
+}
+
+.roadmap-learning-heading h2 {
+  margin-top: 3px;
+  color: #245c44;
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+}
+
+.roadmap-learning-heading > p:last-child {
+  margin-top: 6px;
+  color: #5e7568;
+  font-size: 0.72rem;
+}
+
+.roadmap-learning-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 16px;
+}
+
+.roadmap-learning-options label {
+  justify-content: flex-start;
+  min-height: 37px;
+  padding: 7px 9px;
+  background: var(--white);
+}
+
+.learning-note {
+  margin: 0 16px 16px;
+  padding: 13px;
+  border-radius: 12px;
+  background: #f5f7fa;
+}
+
+.learning-note strong {
+  color: var(--navy);
+  font-size: 0.76rem;
+}
+
+.learning-note p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.71rem;
+  line-height: 1.55;
+}
+
 @media (max-width: 860px) {
   .app-shell {
     width: min(100% - 24px, 720px);
@@ -581,6 +825,31 @@ textarea:focus-visible {
   .daily-layout {
     grid-template-columns: 1fr;
   }
+
+  .roadmap-shell {
+    width: min(100% - 24px, 820px);
+  }
+
+  .roadmap-header {
+    display: block;
+  }
+
+  .roadmap-actions {
+    justify-content: flex-start;
+    margin-top: 15px;
+  }
+
+  .roadmap-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .roadmap-learning-panel {
+    position: static;
+  }
+
+  .roadmap-learning-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 580px) {
@@ -596,6 +865,36 @@ textarea:focus-visible {
   .schedule-item {
     grid-template-columns: 22px 100px minmax(0, 1fr);
     padding-inline: 9px;
+  }
+
+  .roadmap-paper {
+    padding: 18px;
+  }
+
+  .roadmap-mode-bar {
+    flex-wrap: wrap;
+  }
+
+  .roadmap-filter-band,
+  .roadmap-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .category-filters {
+    justify-content: flex-start;
+  }
+
+  #roadmap-schedule {
+    display: block;
+  }
+
+  #roadmap-schedule .schedule-period {
+    margin-bottom: 12px;
+  }
+
+  .roadmap-learning-options {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -635,6 +934,51 @@ textarea:focus-visible {
   .daily-layout {
     grid-template-columns: 1.32fr 0.68fr;
     gap: 10px;
+  }
+
+  .roadmap-paper {
+    padding: 0;
+  }
+
+  .roadmap-header {
+    padding-bottom: 8px;
+  }
+
+  .roadmap-layout {
+    grid-template-columns: minmax(0, 1fr) 54mm;
+    gap: 8px;
+  }
+
+  .roadmap-principles {
+    margin-bottom: 8px;
+  }
+
+  .roadmap-principles .focus-anchor {
+    min-height: 0;
+    padding: 8px 8px 8px 32px;
+  }
+
+  .principle-number {
+    top: 8px;
+    left: 9px;
+  }
+
+  .roadmap-learning-panel {
+    position: static;
+  }
+
+  .roadmap-learning-heading,
+  .roadmap-learning-options {
+    padding: 9px;
+  }
+
+  .roadmap-learning-options {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .learning-note {
+    margin: 0 9px 9px;
   }
 
   .focus-anchors {

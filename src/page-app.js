@@ -1,7 +1,8 @@
 import { LEARNING_TOPICS, MODES, PLATFORMS, getSchedule } from './routine-data.js';
 import { clearState, countPipelineProgress, loadState, saveState } from './routine-core.js';
 
-const PAGE_NAME = 'daily';
+const DAILY_PAGE_NAME = 'daily';
+const ROADMAP_PAGE_NAME = 'roadmap';
 const PERIODS = [
   { id: 'morning', label: '오전', description: '몸과 취업 핵심' },
   { id: 'afternoon', label: '오후', description: '지원과 개발 학습' },
@@ -29,6 +30,13 @@ const createDefaultState = () => ({
     blocked: '',
     firstAction: '',
   },
+});
+
+const createDefaultRoadmapState = () => ({
+  mode: MODES[0],
+  runStart: '21',
+  checkedIds: [],
+  learningTopics: [],
 });
 
 const stringValue = (value) => (typeof value === 'string' ? value : '');
@@ -74,6 +82,20 @@ export function normalizeDailyState(candidate = {}) {
   };
 }
 
+export function normalizeRoadmapState(candidate = {}) {
+  const source = candidate && typeof candidate === 'object' && !Array.isArray(candidate) ? candidate : {};
+  const sourceTopics = Array.isArray(source.learningTopics) ? source.learningTopics : [];
+
+  return {
+    mode: MODES.includes(source.mode) ? source.mode : MODES[0],
+    runStart: source.runStart === '22' ? '22' : '21',
+    checkedIds: Array.from(
+      new Set((Array.isArray(source.checkedIds) ? source.checkedIds : []).filter((id) => typeof id === 'string')),
+    ),
+    learningTopics: LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic)),
+  };
+}
+
 function checkedSetFrom(checkedIds) {
   if (checkedIds instanceof Set) return checkedIds;
   return new Set(Array.isArray(checkedIds) ? checkedIds : []);
@@ -113,6 +135,7 @@ export function renderSchedule(container, schedule, checkedIds = []) {
       row.className = 'schedule-item';
       row.setAttribute('role', 'listitem');
       row.dataset.scheduleRow = item.id;
+      row.dataset.category = item.category;
 
       const checkbox = pageDocument.createElement('input');
       checkbox.type = 'checkbox';
@@ -278,7 +301,7 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
   const root = pageDocument.getElementById('daily-page');
   if (!root) return null;
 
-  let state = normalizeDailyState(loadState(storage, PAGE_NAME, date, createDefaultState()));
+  let state = normalizeDailyState(loadState(storage, DAILY_PAGE_NAME, date, createDefaultState()));
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
 
@@ -323,7 +346,7 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
 
   function persist(overrides) {
     captureState(overrides);
-    saveState(storage, PAGE_NAME, date, state);
+    saveState(storage, DAILY_PAGE_NAME, date, state);
     updateProgress(root);
   }
 
@@ -333,7 +356,7 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
     setPressedMode(root, state.mode);
     setRunStart(root, state.runStart, state.mode);
     renderCurrentSchedule();
-    saveState(storage, PAGE_NAME, date, state);
+    saveState(storage, DAILY_PAGE_NAME, date, state);
     updateProgress(root);
   }
 
@@ -342,12 +365,12 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
     captureState({ runStart: nextRunStart });
     setRunStart(root, state.runStart, state.mode);
     if (state.mode === 'running') renderCurrentSchedule();
-    saveState(storage, PAGE_NAME, date, state);
+    saveState(storage, DAILY_PAGE_NAME, date, state);
     updateProgress(root);
   }
 
   function resetToday() {
-    clearState(storage, PAGE_NAME, date);
+    clearState(storage, DAILY_PAGE_NAME, date);
     state = createDefaultState();
     paintState();
   }
@@ -409,8 +432,196 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
   };
 }
 
+function collectRoadmapState(root) {
+  const activeMode = root.querySelector('[data-roadmap-mode][aria-pressed="true"]');
+  const selectedRunStart = root.querySelector('input[name="roadmap-run-start"]:checked');
+
+  return {
+    mode: activeMode?.dataset.roadmapMode ?? MODES[0],
+    runStart: selectedRunStart?.value ?? '21',
+    checkedIds: Array.from(
+      root.querySelectorAll('[data-schedule-id]:checked'),
+      (input) => input.dataset.scheduleId,
+    ),
+    learningTopics: Array.from(
+      root.querySelectorAll('[data-learning-topic]:checked'),
+      (input) => input.value,
+    ),
+  };
+}
+
+function setRoadmapMode(root, mode) {
+  for (const button of root.querySelectorAll('[data-roadmap-mode]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.roadmapMode === mode));
+  }
+}
+
+function setRoadmapRunStart(root, runStart, mode) {
+  for (const input of root.querySelectorAll('input[name="roadmap-run-start"]')) {
+    input.checked = input.value === runStart;
+  }
+  const controls = root.querySelector('#roadmap-run-start-controls');
+  if (controls) controls.hidden = mode !== 'running';
+}
+
+function applyRoadmapLearningState(root, learningTopics) {
+  const selectedTopics = new Set(learningTopics);
+  for (const input of root.querySelectorAll('[data-learning-topic]')) {
+    input.checked = selectedTopics.has(input.value);
+  }
+}
+
+function applyRoadmapCategoryFilter(root, category) {
+  for (const button of root.querySelectorAll('[data-category-filter]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.categoryFilter === category));
+  }
+
+  for (const row of root.querySelectorAll('[data-schedule-row]')) {
+    row.hidden = category !== 'all' && row.dataset.category !== category;
+  }
+
+  for (const period of root.querySelectorAll('#roadmap-schedule .schedule-period')) {
+    const rows = Array.from(period.querySelectorAll('[data-schedule-row]'));
+    period.hidden = rows.length === 0 || rows.every((row) => row.hidden);
+  }
+}
+
+export function initRoadmapPage(pageDocument, storage, date = localDateString()) {
+  const root = pageDocument.getElementById('roadmap-page');
+  if (!root) return null;
+
+  let state = normalizeRoadmapState(loadState(storage, ROADMAP_PAGE_NAME, date, createDefaultRoadmapState()));
+  let checkedIds = new Set(state.checkedIds);
+  let renderedIds = new Set();
+  let activeCategory = 'all';
+
+  const dateElement = root.querySelector('#roadmap-current-date');
+  if (dateElement) {
+    dateElement.dateTime = date;
+    dateElement.textContent = formatDate(date);
+  }
+
+  function syncVisibleScheduleChecks() {
+    for (const id of renderedIds) checkedIds.delete(id);
+    for (const input of root.querySelectorAll('[data-schedule-id]:checked')) checkedIds.add(input.dataset.scheduleId);
+  }
+
+  function renderCurrentSchedule() {
+    const schedule = getSchedule(state.mode, state.runStart);
+    renderedIds = new Set(schedule.map((item) => item.id));
+    renderSchedule(root.querySelector('#roadmap-schedule'), schedule, checkedIds);
+    applyRoadmapCategoryFilter(root, activeCategory);
+  }
+
+  function paintState() {
+    checkedIds = new Set(state.checkedIds);
+    setRoadmapMode(root, state.mode);
+    setRoadmapRunStart(root, state.runStart, state.mode);
+    renderCurrentSchedule();
+    applyRoadmapLearningState(root, state.learningTopics);
+  }
+
+  function captureState(overrides = {}) {
+    syncVisibleScheduleChecks();
+    state = normalizeRoadmapState({
+      ...collectRoadmapState(root),
+      ...overrides,
+      checkedIds: Array.from(checkedIds),
+    });
+    checkedIds = new Set(state.checkedIds);
+    return state;
+  }
+
+  function persist(overrides) {
+    captureState(overrides);
+    saveState(storage, ROADMAP_PAGE_NAME, date, state);
+  }
+
+  function changeMode(mode) {
+    if (!MODES.includes(mode) || mode === state.mode) return;
+    captureState({ mode });
+    setRoadmapMode(root, state.mode);
+    setRoadmapRunStart(root, state.runStart, state.mode);
+    renderCurrentSchedule();
+    saveState(storage, ROADMAP_PAGE_NAME, date, state);
+  }
+
+  function changeRunStart(runStart) {
+    captureState({ runStart: runStart === '22' ? '22' : '21' });
+    setRoadmapRunStart(root, state.runStart, state.mode);
+    if (state.mode === 'running') renderCurrentSchedule();
+    saveState(storage, ROADMAP_PAGE_NAME, date, state);
+  }
+
+  function changeCategory(category) {
+    const categories = new Set(['all', 'exercise', 'career', 'learning', 'meal']);
+    activeCategory = categories.has(category) ? category : 'all';
+    applyRoadmapCategoryFilter(root, activeCategory);
+  }
+
+  function resetToday() {
+    clearState(storage, ROADMAP_PAGE_NAME, date);
+    state = createDefaultRoadmapState();
+    activeCategory = 'all';
+    paintState();
+  }
+
+  function openPdfPreview() {
+    if (typeof window !== 'undefined' && window.document === pageDocument) {
+      window.print();
+      return;
+    }
+    pageDocument.defaultView?.print?.();
+  }
+
+  function handleClick(event) {
+    const modeButton = event.target.closest?.('[data-roadmap-mode]');
+    if (modeButton && root.contains(modeButton)) {
+      changeMode(modeButton.dataset.roadmapMode);
+      return;
+    }
+
+    const categoryButton = event.target.closest?.('[data-category-filter]');
+    if (categoryButton && root.contains(categoryButton)) {
+      changeCategory(categoryButton.dataset.categoryFilter);
+      return;
+    }
+
+    if (event.target.closest?.('#roadmap-reset-today')) {
+      resetToday();
+      return;
+    }
+    if (event.target.closest?.('#roadmap-pdf-preview')) openPdfPreview();
+  }
+
+  function handleChange(event) {
+    if (event.target.matches('input[name="roadmap-run-start"]')) {
+      changeRunStart(event.target.value);
+      return;
+    }
+    if (event.target.matches('[data-schedule-id], [data-learning-topic]')) persist();
+  }
+
+  root.addEventListener('click', handleClick);
+  root.addEventListener('change', handleChange);
+  paintState();
+
+  return {
+    getState: () => structuredClone(state),
+    reset: resetToday,
+    destroy() {
+      root.removeEventListener('click', handleClick);
+      root.removeEventListener('change', handleChange);
+    },
+  };
+}
+
 if (typeof document !== 'undefined') {
-  const boot = () => initDailyPage(document, window.localStorage, localDateString());
+  const boot = () => {
+    const today = localDateString();
+    initDailyPage(document, window.localStorage, today);
+    initRoadmapPage(document, window.localStorage, today);
+  };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
   } else {
