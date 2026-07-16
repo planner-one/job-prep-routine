@@ -1105,6 +1105,12 @@ textarea:focus-visible {
   background: #f8fafc;
 }
 
+.weekly-detail-grid > .weekly-schedule-column {
+  order: -1;
+  border-right: 1px solid var(--line);
+  border-left: 0;
+}
+
 .weekly-check-group {
   margin-bottom: 11px;
   padding: 13px;
@@ -1491,6 +1497,7 @@ textarea:focus-visible {
 
   .weekly-schedule-column {
     border-top: 1px solid var(--line);
+    border-right: 0;
     border-left: 0;
   }
 

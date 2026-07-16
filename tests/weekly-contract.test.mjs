@@ -50,6 +50,13 @@ test('선택 요일 상세 한 카드 안에 실행 체크와 보조 시간표�
   assert.match(detail, /class="weekly-detail-grid"/);
 });
 
+test('고정 시간표를 왼쪽, 체크리스트를 오른쪽에 배치한다', () => {
+  assert.match(
+    css,
+    /\.weekly-detail-grid\s*>\s*\.weekly-schedule-column\s*\{[^}]*order\s*:\s*-1/s,
+  );
+});
+
 test('실행일 모드·러닝 시각·지원 4개·숙지·면접·식후 휴식·학습 6종을 제공한다', () => {
   for (const [mode, label] of [
     ['workout', '운동일'],
