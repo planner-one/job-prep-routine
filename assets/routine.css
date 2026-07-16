@@ -1,0 +1,652 @@
+:root {
+  --navy: #17375e;
+  --ink: #182235;
+  --muted: #6f7e91;
+  --line: #e0e7f0;
+  --canvas: #f3f6fa;
+  --white: #ffffff;
+  --blue: #397ad4;
+  --blue-soft: #edf5ff;
+  --orange: #d88318;
+  --orange-soft: #fff7e8;
+  --green: #21835d;
+  --green-soft: #effaf4;
+  --violet: #7456aa;
+  --violet-soft: #f5f0ff;
+  --shadow: 0 20px 54px rgb(23 55 94 / 9%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+input[type="checkbox"],
+input[type="radio"],
+select {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgb(57 122 212 / 25%);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  width: min(1120px, calc(100% - 40px));
+  margin: 30px auto;
+}
+
+.daily-paper {
+  padding: 30px;
+  border: 1px solid #dce4ee;
+  border-radius: 24px;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.daily-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.title-block h1,
+.title-block p,
+.section-heading h2,
+.section-heading p,
+.focus-anchor h2,
+.focus-anchor p,
+.side-panel h3,
+.progress-card h2,
+.progress-card p {
+  margin: 0;
+}
+
+.eyebrow,
+.section-kicker {
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.title-block h1 {
+  margin-top: 2px;
+  color: var(--navy);
+  font-size: clamp(1.75rem, 4vw, 2.15rem);
+  letter-spacing: -0.045em;
+}
+
+.date-line {
+  margin-top: 5px !important;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.header-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: min(100%, 520px);
+}
+
+.mode-bar,
+.sub-actions,
+.run-picker {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mode-button,
+.pdf-button,
+.reset-button {
+  min-height: 38px;
+  border: 1px solid #d4deea;
+  border-radius: 999px;
+  background: var(--white);
+  color: #51647b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.mode-button[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.pdf-button {
+  border-radius: 10px;
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.reset-button {
+  min-height: 31px;
+  padding: 5px 10px;
+  border-style: dashed;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.run-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.run-picker legend {
+  float: left;
+  margin-right: 4px;
+  font-weight: 700;
+}
+
+.run-picker label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border: 1px solid #d9d1eb;
+  border-radius: 999px;
+}
+
+.run-picker input {
+  margin: 0;
+  accent-color: var(--violet);
+}
+
+.progress-card {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.progress-card h2 {
+  color: var(--navy);
+  font-size: 0.93rem;
+}
+
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4eaf1;
+}
+
+.progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  transition: width 180ms ease;
+}
+
+.progress-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.focus-anchors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.focus-anchor {
+  min-height: 84px;
+  padding: 14px 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.focus-anchor h2 {
+  font-size: 0.98rem;
+}
+
+.focus-anchor p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.focus-anchor--application {
+  background: var(--orange-soft);
+}
+
+.focus-anchor--review {
+  background: #fff5fa;
+}
+
+.focus-anchor--learning {
+  background: var(--green-soft);
+}
+
+.daily-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.82fr);
+  align-items: start;
+  gap: 22px;
+}
+
+.section-heading {
+  margin-bottom: 10px;
+}
+
+.section-heading h2 {
+  color: #43566d;
+  font-size: 1rem;
+}
+
+.schedule-period {
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  break-inside: avoid;
+}
+
+.period-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+}
+
+.period-heading h3,
+.period-heading p {
+  margin: 0;
+}
+
+.period-heading h3 {
+  font-size: 0.88rem;
+}
+
+.period-heading p {
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.schedule-period--morning .period-heading {
+  background: var(--blue-soft);
+  color: #285f9d;
+}
+
+.schedule-period--afternoon .period-heading {
+  background: var(--orange-soft);
+  color: #905810;
+}
+
+.schedule-period--evening .period-heading {
+  background: var(--violet-soft);
+  color: #64479a;
+}
+
+.schedule-period--night .period-heading {
+  background: #f1f3f7;
+  color: #4f5f73;
+}
+
+.schedule-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-item {
+  display: grid;
+  grid-template-columns: 24px 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 13px;
+  border-top: 1px solid var(--line);
+}
+
+.schedule-item:first-child {
+  border-top: 0;
+}
+
+.schedule-item input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+
+.schedule-time {
+  color: #40536a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.schedule-label {
+  font-size: 0.86rem;
+}
+
+.schedule-item.is-complete {
+  background: #fafbfc;
+  color: var(--muted);
+}
+
+.schedule-item.is-complete .schedule-label {
+  text-decoration: line-through;
+}
+
+.execution-column {
+  min-width: 0;
+}
+
+.side-panel {
+  margin-bottom: 12px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  break-inside: avoid;
+}
+
+.side-panel h3 {
+  color: var(--navy);
+  font-size: 0.94rem;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.panel-heading span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.company-card {
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+}
+
+.company-card:first-of-type {
+  margin-top: 8px;
+}
+
+.company-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-head input {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 5px 3px;
+  border: 0;
+  border-bottom: 1px dashed #b9c7d7;
+  background: transparent;
+}
+
+.company-head select {
+  flex: 0 0 92px;
+  width: 92px;
+  padding: 5px 7px;
+  border: 1px solid #d8e0e9;
+  border-radius: 8px;
+  background: var(--white);
+  color: #52647a;
+  font-size: 0.73rem;
+}
+
+.pipeline-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.pipeline-steps label,
+.learning-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #dce3eb;
+  border-radius: 999px;
+  color: #52647a;
+  font-size: 0.72rem;
+}
+
+.pipeline-steps label {
+  padding: 5px 8px;
+}
+
+.pipeline-steps label:has(input:checked) {
+  border-color: #e4ac5b;
+  background: #fff1dc;
+  color: #82500f;
+  font-weight: 800;
+}
+
+.pipeline-steps input {
+  margin: 0;
+  accent-color: var(--orange);
+}
+
+.job-link-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.job-link-row input {
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid #d8e0e9;
+  border-radius: 8px;
+  color: #52647a;
+  font-size: 0.72rem;
+}
+
+.learning-panel > h3,
+.memo-panel > h3 {
+  margin-bottom: 11px;
+}
+
+.learning-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.learning-options label {
+  padding: 7px 10px;
+}
+
+.learning-options label:has(input:checked) {
+  border-color: #78bd99;
+  background: #e9f7ef;
+  color: #176b45;
+  font-weight: 800;
+}
+
+.learning-options input {
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.memo-panel label {
+  display: block;
+  margin-top: 9px;
+  color: #4a5e75;
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.memo-panel textarea {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  padding: 7px 2px;
+  resize: vertical;
+  border: 0;
+  border-bottom: 1px solid #d3dde8;
+  background: transparent;
+  font-size: 0.8rem;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    width: min(100% - 24px, 720px);
+    margin: 12px auto;
+  }
+
+  .daily-paper {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .daily-header {
+    display: block;
+  }
+
+  .header-actions {
+    justify-items: start;
+    margin-top: 15px;
+  }
+
+  .mode-bar,
+  .sub-actions,
+  .run-picker {
+    justify-content: flex-start;
+  }
+
+  .daily-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 580px) {
+  .focus-anchors,
+  .progress-card {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-card {
+    gap: 7px;
+  }
+
+  .schedule-item {
+    grid-template-columns: 22px 100px minmax(0, 1fr);
+    padding-inline: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill {
+    transition: none;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 9mm;
+}
+
+@media print {
+  body {
+    background: var(--white);
+  }
+
+  .app-shell {
+    width: auto;
+    margin: 0;
+  }
+
+  .daily-paper {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .screen-only,
+  .job-link-row {
+    display: none !important;
+  }
+
+  .daily-layout {
+    grid-template-columns: 1.32fr 0.68fr;
+    gap: 10px;
+  }
+
+  .focus-anchors {
+    gap: 6px;
+    margin-bottom: 9px;
+  }
+
+  .focus-anchor,
+  .progress-card,
+  .side-panel,
+  .period-heading,
+  .schedule-item {
+    padding-block: 6px;
+  }
+}

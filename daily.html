@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>데일리 포커스 보드</title>
+    <link rel="stylesheet" href="./assets/routine.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="daily-paper" id="daily-page">
+        <header class="daily-header">
+          <div class="title-block">
+            <p class="eyebrow">DAILY FOCUS</p>
+            <h1>오늘을 끝내는 한 장</h1>
+            <p class="date-line"><time id="current-date" datetime="">오늘</time></p>
+          </div>
+
+          <div class="header-actions screen-only">
+            <div class="mode-bar" role="group" aria-label="오늘의 루틴 모드">
+              <button type="button" class="mode-button" data-mode="workout" aria-pressed="true">운동일</button>
+              <button type="button" class="mode-button" data-mode="normal" aria-pressed="false">비운동일</button>
+              <button type="button" class="mode-button" data-mode="running" aria-pressed="false">러닝일</button>
+              <button type="button" class="mode-button" data-mode="maintenance" aria-pressed="false">핵심 유지일</button>
+              <button type="button" class="pdf-button" id="pdf-preview">PDF 미리보기</button>
+            </div>
+
+            <div class="sub-actions">
+              <fieldset class="run-picker" id="run-start-controls" hidden>
+                <legend>러닝 시작</legend>
+                <label><input type="radio" name="run-start" value="21" checked> 21시</label>
+                <label><input type="radio" name="run-start" value="22"> 22시</label>
+              </fieldset>
+              <button type="button" class="reset-button" id="reset-today">현재 날짜 초기화</button>
+            </div>
+          </div>
+        </header>
+
+        <section class="progress-card" aria-labelledby="progress-title">
+          <h2 id="progress-title">오늘 진척</h2>
+          <div
+            class="progress-track"
+            id="progress-track"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="1"
+            aria-valuenow="0"
+            aria-labelledby="progress-title progress-count"
+          >
+            <span class="progress-fill" id="progress-fill"></span>
+          </div>
+          <p class="progress-count" id="progress-count" aria-live="polite">0 / 0 완료</p>
+        </section>
+
+        <section class="focus-anchors" aria-label="오늘의 핵심 세 가지">
+          <article class="focus-anchor focus-anchor--application">
+            <h2>지원 3~4개</h2>
+            <p>분석 → 자소서 조정 → 제출</p>
+          </article>
+          <article class="focus-anchor focus-anchor--review">
+            <h2>내용 숙지 30분</h2>
+            <p>이력서·포트폴리오를 내 말로</p>
+          </article>
+          <article class="focus-anchor focus-anchor--learning">
+            <h2>오늘의 학습 결과</h2>
+            <p>선택한 조합을 작은 구현으로 남기기</p>
+          </article>
+        </section>
+
+        <div class="daily-layout">
+          <section class="schedule-column" aria-labelledby="schedule-title">
+            <div class="section-heading">
+              <p class="section-kicker">TIME BLOCKS</p>
+              <h2 id="schedule-title">고정 시간표</h2>
+            </div>
+            <div id="daily-schedule"></div>
+          </section>
+
+          <aside class="execution-column" aria-labelledby="execution-title">
+            <div class="section-heading">
+              <p class="section-kicker">TODAY'S ACTION</p>
+              <h2 id="execution-title">오늘의 실행</h2>
+            </div>
+
+            <section class="side-panel" id="application-pipeline" aria-labelledby="pipeline-title">
+              <div class="panel-heading">
+                <h3 id="pipeline-title">지원 파이프라인</h3>
+                <span id="pipeline-progress">지원 0개 · 0 / 12단계</span>
+              </div>
+
+              <article class="company-card" data-company-index="0">
+                <div class="company-head">
+                  <label class="visually-hidden" for="company-1-name">회사 1 회사명</label>
+                  <input id="company-1-name" type="text" data-field="name" aria-label="회사 1 회사명" placeholder="회사 1" autocomplete="organization">
+                  <label class="visually-hidden" for="company-1-platform">회사 1 플랫폼</label>
+                  <select id="company-1-platform" data-field="platform" aria-label="회사 1 플랫폼">
+                    <option>사람인</option><option>점핏</option><option>원티드</option><option>잡코리아</option><option>기타</option>
+                  </select>
+                </div>
+                <div class="pipeline-steps">
+                  <label><input type="checkbox" data-field="analyzed" data-progress-check> 분석</label>
+                  <label><input type="checkbox" data-field="letter" data-progress-check> 자소서</label>
+                  <label><input type="checkbox" data-field="applied" data-progress-check> 지원</label>
+                </div>
+                <label class="job-link-row screen-only">지원 공고 링크 <input type="url" data-field="link" aria-label="회사 1 지원 공고 링크" placeholder="https://" inputmode="url"></label>
+              </article>
+
+              <article class="company-card" data-company-index="1">
+                <div class="company-head">
+                  <label class="visually-hidden" for="company-2-name">회사 2 회사명</label>
+                  <input id="company-2-name" type="text" data-field="name" aria-label="회사 2 회사명" placeholder="회사 2" autocomplete="organization">
+                  <label class="visually-hidden" for="company-2-platform">회사 2 플랫폼</label>
+                  <select id="company-2-platform" data-field="platform" aria-label="회사 2 플랫폼">
+                    <option>사람인</option><option>점핏</option><option>원티드</option><option>잡코리아</option><option>기타</option>
+                  </select>
+                </div>
+                <div class="pipeline-steps">
+                  <label><input type="checkbox" data-field="analyzed" data-progress-check> 분석</label>
+                  <label><input type="checkbox" data-field="letter" data-progress-check> 자소서</label>
+                  <label><input type="checkbox" data-field="applied" data-progress-check> 지원</label>
+                </div>
+                <label class="job-link-row screen-only">지원 공고 링크 <input type="url" data-field="link" aria-label="회사 2 지원 공고 링크" placeholder="https://" inputmode="url"></label>
+              </article>
+
+              <article class="company-card" data-company-index="2">
+                <div class="company-head">
+                  <label class="visually-hidden" for="company-3-name">회사 3 회사명</label>
+                  <input id="company-3-name" type="text" data-field="name" aria-label="회사 3 회사명" placeholder="회사 3" autocomplete="organization">
+                  <label class="visually-hidden" for="company-3-platform">회사 3 플랫폼</label>
+                  <select id="company-3-platform" data-field="platform" aria-label="회사 3 플랫폼">
+                    <option>사람인</option><option>점핏</option><option>원티드</option><option>잡코리아</option><option>기타</option>
+                  </select>
+                </div>
+                <div class="pipeline-steps">
+                  <label><input type="checkbox" data-field="analyzed" data-progress-check> 분석</label>
+                  <label><input type="checkbox" data-field="letter" data-progress-check> 자소서</label>
+                  <label><input type="checkbox" data-field="applied" data-progress-check> 지원</label>
+                </div>
+                <label class="job-link-row screen-only">지원 공고 링크 <input type="url" data-field="link" aria-label="회사 3 지원 공고 링크" placeholder="https://" inputmode="url"></label>
+              </article>
+
+              <article class="company-card" data-company-index="3">
+                <div class="company-head">
+                  <label class="visually-hidden" for="company-4-name">회사 4 회사명</label>
+                  <input id="company-4-name" type="text" data-field="name" aria-label="회사 4 회사명" placeholder="회사 4" autocomplete="organization">
+                  <label class="visually-hidden" for="company-4-platform">회사 4 플랫폼</label>
+                  <select id="company-4-platform" data-field="platform" aria-label="회사 4 플랫폼">
+                    <option>사람인</option><option>점핏</option><option>원티드</option><option>잡코리아</option><option>기타</option>
+                  </select>
+                </div>
+                <div class="pipeline-steps">
+                  <label><input type="checkbox" data-field="analyzed" data-progress-check> 분석</label>
+                  <label><input type="checkbox" data-field="letter" data-progress-check> 자소서</label>
+                  <label><input type="checkbox" data-field="applied" data-progress-check> 지원</label>
+                </div>
+                <label class="job-link-row screen-only">지원 공고 링크 <input type="url" data-field="link" aria-label="회사 4 지원 공고 링크" placeholder="https://" inputmode="url"></label>
+              </article>
+            </section>
+
+            <section class="side-panel learning-panel" aria-labelledby="learning-title">
+              <h3 id="learning-title">학습 조합</h3>
+              <div class="learning-options">
+                <label><input type="checkbox" data-learning-topic value="Spring" data-progress-check> Spring</label>
+                <label><input type="checkbox" data-learning-topic value="Redis" data-progress-check> Redis</label>
+                <label><input type="checkbox" data-learning-topic value="Java" data-progress-check> Java</label>
+                <label><input type="checkbox" data-learning-topic value="프로젝트 적용" data-progress-check> 프로젝트 적용</label>
+                <label><input type="checkbox" data-learning-topic value="CS" data-progress-check> CS</label>
+                <label><input type="checkbox" data-learning-topic value="코딩테스트" data-progress-check> 코딩테스트</label>
+              </div>
+            </section>
+
+            <section class="side-panel memo-panel" aria-labelledby="memo-title">
+              <h3 id="memo-title">하루 마감</h3>
+              <label for="implemented-today">오늘 구현한 것</label>
+              <textarea id="implemented-today" data-memo="implemented" rows="2"></textarea>
+              <label for="blocked-today">막힌 것</label>
+              <textarea id="blocked-today" data-memo="blocked" rows="2"></textarea>
+              <label for="first-action-tomorrow">내일 첫 행동</label>
+              <textarea id="first-action-tomorrow" data-memo="firstAction" rows="2"></textarea>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="./src/page-app.js"></script>
+  </body>
+</html>
