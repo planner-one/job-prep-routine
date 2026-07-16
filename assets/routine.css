@@ -691,33 +691,13 @@ textarea:focus-visible {
 
 #roadmap-schedule {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 12px;
 }
 
 #roadmap-schedule .schedule-period {
   margin: 0;
-}
-
-#roadmap-schedule .schedule-period--morning {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-#roadmap-schedule .schedule-period--afternoon {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-#roadmap-schedule .schedule-period--evening {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-#roadmap-schedule .schedule-period--night {
-  grid-column: 2;
-  grid-row: 2;
 }
 
 #roadmap-schedule .schedule-item {
@@ -1774,8 +1754,8 @@ textarea:focus-visible {
   }
 
   .roadmap-principles .focus-anchor {
-    min-height: 100px;
-    padding: 12px 12px 12px 36px;
+    min-height: 82px;
+    padding: 9px 10px 9px 34px;
   }
 
   .principle-number {
@@ -1783,13 +1763,17 @@ textarea:focus-visible {
     left: 12px;
   }
 
+  #roadmap-schedule {
+    gap: 5px;
+  }
+
   #roadmap-schedule .period-heading {
-    padding-block: 10px;
+    padding-block: 5px;
   }
 
   #roadmap-schedule .schedule-item {
-    min-height: 52px;
-    padding-block: 10px;
+    min-height: 31px;
+    padding-block: 4px;
   }
 
   #roadmap-schedule .schedule-time {
@@ -1802,7 +1786,7 @@ textarea:focus-visible {
 
   .roadmap-learning-panel {
     display: flex;
-    min-height: 185mm;
+    min-height: 155mm;
     flex-direction: column;
     position: static;
   }
@@ -1819,7 +1803,7 @@ textarea:focus-visible {
   }
 
   .roadmap-learning-options label {
-    min-height: 47px;
+    min-height: 35px;
   }
 
   .learning-note {

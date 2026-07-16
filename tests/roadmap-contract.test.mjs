@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
+const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'utf8').catch(() => '');
 
 test('로드맵은 모드와 카테고리 필터를 분리한다', () => {
   assert.match(html, /id="roadmap-mode-switch"/);
@@ -19,6 +20,12 @@ test('로드맵은 일정 체크와 학습 6종 복수 선택을 제공한다', 
     assert.match(html, new RegExp(`data-learning-topic[^>]+value="${topic}"`));
   }
   assert.doesNotMatch(html, /type="time"/);
+});
+
+test('시간표를 네 칸이 아닌 한 열로 나열한다', () => {
+  const scheduleStyle = css.match(/#roadmap-schedule\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(scheduleStyle, /grid-template-columns\s*:\s*minmax\(0,\s*1fr\)/);
+  assert.doesNotMatch(scheduleStyle, /repeat\(2/);
 });
 
 test('로드맵은 러닝 시각·현재 날짜 초기화·PDF 미리보기를 제공한다', () => {
