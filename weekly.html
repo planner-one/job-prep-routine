@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>주간 실행 보드</title>
+    <link rel="stylesheet" href="./assets/routine.css">
+  </head>
+  <body>
+    <div class="app-shell weekly-shell">
+      <main class="daily-paper weekly-paper" id="weekly-page">
+        <header class="daily-header weekly-header">
+          <div class="title-block">
+            <p class="eyebrow">이번 주의 실행</p>
+            <h1>주간 실행 보드</h1>
+            <p class="date-line"><time id="weekly-current-week" datetime="">이번 주</time></p>
+          </div>
+
+          <div class="weekly-actions screen-only">
+            <button type="button" class="reset-button" id="weekly-reset-current">현재 주 초기화</button>
+            <button type="button" class="pdf-button" id="weekly-pdf-preview">PDF 미리보기</button>
+          </div>
+        </header>
+
+        <section class="weekly-progress-grid" id="weekly-progress" aria-labelledby="weekly-progress-title" aria-live="polite">
+          <h2 class="visually-hidden" id="weekly-progress-title">주간 목표와 진척</h2>
+
+          <article class="weekly-progress-card weekly-progress-card--application" data-weekly-progress="applications">
+            <div class="weekly-progress-heading">
+              <div>
+                <p class="section-kicker">가장 먼저 끝내기</p>
+                <h3>지원</h3>
+              </div>
+              <strong id="weekly-applications-value">0 / 18–24</strong>
+            </div>
+            <div class="weekly-goal-track" role="progressbar" aria-label="주간 지원 진척" aria-valuemin="0" aria-valuemax="24" aria-valuenow="0">
+              <span class="weekly-goal-fill"></span>
+            </div>
+            <p>실행일마다 3–4개씩 제출</p>
+          </article>
+
+          <article class="weekly-progress-card weekly-progress-card--preparation" data-weekly-progress="reviews">
+            <div class="weekly-progress-heading">
+              <div>
+                <p class="section-kicker">내 말로 설명하기</p>
+                <h3>숙지·면접</h3>
+              </div>
+            </div>
+            <dl class="weekly-inline-metrics">
+              <div><dt>내용 숙지</dt><dd id="weekly-reviews-value">0 / 실행일 6회</dd></div>
+              <div><dt>면접 연습·복기</dt><dd id="weekly-interviews-value">0회</dd></div>
+            </dl>
+          </article>
+
+          <article class="weekly-progress-card weekly-progress-card--exercise" data-weekly-progress="workouts">
+            <div class="weekly-progress-heading">
+              <div>
+                <p class="section-kicker">체력 리듬</p>
+                <h3>운동</h3>
+              </div>
+            </div>
+            <dl class="weekly-inline-metrics">
+              <div><dt>아침 운동</dt><dd id="weekly-workouts-value">0 / 3–5회</dd></div>
+              <div><dt>저녁 러닝</dt><dd id="weekly-runs-value">0 / 1–2회</dd></div>
+            </dl>
+          </article>
+
+          <article class="weekly-progress-card weekly-progress-card--learning" data-weekly-progress="learning">
+            <div class="weekly-progress-heading">
+              <div>
+                <p class="section-kicker">결과물로 남기기</p>
+                <h3>핵심 학습</h3>
+              </div>
+            </div>
+            <dl class="weekly-learning-metrics">
+              <div data-progress-topic="Spring"><dt>Spring</dt><dd class="weekly-metric-value">0 / 4–6회</dd></div>
+              <div data-progress-topic="Redis"><dt>Redis</dt><dd class="weekly-metric-value">0 / 2–4회</dd></div>
+              <div data-progress-topic="Java"><dt>Java</dt><dd class="weekly-metric-value">0 / 2–3회</dd></div>
+              <div data-progress-topic="프로젝트 적용"><dt>프로젝트 적용</dt><dd class="weekly-metric-value">0 / 3개 이상</dd></div>
+            </dl>
+          </article>
+        </section>
+
+        <nav class="weekday-tabs screen-only" id="weekday-tabs" role="tablist" aria-label="요일 선택">
+          <button type="button" role="tab" id="weekday-tab-mon" aria-controls="day-detail" aria-selected="true" data-day="mon">월<span data-day-badge>운동</span></button>
+          <button type="button" role="tab" id="weekday-tab-tue" aria-controls="day-detail" aria-selected="false" data-day="tue">화<span data-day-badge>실행</span></button>
+          <button type="button" role="tab" id="weekday-tab-wed" aria-controls="day-detail" aria-selected="false" data-day="wed">수<span data-day-badge>러닝</span></button>
+          <button type="button" role="tab" id="weekday-tab-thu" aria-controls="day-detail" aria-selected="false" data-day="thu">목<span data-day-badge>운동</span></button>
+          <button type="button" role="tab" id="weekday-tab-fri" aria-controls="day-detail" aria-selected="false" data-day="fri">금<span data-day-badge>실행</span></button>
+          <button type="button" role="tab" id="weekday-tab-sat" aria-controls="day-detail" aria-selected="false" data-day="sat">토<span data-day-badge>운동</span></button>
+          <button type="button" role="tab" id="weekday-tab-sun" aria-controls="day-detail" aria-selected="false" data-day="sun">일<span data-day-badge>유지</span></button>
+        </nav>
+
+        <section class="weekly-detail-card" id="day-detail" role="tabpanel" aria-labelledby="weekday-tab-mon" tabindex="0">
+          <header class="weekly-detail-header">
+            <div>
+              <p class="section-kicker" id="selected-day-role">실행일</p>
+              <h2 id="selected-day-title">월요일 실행</h2>
+              <p class="weekly-selected-date" id="selected-day-date"></p>
+            </div>
+            <button type="button" class="maintenance-button screen-only" id="set-maintenance-day">이 요일을 핵심 유지일로</button>
+          </header>
+
+          <div class="weekly-detail-toolbar screen-only" id="execution-day-controls">
+            <div class="weekly-mode-buttons" id="weekly-mode-controls" role="group" aria-label="선택 요일 모드">
+              <button type="button" data-weekly-mode="workout" aria-pressed="true">운동일</button>
+              <button type="button" data-weekly-mode="normal" aria-pressed="false">비운동일</button>
+              <button type="button" data-weekly-mode="running" aria-pressed="false">러닝일</button>
+            </div>
+            <fieldset class="run-picker" id="weekly-run-start-controls" hidden>
+              <legend>러닝 시작</legend>
+              <label><input type="radio" name="weekly-run-start" value="21" checked> 21시</label>
+              <label><input type="radio" name="weekly-run-start" value="22"> 22시</label>
+            </fieldset>
+          </div>
+
+          <div class="weekly-detail-grid">
+            <div class="weekly-checklist-column" id="weekly-day-checklist">
+              <div id="execution-checklist">
+                <section class="weekly-check-group weekly-check-group--application" aria-labelledby="weekly-application-title">
+                  <div class="weekly-check-heading">
+                    <div>
+                      <p class="section-kicker">오늘의 최우선 결과</p>
+                      <h3 id="weekly-application-title">지원 3–4개</h3>
+                    </div>
+                    <span id="selected-day-application-count">0 / 4</span>
+                  </div>
+                  <div class="weekly-application-checks">
+                    <label><input type="checkbox" data-weekly-application="0"> 지원 1</label>
+                    <label><input type="checkbox" data-weekly-application="1"> 지원 2</label>
+                    <label><input type="checkbox" data-weekly-application="2"> 지원 3</label>
+                    <label><input type="checkbox" data-weekly-application="3"> 지원 4</label>
+                  </div>
+                </section>
+
+                <section class="weekly-check-group" aria-labelledby="weekly-core-title">
+                  <div class="weekly-check-heading">
+                    <div>
+                      <p class="section-kicker">반드시 지킬 흐름</p>
+                      <h3 id="weekly-core-title">핵심 실행</h3>
+                    </div>
+                  </div>
+                  <div class="weekly-core-checks">
+                    <label><input type="checkbox" data-weekly-task="activity"> <span id="weekly-activity-label">아침 운동 완료</span></label>
+                    <label><input type="checkbox" data-weekly-task="review"> 이력서·포트폴리오 숙지 30분</label>
+                    <label><input type="checkbox" data-weekly-task="interview"> 면접 연습</label>
+                    <label><input type="checkbox" data-weekly-task="mealRest"> 식후 20분 휴식</label>
+                  </div>
+                </section>
+
+                <section class="weekly-check-group weekly-check-group--learning" aria-labelledby="weekly-learning-title">
+                  <div class="weekly-check-heading">
+                    <div>
+                      <p class="section-kicker">복수 선택</p>
+                      <h3 id="weekly-learning-title">학습 조합</h3>
+                    </div>
+                  </div>
+                  <div class="learning-options weekly-learning-options">
+                    <label><input type="checkbox" data-weekly-learning value="Spring"> Spring</label>
+                    <label><input type="checkbox" data-weekly-learning value="Redis"> Redis</label>
+                    <label><input type="checkbox" data-weekly-learning value="Java"> Java</label>
+                    <label><input type="checkbox" data-weekly-learning value="프로젝트 적용"> 프로젝트 적용</label>
+                    <label><input type="checkbox" data-weekly-learning value="CS"> CS</label>
+                    <label><input type="checkbox" data-weekly-learning value="코딩테스트"> 코딩테스트</label>
+                  </div>
+                </section>
+              </div>
+
+              <section class="weekly-check-group weekly-maintenance-checks" id="maintenance-checklist" aria-labelledby="weekly-maintenance-title" hidden>
+                <div class="weekly-check-heading">
+                  <div>
+                    <p class="section-kicker">최소 흐름만 이어가기</p>
+                    <h3 id="weekly-maintenance-title">핵심 유지일 체크</h3>
+                  </div>
+                </div>
+                <div class="weekly-core-checks">
+                  <label><input type="checkbox" data-maintenance-task="deadline"> 마감 임박 공고 확인</label>
+                  <label><input type="checkbox" data-maintenance-task="application"> 필요 시 1개 지원</label>
+                  <label><input type="checkbox" data-maintenance-task="review"> 이력서·포트폴리오 숙지 30분</label>
+                  <label><input type="checkbox" data-maintenance-task="interview"> 면접 답변 3개 복기</label>
+                  <label><input type="checkbox" data-maintenance-task="learningReview"> 핵심 학습 복습</label>
+                  <label><input type="checkbox" data-maintenance-task="nextWeek"> 다음 주 준비</label>
+                  <label><input type="checkbox" data-maintenance-task="rest"> 충분한 휴식</label>
+                </div>
+              </section>
+            </div>
+
+            <aside class="weekly-schedule-column" id="weekly-day-schedule" aria-labelledby="weekly-schedule-title">
+              <div class="weekly-schedule-heading">
+                <div>
+                  <p class="section-kicker">체크리스트를 받치는 시간 흐름</p>
+                  <h3 id="weekly-schedule-title">운동일 고정 시간표</h3>
+                </div>
+                <span id="weekly-schedule-mode">운동일</span>
+              </div>
+              <div id="weekly-schedule-list"></div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./src/weekly-app.js"></script>
+  </body>
+</html>

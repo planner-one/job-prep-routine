@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/routine-data.js && node --check src/routine-core.js && node --check src/page-app.js"
+    "check": "node --check src/routine-data.js && node --check src/routine-core.js && node --check src/page-app.js && node --check src/weekly-app.js"
   }
 }
