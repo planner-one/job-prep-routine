@@ -34,27 +34,31 @@ const createDefaultState = () => ({
 const stringValue = (value) => (typeof value === 'string' ? value : '');
 
 function normalizeCompany(company = {}) {
-  const platform = PLATFORMS.includes(company.platform) ? company.platform : PLATFORMS[0];
+  const source = company && typeof company === 'object' && !Array.isArray(company) ? company : {};
+  const platform = PLATFORMS.includes(source.platform) ? source.platform : PLATFORMS[0];
   return {
-    name: stringValue(company.name),
+    name: stringValue(source.name),
     platform,
-    analyzed: Boolean(company.analyzed),
-    letter: Boolean(company.letter),
-    applied: Boolean(company.applied),
-    link: stringValue(company.link),
+    analyzed: Boolean(source.analyzed),
+    letter: Boolean(source.letter),
+    applied: Boolean(source.applied),
+    link: stringValue(source.link),
   };
 }
 
-function normalizeState(candidate = {}) {
+export function normalizeDailyState(candidate = {}) {
+  const source = candidate && typeof candidate === 'object' && !Array.isArray(candidate) ? candidate : {};
   const defaults = createDefaultState();
-  const mode = MODES.includes(candidate.mode) ? candidate.mode : defaults.mode;
-  const runStart = candidate.runStart === '22' ? '22' : '21';
-  const companies = Array.from({ length: 4 }, (_, index) => normalizeCompany(candidate.companies?.[index]));
+  const mode = MODES.includes(source.mode) ? source.mode : defaults.mode;
+  const runStart = source.runStart === '22' ? '22' : '21';
+  const sourceCompanies = Array.isArray(source.companies) ? source.companies : [];
+  const sourceTopics = Array.isArray(source.learningTopics) ? source.learningTopics : [];
+  const companies = Array.from({ length: 4 }, (_, index) => normalizeCompany(sourceCompanies[index]));
   const checkedIds = Array.from(
-    new Set((Array.isArray(candidate.checkedIds) ? candidate.checkedIds : []).filter((id) => typeof id === 'string')),
+    new Set((Array.isArray(source.checkedIds) ? source.checkedIds : []).filter((id) => typeof id === 'string')),
   );
-  const learningTopics = LEARNING_TOPICS.filter((topic) => candidate.learningTopics?.includes(topic));
-  const memos = candidate.memos ?? {};
+  const learningTopics = LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic));
+  const memos = source.memos && typeof source.memos === 'object' && !Array.isArray(source.memos) ? source.memos : {};
 
   return {
     mode,
@@ -274,7 +278,7 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
   const root = pageDocument.getElementById('daily-page');
   if (!root) return null;
 
-  let state = normalizeState(loadState(storage, PAGE_NAME, date, createDefaultState()));
+  let state = normalizeDailyState(loadState(storage, PAGE_NAME, date, createDefaultState()));
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
 
@@ -308,7 +312,7 @@ export function initDailyPage(pageDocument, storage, date = localDateString()) {
 
   function captureState(overrides = {}) {
     syncVisibleScheduleChecks();
-    state = normalizeState({
+    state = normalizeDailyState({
       ...collectDailyState(root),
       ...overrides,
       checkedIds: Array.from(checkedIds),
