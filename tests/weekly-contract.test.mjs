@@ -39,6 +39,10 @@ test('주간 목표 수치가 설계와 일치한다', () => {
   }
 });
 
+test('지원 목표 문구와 별개로 선택 가능한 최대 25개를 진척 상한으로 제공한다', () => {
+  assert.match(html, /aria-label="주간 지원 진척"[^>]+aria-valuemax="25"/);
+});
+
 test('선택 요일 상세 한 카드 안에 실행 체크와 보조 시간표를 섞는다', () => {
   const detail = html.match(/<section[^>]+id="day-detail"[\s\S]*?<\/section>\s*<\/main>/)?.[0] ?? '';
   assert.match(detail, /id="weekly-day-checklist"/);

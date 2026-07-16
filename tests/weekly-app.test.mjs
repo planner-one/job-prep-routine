@@ -14,6 +14,13 @@ test('해당 날짜가 속한 주의 월요일을 주간 키로 계산한다', (
   assert.equal(weeklyApp.weekMondayKey('2026-07-19'), '2026-07-13');
   assert.equal(weeklyApp.weekMondayKey('2026-07-20'), '2026-07-20');
 });
+
+test('연말을 걸치는 주 범위는 시작 연도와 종료 연도를 모두 표시한다', () => {
+  assertFunction('formatWeekRange');
+  assert.equal(weeklyApp.formatWeekRange('2026-07-13'), '2026년 7월 13일–19일');
+  assert.equal(weeklyApp.formatWeekRange('2026-12-28'), '2026년 12월 28일–2027년 1월 3일');
+});
+
 test('저장 상태를 일곱 요일·한 유지일·허용된 모드와 학습 항목으로 정규화한다', () => {
   assertFunction('normalizeWeeklyState');
   const normalized = weeklyApp.normalizeWeeklyState({
@@ -40,6 +47,17 @@ test('저장 상태를 일곱 요일·한 유지일·허용된 모드와 학습 
   assert.equal(normalized.days.wed.tasks.activity, true);
   assert.equal(normalized.days.wed.tasks.interview, false);
   assert.equal(weeklyApp.normalizeWeeklyState({ maintenanceDay: 'bad' }).maintenanceDay, 'sun');
+});
+
+test('실행 모드가 실제로 바뀔 때만 이전 의미의 활동 완료를 초기화한다', () => {
+  assertFunction('updateExecutionMode');
+  const day = { mode: 'normal', tasks: { activity: true } };
+
+  assert.equal(weeklyApp.updateExecutionMode(day, 'normal'), false);
+  assert.equal(day.tasks.activity, true);
+  assert.equal(weeklyApp.updateExecutionMode(day, 'running'), true);
+  assert.equal(day.mode, 'running');
+  assert.equal(day.tasks.activity, false);
 });
 
 test('실행일 체크와 유지일의 실제 지원·면접 체크에서 주간 진척을 계산한다', () => {

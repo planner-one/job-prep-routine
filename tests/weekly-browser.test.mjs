@@ -293,6 +293,30 @@ test('주간 보드의 요일·유지일·모드·진척을 실제 브라우저�
       maintenanceHidden: true,
     });
 
+    const activityReset = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const activity = document.querySelector('[data-weekly-task="activity"]');
+        activity.click();
+        document.querySelector('[data-weekly-mode="normal"]').click();
+        const preservedOnSameMode = activity.checked;
+        document.querySelector('[data-weekly-mode="running"]').click();
+        return {
+          preservedOnSameMode,
+          activityChecked: document.querySelector('[data-weekly-task="activity"]').checked,
+          runs: document.querySelector('#weekly-runs-value').textContent,
+          applicationsMax: document.querySelector('[aria-label="주간 지원 진척"]').getAttribute('aria-valuemax'),
+        };
+      })()`,
+    );
+    assert.deepEqual(activityReset, {
+      preservedOnSameMode: true,
+      activityChecked: false,
+      runs: '0 / 1–2회',
+      applicationsMax: '25',
+    });
+
     const runningSchedule = await evaluate(
       cdp,
       sessionId,

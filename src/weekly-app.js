@@ -127,6 +127,13 @@ export function createDefaultWeeklyState() {
   };
 }
 
+export function updateExecutionMode(day, mode) {
+  if (!sourceObject(day).tasks || !EXECUTION_MODES.includes(mode) || day.mode === mode) return false;
+  day.mode = mode;
+  day.tasks.activity = false;
+  return true;
+}
+
 function normalizeDayState(candidate, dayId) {
   const source = sourceObject(candidate);
   const defaultMode = DEFAULT_MODES[dayId] ?? 'normal';
@@ -201,10 +208,13 @@ function dateAtWeekday(weekKey, dayId) {
   return date;
 }
 
-function formatWeekRange(weekKey) {
+export function formatWeekRange(weekKey) {
   const monday = localDateFrom(weekKey);
   const sunday = new Date(monday);
   sunday.setDate(sunday.getDate() + 6);
+  if (monday.getFullYear() !== sunday.getFullYear()) {
+    return `${monday.getFullYear()}년 ${monday.getMonth() + 1}월 ${monday.getDate()}일–${sunday.getFullYear()}년 ${sunday.getMonth() + 1}월 ${sunday.getDate()}일`;
+  }
   if (monday.getMonth() === sunday.getMonth()) {
     return `${monday.getFullYear()}년 ${monday.getMonth() + 1}월 ${monday.getDate()}일–${sunday.getDate()}일`;
   }
@@ -265,7 +275,7 @@ function updateWeeklyProgress(root, state) {
   setText(root, '#weekly-interviews-value', `${progress.interviews}회`);
   setText(root, '#weekly-workouts-value', `${progress.workouts} / 3–5회`);
   setText(root, '#weekly-runs-value', `${progress.runs} / 1–2회`);
-  setProgressTrack(root, 'applications', progress.applications, 24);
+  setProgressTrack(root, 'applications', progress.applications, 25);
 
   for (const [topic, target] of Object.entries(LEARNING_TARGETS)) {
     setText(
@@ -408,12 +418,10 @@ export function initWeeklyPage(pageDocument, storage, date = localDateString()) 
   function changeMode(mode) {
     if (
       state.selectedDay === state.maintenanceDay ||
-      !EXECUTION_MODES.includes(mode) ||
-      selectedDayState().mode === mode
+      !updateExecutionMode(selectedDayState(), mode)
     ) {
       return;
     }
-    selectedDayState().mode = mode;
     persist();
     paintTabs();
     paintDetail();
