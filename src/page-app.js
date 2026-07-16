@@ -267,6 +267,12 @@ function applyMemoState(root, memos) {
   }
 }
 
+function syncScheduleCompletion(root) {
+  for (const checkbox of root.querySelectorAll('[data-schedule-id]')) {
+    checkbox.closest('.schedule-item')?.classList.toggle('is-complete', checkbox.checked);
+  }
+}
+
 function updateProgress(root) {
   const checkboxes = Array.from(root.querySelectorAll('[data-progress-check]'));
   const completed = checkboxes.filter((input) => input.checked).length;
@@ -292,9 +298,7 @@ function updateProgress(root) {
     pipelineSummary.textContent = `지원 ${pipeline.applied}개 · ${pipeline.completedSteps} / ${pipeline.totalSteps}단계`;
   }
 
-  for (const checkbox of root.querySelectorAll('[data-schedule-id]')) {
-    checkbox.closest('.schedule-item')?.classList.toggle('is-complete', checkbox.checked);
-  }
+  syncScheduleCompletion(root);
 }
 
 export function initDailyPage(pageDocument, storage, date = localDateString()) {
@@ -534,6 +538,7 @@ export function initRoadmapPage(pageDocument, storage, date = localDateString())
 
   function persist(overrides) {
     captureState(overrides);
+    syncScheduleCompletion(root);
     saveState(storage, ROADMAP_PAGE_NAME, date, state);
   }
 

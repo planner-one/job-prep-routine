@@ -307,7 +307,17 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
         const at21 = document.querySelector('[data-schedule-id="run"]').closest('.schedule-item').querySelector('.schedule-time').textContent;
         document.querySelector('input[name="roadmap-run-start"][value="22"]').click();
         document.querySelector('[data-category-filter="all"]').click();
-        document.querySelector('[data-schedule-id="run"]').click();
+        const runCheckbox = document.querySelector('[data-schedule-id="run"]');
+        const runRow = runCheckbox.closest('.schedule-item');
+        runCheckbox.checked = false;
+        runRow.classList.remove('is-complete');
+        runCheckbox.click();
+        const classAfterCheck = runRow.classList.contains('is-complete');
+        runCheckbox.checked = true;
+        runRow.classList.add('is-complete');
+        runCheckbox.click();
+        const classAfterUncheck = runRow.classList.contains('is-complete');
+        runCheckbox.click();
         document.querySelector('[data-learning-topic][value="Spring"]').click();
         document.querySelector('[data-learning-topic][value="CS"]').click();
 
@@ -318,6 +328,7 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
           at21,
           at22: document.querySelector('[data-schedule-id="run"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
           controlsHidden: document.querySelector('#roadmap-run-start-controls').hidden,
+          completionClass: { checked: classAfterCheck, unchecked: classAfterUncheck },
           state: JSON.parse(localStorage.getItem(key)),
         };
       })()`,
@@ -325,6 +336,7 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
     assert.equal(stored.at21, '21:00–22:00');
     assert.equal(stored.at22, '22:00–23:00');
     assert.equal(stored.controlsHidden, false);
+    assert.deepEqual(stored.completionClass, { checked: true, unchecked: false });
     assert.equal(stored.state.mode, 'running');
     assert.equal(stored.state.runStart, '22');
     assert.equal(stored.state.checkedIds.includes('run'), true);

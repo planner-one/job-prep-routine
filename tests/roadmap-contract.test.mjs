@@ -34,3 +34,8 @@ test('PDF 미리보기는 상단 조작 영역의 마지막 버튼이다', () =>
   const actions = html.match(/<div class="roadmap-actions[\s\S]*?<\/div>\s*<\/header>/)?.[0] ?? '';
   assert.match(actions, /id="roadmap-pdf-preview"[^>]*>PDF 미리보기<\/button>\s*<\/div>\s*<\/header>$/);
 });
+
+test('학습 안내는 모든 모드에 맞는 중립 문구를 사용한다', () => {
+  assert.match(html, /오늘의 학습 블록/);
+  assert.doesNotMatch(html, /16:50 학습 블록/);
+});
