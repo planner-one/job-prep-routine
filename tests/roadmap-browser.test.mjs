@@ -260,10 +260,10 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
       cdp,
       sessionId,
       `(() => {
-        document.querySelector('[data-category-filter="career"]').click();
+        document.querySelector('[data-category-filter="learning"]').click();
         const rows = [...document.querySelectorAll('[data-schedule-row]')];
         return {
-          pressed: document.querySelector('[data-category-filter="career"]').getAttribute('aria-pressed'),
+          pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
           visibleCategories: [...new Set(rows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
           visible: rows.filter((row) => !row.hidden).length,
           hidden: rows.filter((row) => row.hidden).length,
@@ -271,9 +271,51 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
       })()`,
     );
     assert.equal(filtered.pressed, 'true');
-    assert.deepEqual(filtered.visibleCategories, ['career']);
+    assert.deepEqual(filtered.visibleCategories, ['learning']);
     assert.equal(filtered.visible > 0, true);
     assert.equal(filtered.hidden > 0, true);
+
+    await cdp.send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
+    const printSchedule = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const rows = [...document.querySelectorAll('#roadmap-schedule [data-schedule-row]')];
+        const periods = [...document.querySelectorAll('#roadmap-schedule .schedule-period')];
+        return {
+          rows: rows.length,
+          hiddenRows: rows.filter((row) => row.hidden).length,
+          visibleRows: rows.filter((row) => getComputedStyle(row).display !== 'none').length,
+          periods: periods.length,
+          hiddenPeriods: periods.filter((period) => period.hidden).length,
+          visiblePeriods: periods.filter((period) => getComputedStyle(period).display !== 'none').length,
+        };
+      })()`,
+    );
+    assert.equal(printSchedule.rows, 16);
+    assert.equal(printSchedule.hiddenRows > 0, true);
+    assert.equal(printSchedule.visibleRows, printSchedule.rows);
+    assert.equal(printSchedule.periods, 4);
+    assert.equal(printSchedule.hiddenPeriods > 0, true);
+    assert.equal(printSchedule.visiblePeriods, printSchedule.periods);
+
+    await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' }, sessionId);
+    const screenSchedule = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const rows = [...document.querySelectorAll('#roadmap-schedule [data-schedule-row]')];
+        const periods = [...document.querySelectorAll('#roadmap-schedule .schedule-period')];
+        return {
+          visibleCategories: [...new Set(rows.filter((row) => getComputedStyle(row).display !== 'none').map((row) => row.dataset.category))],
+          hiddenRows: rows.filter((row) => row.hidden && getComputedStyle(row).display === 'none').length,
+          hiddenPeriods: periods.filter((period) => period.hidden && getComputedStyle(period).display === 'none').length,
+        };
+      })()`,
+    );
+    assert.deepEqual(screenSchedule.visibleCategories, ['learning']);
+    assert.equal(screenSchedule.hiddenRows, filtered.hidden);
+    assert.equal(screenSchedule.hiddenPeriods, printSchedule.hiddenPeriods);
 
     const modeSchedules = await evaluate(
       cdp,
@@ -297,7 +339,7 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
       { workout: 16, normal: 15, running: 15, maintenance: 11 },
     );
     assert.equal(new Set(Object.values(modeSchedules).map((value) => value.signature)).size, 4);
-    for (const value of Object.values(modeSchedules)) assert.deepEqual(value.visibleCategories, ['career']);
+    for (const value of Object.values(modeSchedules)) assert.deepEqual(value.visibleCategories, ['learning']);
 
     const stored = await evaluate(
       cdp,

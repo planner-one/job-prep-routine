@@ -1754,6 +1754,14 @@ textarea:focus-visible {
     gap: 8px;
   }
 
+  .roadmap-paper #roadmap-schedule [data-schedule-row][hidden] {
+    display: grid !important;
+  }
+
+  .roadmap-paper #roadmap-schedule .schedule-period[hidden] {
+    display: block !important;
+  }
+
   .roadmap-principles {
     margin-bottom: 8px;
   }
