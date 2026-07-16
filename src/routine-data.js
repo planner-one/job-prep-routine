@@ -67,7 +67,7 @@ const MAINTENANCE_SCHEDULE = [
   scheduleItem('maintenance-wake', '08:00', '기상·회복', 'exercise', 'morning'),
   scheduleItem('maintenance-breakfast', '08:10–09:00', '아침·식후 20분', 'meal', 'morning'),
   scheduleItem('maintenance-portfolio', '10:00–10:30', '이력서·포트폴리오 숙지', 'career', 'morning'),
-  scheduleItem('maintenance-application', '10:30–11:30', '마감 임박 공고 확인·선택 지원', 'career', 'morning'),
+  scheduleItem('maintenance-application', '10:30–11:30', '마감 임박 공고 확인 및 필요 시 1개 지원', 'career', 'morning'),
   scheduleItem('maintenance-lunch', '12:00–13:00', '점심·식후 20분', 'meal', 'afternoon'),
   scheduleItem('maintenance-learning', '14:00–15:00', '이번 주 핵심 학습 복습', 'learning', 'afternoon'),
   scheduleItem('maintenance-interview', '17:00–17:30', '면접 답변 3개 복기', 'career', 'afternoon'),
