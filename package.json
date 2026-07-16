@@ -1,0 +1,9 @@
+{
+  "name": "job-prep-routine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/routine-data.js && node --check src/routine-core.js && node --check src/page-app.js"
+  }
+}
