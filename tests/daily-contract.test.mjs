@@ -32,6 +32,21 @@ test('데일리형은 시간표와 지원 파이프라인의 두 열을 가진�
   assert.match(html, /id="application-pipeline"/);
 });
 
+test('데일리는 시간표 카테고리 필터와 빈 결과 안내를 제공한다', () => {
+  assert.match(html, /id="daily-category-filters"/);
+  for (const [value, label] of [
+    ['all', '전체'],
+    ['exercise', '운동·회복'],
+    ['career', '취업·면접'],
+    ['learning', '개발 학습'],
+    ['meal', '식사·휴식'],
+  ]) {
+    assert.match(html, new RegExp(`data-category-filter="${value}"[^>]*>${label}<`));
+  }
+  assert.match(html, /data-category-filter="all" aria-pressed="true"/);
+  assert.match(html, /id="daily-schedule-empty"[^>]*hidden/);
+});
+
 test('노출 UI 제목은 자연스러운 한국어를 사용한다', () => {
   assert.doesNotMatch(html, /DAILY FOCUS|TIME BLOCKS|TODAY'S ACTION/);
   assert.match(html, />오늘의 집중</);

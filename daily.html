@@ -74,6 +74,20 @@
               <p class="section-kicker">시간 블록</p>
               <h2 id="schedule-title">고정 시간표</h2>
             </div>
+            <div class="daily-filter-band screen-only">
+              <div>
+                <p class="section-kicker">일정 보기</p>
+                <h3>지금 필요한 흐름만 보기</h3>
+              </div>
+              <div class="category-filters" id="daily-category-filters" role="group" aria-label="시간표 카테고리 필터">
+                <button type="button" data-category-filter="all" aria-pressed="true">전체</button>
+                <button type="button" data-category-filter="exercise" aria-pressed="false">운동·회복</button>
+                <button type="button" data-category-filter="career" aria-pressed="false">취업·면접</button>
+                <button type="button" data-category-filter="learning" aria-pressed="false">개발 학습</button>
+                <button type="button" data-category-filter="meal" aria-pressed="false">식사·휴식</button>
+              </div>
+            </div>
+            <p class="schedule-empty" id="daily-schedule-empty" role="status" hidden>이 모드에는 선택한 카테고리의 일정이 없습니다.</p>
             <div id="daily-schedule"></div>
           </section>
 

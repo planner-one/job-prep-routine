@@ -16,6 +16,7 @@ const PERIODS = [
   { id: 'evening', label: '저녁', description: '복기와 마감' },
   { id: 'night', label: '밤', description: '정리와 회복' },
 ];
+const SCHEDULE_CATEGORIES = new Set(['all', 'exercise', 'career', 'learning', 'meal']);
 
 const emptyCompany = () => ({
   name: '',
@@ -171,6 +172,24 @@ export function renderSchedule(container, schedule, checkedIds = []) {
   return container;
 }
 
+export function applyDailyCategoryFilter(root, category) {
+  const normalized = SCHEDULE_CATEGORIES.has(category) ? category : 'all';
+  for (const button of root.querySelectorAll('#daily-category-filters [data-category-filter]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.categoryFilter === normalized));
+  }
+  const rows = Array.from(root.querySelectorAll('#daily-schedule [data-schedule-row]'));
+  for (const row of rows) {
+    row.hidden = normalized !== 'all' && row.dataset.category !== normalized;
+  }
+  for (const period of root.querySelectorAll('#daily-schedule .schedule-period')) {
+    const periodRows = Array.from(period.querySelectorAll('[data-schedule-row]'));
+    period.hidden = periodRows.length === 0 || periodRows.every((row) => row.hidden);
+  }
+  const empty = root.querySelector('#daily-schedule-empty');
+  if (empty) empty.hidden = rows.some((row) => !row.hidden);
+  return normalized;
+}
+
 function fieldIn(card, field) {
   return card.querySelector(`[data-field="${field}"]`);
 }
@@ -308,6 +327,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   let state = normalizeDailyState(loadState(storage, DAILY_PAGE_NAME, date, createDefaultState()));
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
+  let activeCategory = 'all';
 
   const dateElement = root.querySelector('#current-date');
   if (dateElement) {
@@ -324,6 +344,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
     const schedule = getSchedule(state.mode, state.runStart);
     renderedIds = new Set(schedule.map((item) => item.id));
     renderSchedule(root.querySelector('#daily-schedule'), schedule, checkedIds);
+    activeCategory = applyDailyCategoryFilter(root, activeCategory);
   }
 
   function paintState() {
@@ -376,6 +397,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   function resetToday() {
     clearState(storage, DAILY_PAGE_NAME, date);
     state = createDefaultState();
+    activeCategory = 'all';
     paintState();
   }
 
@@ -388,6 +410,12 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   }
 
   function handleClick(event) {
+    const categoryButton = event.target.closest?.('#daily-category-filters [data-category-filter]');
+    if (categoryButton && root.contains(categoryButton)) {
+      activeCategory = applyDailyCategoryFilter(root, categoryButton.dataset.categoryFilter);
+      return;
+    }
+
     const modeButton = event.target.closest?.('[data-mode]');
     if (modeButton && root.contains(modeButton)) {
       changeMode(modeButton.dataset.mode);

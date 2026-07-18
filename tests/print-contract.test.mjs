@@ -59,6 +59,18 @@ test('로드맵 인쇄는 화면 필터로 숨긴 현재 모드의 전체 시간
   );
 });
 
+test('데일리 인쇄는 화면 필터로 숨긴 전체 시간표를 다시 표시한다', () => {
+  const printCss = blockAfter(css, '@media print');
+  assert.match(
+    declarationsFor(printCss, '#daily-page #daily-schedule [data-schedule-row][hidden]'),
+    /display:\s*grid\s*!important/,
+  );
+  assert.match(
+    declarationsFor(printCss, '#daily-page #daily-schedule .schedule-period[hidden]'),
+    /display:\s*block\s*!important/,
+  );
+});
+
 test('PDF 내보내기는 Chrome 재정의와 안정적인 한국어 파일명을 지원한다', () => {
   assert.match(exportScript, /CHROME_BIN/);
   assert.match(exportScript, /Google Chrome\.app\/Contents\/MacOS\/Google Chrome/);

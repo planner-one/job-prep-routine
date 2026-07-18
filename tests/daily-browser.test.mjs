@@ -309,6 +309,59 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     assert.equal(Number(stored.progress) >= 3, true);
     assert.match(stored.pipeline, /1 \/ 12단계/);
 
+    const filtered = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const date = document.querySelector('#current-date').dateTime;
+        const key = 'job-prep-routine:daily:' + date;
+        const before = localStorage.getItem(key);
+        const progressBefore = document.querySelector('#progress-count').textContent;
+        document.querySelector('[data-category-filter="learning"]').click();
+        const rows = [...document.querySelectorAll('#daily-schedule [data-schedule-row]')];
+        return {
+          before,
+          after: localStorage.getItem(key),
+          progressBefore,
+          progressAfter: document.querySelector('#progress-count').textContent,
+          pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
+          visibleCategories: [...new Set(rows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
+          hiddenPeriods: [...document.querySelectorAll('#daily-schedule .schedule-period')].filter((period) => period.hidden).length,
+        };
+      })()`,
+    );
+    assert.equal(filtered.before, filtered.after);
+    assert.equal(filtered.progressBefore, filtered.progressAfter);
+    assert.equal(filtered.pressed, 'true');
+    assert.deepEqual(filtered.visibleCategories, ['learning']);
+    assert.equal(filtered.hiddenPeriods > 0, true);
+
+    const retainedAfterModeChange = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        document.querySelector('[data-mode="normal"]').click();
+        const normalRows = [...document.querySelectorAll('#daily-schedule [data-schedule-row]')];
+        const normal = {
+          pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
+          visibleCategories: [...new Set(normalRows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
+        };
+        document.querySelector('[data-mode="running"]').click();
+        const runningRows = [...document.querySelectorAll('#daily-schedule [data-schedule-row]')];
+        return {
+          normal,
+          running: {
+            pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
+            visibleCategories: [...new Set(runningRows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
+          },
+        };
+      })()`,
+    );
+    assert.deepEqual(retainedAfterModeChange, {
+      normal: { pressed: 'true', visibleCategories: ['learning'] },
+      running: { pressed: 'true', visibleCategories: ['learning'] },
+    });
+
     await navigate(cdp, sessionId, staticSite.url);
     const restored = await evaluate(
       cdp,
@@ -324,6 +377,8 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
         link: document.querySelector('.company-card[data-company-index="0"] [data-field="link"]').value,
         cs: document.querySelector('[data-learning-topic][value="CS"]').checked,
         memo: document.querySelector('[data-memo="implemented"]').value,
+        allPressed: document.querySelector('[data-category-filter="all"]').getAttribute('aria-pressed'),
+        learningPressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
       }))()`,
     );
     assert.deepEqual(restored, {
@@ -337,6 +392,8 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
       link: 'https://example.com/job',
       cs: true,
       memo: 'CDP 상호작용 테스트',
+      allPressed: 'true',
+      learningPressed: 'false',
     });
 
     const reset = await evaluate(
