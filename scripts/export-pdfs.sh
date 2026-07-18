@@ -4,7 +4,8 @@ set -eu
 DEFAULT_CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHROME="${CHROME_BIN:-$DEFAULT_CHROME}"
 BASE_URL="${1:-http://127.0.0.1:8787}"
-OUT_DIR="${2:-../outputs}"
+OUT_DIR="${2:-output/pdf}"
+TARGET="${3:-all}"
 
 if [ ! -x "$CHROME" ]; then
   echo "실행 가능한 Chrome을 찾지 못했습니다: $CHROME" >&2
@@ -29,6 +30,17 @@ export_pdf() {
     "$BASE_URL/$page"
 }
 
-export_pdf "roadmap.html" "취업준비-운영로드맵.pdf"
-export_pdf "weekly.html" "취업준비-주간실행보드.pdf"
-export_pdf "daily.html" "취업준비-데일리포커스보드.pdf"
+case "$TARGET" in
+  all)
+    export_pdf "roadmap.html" "취업준비-운영-로드맵.pdf"
+    export_pdf "weekly.html" "취업준비-주간실행보드.pdf"
+    export_pdf "daily.html" "취업준비-데일리포커스보드.pdf"
+    ;;
+  roadmap)
+    export_pdf "roadmap.html" "취업준비-운영-로드맵.pdf"
+    ;;
+  *)
+    echo "지원하지 않는 PDF 대상입니다: $TARGET" >&2
+    exit 2
+    ;;
+esac

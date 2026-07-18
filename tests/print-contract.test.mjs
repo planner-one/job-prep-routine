@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'utf8').catch(() => '');
 const home = await readFile(new URL('../index.html', import.meta.url), 'utf8').catch(() => '');
 const exportScript = await readFile(new URL('../scripts/export-pdfs.sh', import.meta.url), 'utf8').catch(() => '');
+const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
 
 function blockAfter(source, marker) {
   const markerIndex = source.indexOf(marker);
@@ -75,13 +76,20 @@ test('PDF 내보내기는 Chrome 재정의와 안정적인 한국어 파일명�
   assert.match(exportScript, /\$\{CHROME_BIN:-/);
 
   for (const [page, filename] of [
-    ['roadmap.html', '취업준비-운영로드맵.pdf'],
+    ['roadmap.html', '취업준비-운영-로드맵.pdf'],
     ['weekly.html', '취업준비-주간실행보드.pdf'],
     ['daily.html', '취업준비-데일리포커스보드.pdf'],
   ]) {
     assert.match(exportScript, new RegExp(`${page.replace('.', '\\.')}`));
     assert.match(exportScript, new RegExp(filename.replace('.', '\\.')));
   }
+});
+
+test('로드맵 PDF는 canonical 경로와 파일명으로 생성되고 다운로드된다', () => {
+  assert.match(exportScript, /TARGET="\$\{3:-all\}"/);
+  assert.match(exportScript, /취업준비-운영-로드맵\.pdf/);
+  assert.match(exportScript, /roadmap\)/);
+  assert.match(roadmapHtml, /href="\.\/output\/pdf\/취업준비-운영-로드맵\.pdf"[^>]*download/);
 });
 
 test('한국어 홈은 네 보드로 이동하는 상대 링크를 제공한다', () => {
