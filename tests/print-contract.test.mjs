@@ -6,6 +6,7 @@ const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'u
 const home = await readFile(new URL('../index.html', import.meta.url), 'utf8').catch(() => '');
 const exportScript = await readFile(new URL('../scripts/export-pdfs.sh', import.meta.url), 'utf8').catch(() => '');
 const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
+const packageJson = await readFile(new URL('../package.json', import.meta.url), 'utf8').catch(() => '');
 
 function blockAfter(source, marker) {
   const markerIndex = source.indexOf(marker);
@@ -90,6 +91,13 @@ test('로드맵 PDF는 canonical 경로와 파일명으로 생성되고 다운�
   assert.match(exportScript, /취업준비-운영-로드맵\.pdf/);
   assert.match(exportScript, /roadmap\)/);
   assert.match(roadmapHtml, /href="\.\/output\/pdf\/취업준비-운영-로드맵\.pdf"[^>]*download/);
+});
+
+test('로드맵 PDF npm 명령은 기존 8787 origin을 사용한다', () => {
+  assert.match(
+    packageJson,
+    /"export:roadmap-pdf": "sh scripts\/export-pdfs\.sh http:\/\/127\.0\.0\.1:8787 output\/pdf roadmap"/,
+  );
 });
 
 test('한국어 홈은 네 보드로 이동하는 상대 링크를 제공한다', () => {
