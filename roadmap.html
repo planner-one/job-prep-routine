@@ -11,27 +11,15 @@
       <main class="daily-paper roadmap-paper" id="roadmap-page">
         <header class="daily-header roadmap-header">
           <div class="title-block">
-            <p class="eyebrow">오늘 운영 기준판</p>
+            <p class="eyebrow">운영 기준표</p>
             <h1>취업 준비 운영 로드맵</h1>
-            <p class="date-line"><time id="roadmap-current-date" datetime="">오늘</time></p>
+            <p class="date-line">다섯 일정 변형을 한곳에서 비교합니다.</p>
           </div>
 
           <div class="roadmap-actions screen-only">
-            <div class="mode-bar roadmap-mode-bar" id="roadmap-mode-switch" role="group" aria-label="오늘의 운영 모드">
-              <button type="button" class="mode-button" data-roadmap-mode="workout" aria-pressed="true">운동일</button>
-              <button type="button" class="mode-button" data-roadmap-mode="normal" aria-pressed="false">비운동일</button>
-              <button type="button" class="mode-button" data-roadmap-mode="running" aria-pressed="false">러닝일</button>
-              <button type="button" class="mode-button" data-roadmap-mode="maintenance" aria-pressed="false">핵심 유지일</button>
-            </div>
-
-            <fieldset class="run-picker" id="roadmap-run-start-controls" hidden>
-              <legend>러닝 시작</legend>
-              <label><input type="radio" name="roadmap-run-start" value="21" checked> 21시</label>
-              <label><input type="radio" name="roadmap-run-start" value="22"> 22시</label>
-            </fieldset>
-            <a class="board-link" href="./history.html">기록·분석</a>
-            <button type="button" class="reset-button" id="roadmap-reset-today">현재 날짜 초기화</button>
-            <button type="button" class="pdf-button" id="roadmap-pdf-preview">PDF 미리보기</button>
+            <a class="board-link" href="./index.html">홈</a>
+            <a class="board-link" href="./daily.html">데일리 포커스</a>
+            <a class="pdf-button" href="./output/pdf/취업준비-운영-로드맵.pdf" download>PDF 다운로드</a>
           </div>
         </header>
 
@@ -53,57 +41,10 @@
           </article>
         </section>
 
-        <section class="roadmap-filter-band screen-only" aria-labelledby="category-filter-title">
-          <div>
-            <p class="section-kicker">일정 보기</p>
-            <h2 id="category-filter-title">필요한 흐름만 골라보기</h2>
-          </div>
-          <div class="category-filters" id="category-filters" role="group" aria-label="일정 카테고리 필터">
-            <button type="button" data-category-filter="all" aria-pressed="true">전체</button>
-            <button type="button" data-category-filter="exercise" aria-pressed="false">운동·회복</button>
-            <button type="button" data-category-filter="career" aria-pressed="false">취업·면접</button>
-            <button type="button" data-category-filter="learning" aria-pressed="false">개발 학습</button>
-            <button type="button" data-category-filter="meal" aria-pressed="false">식사·휴식</button>
-          </div>
-        </section>
-
-        <div class="roadmap-layout">
-          <section class="schedule-column roadmap-schedule-column" aria-labelledby="roadmap-schedule-title">
-            <div class="section-heading roadmap-section-heading">
-              <div>
-                <p class="section-kicker">오늘의 기준 시간표</p>
-                <h2 id="roadmap-schedule-title">선택한 모드의 하루 전체 흐름</h2>
-              </div>
-              <p class="schedule-hint">완료한 일정은 바로 체크하세요.</p>
-            </div>
-            <div id="roadmap-schedule"></div>
-          </section>
-
-          <aside class="roadmap-side" aria-labelledby="roadmap-learning-title">
-            <section class="side-panel learning-panel roadmap-learning-panel" id="roadmap-learning">
-              <div class="roadmap-learning-heading">
-                <p class="section-kicker">오늘의 학습 조합</p>
-                <h2 id="roadmap-learning-title">집중할 주제를 복수 선택</h2>
-                <p>오늘의 학습 블록에서 함께 다룰 주제를 고릅니다.</p>
-              </div>
-              <div class="learning-options roadmap-learning-options">
-                <label><input type="checkbox" data-learning-topic value="Spring"> Spring</label>
-                <label><input type="checkbox" data-learning-topic value="Redis"> Redis</label>
-                <label><input type="checkbox" data-learning-topic value="Java"> Java</label>
-                <label><input type="checkbox" data-learning-topic value="프로젝트 적용"> 프로젝트 적용</label>
-                <label><input type="checkbox" data-learning-topic value="CS"> CS</label>
-                <label><input type="checkbox" data-learning-topic value="코딩테스트"> 코딩테스트</label>
-              </div>
-              <div class="learning-note">
-                <strong>운영 기준</strong>
-                <p>개념 정리만 하지 않고 코드·문서·프로젝트 변화 중 하나를 남깁니다.</p>
-              </div>
-            </section>
-          </aside>
-        </div>
+        <div id="roadmap-reference-list" class="roadmap-reference-list"></div>
       </main>
     </div>
 
-    <script type="module" src="./src/page-app.js"></script>
+    <script type="module" src="./src/roadmap-app.js"></script>
   </body>
 </html>

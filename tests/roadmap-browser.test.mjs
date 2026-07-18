@@ -183,7 +183,7 @@ async function waitForPageReady(cdp, sessionId) {
     const ready = await evaluate(
       cdp,
       sessionId,
-      `document.readyState === 'complete' && document.querySelectorAll('#roadmap-schedule [data-schedule-id]').length > 0`,
+      `document.readyState === 'complete' && document.documentElement.dataset.roadmapReady === 'true'`,
     );
     if (ready) return;
     await delay(40);
@@ -198,7 +198,8 @@ async function navigate(cdp, sessionId, url) {
   await waitForPageReady(cdp, sessionId);
 }
 
-test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라우저에서 운영한다', { timeout: 45_000 }, async () => {
+
+test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 기존 저장값을 보존한다', { timeout: 45_000 }, async () => {
   let server;
   let chrome;
   let cdp;
@@ -219,226 +220,33 @@ test('로드맵의 필터·모드·러닝 시각·체크 상태를 실제 브라
     await cdp.send('Runtime.enable', {}, sessionId);
     await navigate(cdp, sessionId, staticSite.url);
 
-    const initial = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        const now = new Date();
-        const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
-        return {
-          date: document.querySelector('#roadmap-current-date').dateTime,
-          today,
-          mode: document.querySelector('[data-roadmap-mode="workout"]').getAttribute('aria-pressed'),
-          filter: document.querySelector('[data-category-filter="all"]').getAttribute('aria-pressed'),
-          scheduleRows: document.querySelectorAll('#roadmap-schedule [data-schedule-id]').length,
-          scheduleTimeInputs: document.querySelectorAll('#roadmap-schedule input:not([type="checkbox"])').length,
-        };
-      })()`,
-    );
-    assert.deepEqual(initial, {
-      date: initial.today,
-      today: initial.today,
-      mode: 'true',
-      filter: 'true',
-      scheduleRows: 16,
-      scheduleTimeInputs: 0,
-    });
-
-    const printCalls = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        window.__roadmapPdfCalls = 0;
-        window.print = () => { window.__roadmapPdfCalls += 1; };
-        document.querySelector('#roadmap-pdf-preview').click();
-        return window.__roadmapPdfCalls;
-      })()`,
-    );
-    assert.equal(printCalls, 1);
-
-    const filtered = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        document.querySelector('[data-category-filter="learning"]').click();
-        const rows = [...document.querySelectorAll('[data-schedule-row]')];
-        return {
-          pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
-          visibleCategories: [...new Set(rows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
-          visible: rows.filter((row) => !row.hidden).length,
-          hidden: rows.filter((row) => row.hidden).length,
-        };
-      })()`,
-    );
-    assert.equal(filtered.pressed, 'true');
-    assert.deepEqual(filtered.visibleCategories, ['learning']);
-    assert.equal(filtered.visible > 0, true);
-    assert.equal(filtered.hidden > 0, true);
-
-    await cdp.send('Emulation.setEmulatedMedia', { media: 'print' }, sessionId);
-    const printSchedule = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        const rows = [...document.querySelectorAll('#roadmap-schedule [data-schedule-row]')];
-        const periods = [...document.querySelectorAll('#roadmap-schedule .schedule-period')];
-        return {
-          rows: rows.length,
-          hiddenRows: rows.filter((row) => row.hidden).length,
-          visibleRows: rows.filter((row) => getComputedStyle(row).display !== 'none').length,
-          periods: periods.length,
-          hiddenPeriods: periods.filter((period) => period.hidden).length,
-          visiblePeriods: periods.filter((period) => getComputedStyle(period).display !== 'none').length,
-        };
-      })()`,
-    );
-    assert.equal(printSchedule.rows, 16);
-    assert.equal(printSchedule.hiddenRows > 0, true);
-    assert.equal(printSchedule.visibleRows, printSchedule.rows);
-    assert.equal(printSchedule.periods, 4);
-    assert.equal(printSchedule.hiddenPeriods > 0, true);
-    assert.equal(printSchedule.visiblePeriods, printSchedule.periods);
-
-    await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' }, sessionId);
-    const screenSchedule = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        const rows = [...document.querySelectorAll('#roadmap-schedule [data-schedule-row]')];
-        const periods = [...document.querySelectorAll('#roadmap-schedule .schedule-period')];
-        return {
-          visibleCategories: [...new Set(rows.filter((row) => getComputedStyle(row).display !== 'none').map((row) => row.dataset.category))],
-          hiddenRows: rows.filter((row) => row.hidden && getComputedStyle(row).display === 'none').length,
-          hiddenPeriods: periods.filter((period) => period.hidden && getComputedStyle(period).display === 'none').length,
-        };
-      })()`,
-    );
-    assert.deepEqual(screenSchedule.visibleCategories, ['learning']);
-    assert.equal(screenSchedule.hiddenRows, filtered.hidden);
-    assert.equal(screenSchedule.hiddenPeriods, printSchedule.hiddenPeriods);
-
-    const modeSchedules = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        const result = {};
-        for (const mode of ['workout', 'normal', 'running', 'maintenance']) {
-          document.querySelector('[data-roadmap-mode="' + mode + '"]').click();
-          const rows = [...document.querySelectorAll('[data-schedule-row]')];
-          result[mode] = {
-            signature: rows.map((row) => row.dataset.scheduleRow).join('|'),
-            count: rows.length,
-            visibleCategories: [...new Set(rows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
-          };
-        }
-        return result;
-      })()`,
-    );
-    assert.deepEqual(
-      Object.fromEntries(Object.entries(modeSchedules).map(([mode, value]) => [mode, value.count])),
-      { workout: 16, normal: 15, running: 15, maintenance: 11 },
-    );
-    assert.equal(new Set(Object.values(modeSchedules).map((value) => value.signature)).size, 4);
-    for (const value of Object.values(modeSchedules)) assert.deepEqual(value.visibleCategories, ['learning']);
-
-    const stored = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        document.querySelector('[data-roadmap-mode="running"]').click();
-        const at21 = document.querySelector('[data-schedule-id="run"]').closest('.schedule-item').querySelector('.schedule-time').textContent;
-        document.querySelector('input[name="roadmap-run-start"][value="22"]').click();
-        document.querySelector('[data-category-filter="all"]').click();
-        const runCheckbox = document.querySelector('[data-schedule-id="run"]');
-        const runRow = runCheckbox.closest('.schedule-item');
-        runCheckbox.checked = false;
-        runRow.classList.remove('is-complete');
-        runCheckbox.click();
-        const classAfterCheck = runRow.classList.contains('is-complete');
-        runCheckbox.checked = true;
-        runRow.classList.add('is-complete');
-        runCheckbox.click();
-        const classAfterUncheck = runRow.classList.contains('is-complete');
-        runCheckbox.click();
-        document.querySelector('[data-learning-topic][value="Spring"]').click();
-        document.querySelector('[data-learning-topic][value="CS"]').click();
-
-        const date = document.querySelector('#roadmap-current-date').dateTime;
-        const key = 'job-prep-routine:roadmap:' + date;
-        localStorage.setItem('job-prep-routine:roadmap:2000-01-01', JSON.stringify({ mode: 'normal' }));
-        return {
-          at21,
-          at22: document.querySelector('[data-schedule-id="run"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
-          controlsHidden: document.querySelector('#roadmap-run-start-controls').hidden,
-          completionClass: { checked: classAfterCheck, unchecked: classAfterUncheck },
-          state: JSON.parse(localStorage.getItem(key)),
-        };
-      })()`,
-    );
-    assert.equal(stored.at21, '21:00–22:00');
-    assert.equal(stored.at22, '22:00–23:00');
-    assert.equal(stored.controlsHidden, false);
-    assert.deepEqual(stored.completionClass, { checked: true, unchecked: false });
-    assert.equal(stored.state.mode, 'running');
-    assert.equal(stored.state.runStart, '22');
-    assert.equal(stored.state.checkedIds.includes('run'), true);
-    assert.deepEqual(stored.state.learningTopics, ['Spring', 'CS']);
-
-    await navigate(cdp, sessionId, staticSite.url);
-    const restored = await evaluate(
-      cdp,
-      sessionId,
-      `(() => ({
-        mode: document.querySelector('[data-roadmap-mode="running"]').getAttribute('aria-pressed'),
-        runStart: document.querySelector('input[name="roadmap-run-start"]:checked').value,
-        runTime: document.querySelector('[data-schedule-id="run"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
-        runChecked: document.querySelector('[data-schedule-id="run"]').checked,
-        spring: document.querySelector('[data-learning-topic][value="Spring"]').checked,
-        cs: document.querySelector('[data-learning-topic][value="CS"]').checked,
-        allFilter: document.querySelector('[data-category-filter="all"]').getAttribute('aria-pressed'),
-      }))()`,
-    );
-    assert.deepEqual(restored, {
-      mode: 'true',
-      runStart: '22',
-      runTime: '22:00–23:00',
-      runChecked: true,
-      spring: true,
-      cs: true,
-      allFilter: 'true',
-    });
-
-    const reset = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        document.querySelector('[data-category-filter="career"]').click();
-        document.querySelector('#roadmap-reset-today').click();
-        const date = document.querySelector('#roadmap-current-date').dateTime;
-        return {
-          stored: localStorage.getItem('job-prep-routine:roadmap:' + date),
-          otherDate: JSON.parse(localStorage.getItem('job-prep-routine:roadmap:2000-01-01')).mode,
-          mode: document.querySelector('[data-roadmap-mode="workout"]').getAttribute('aria-pressed'),
-          runStart: document.querySelector('input[name="roadmap-run-start"]:checked').value,
-          runControlsHidden: document.querySelector('#roadmap-run-start-controls').hidden,
-          allFilter: document.querySelector('[data-category-filter="all"]').getAttribute('aria-pressed'),
-          hiddenRows: [...document.querySelectorAll('[data-schedule-row]')].filter((row) => row.hidden).length,
-          checkedRows: document.querySelectorAll('[data-schedule-id]:checked').length,
-          learningTopics: document.querySelectorAll('[data-learning-topic]:checked').length,
-        };
-      })()`,
-    );
-    assert.deepEqual(reset, {
-      stored: null,
-      otherDate: 'normal',
-      mode: 'true',
+    const legacyRaw = JSON.stringify({
+      mode: 'running',
       runStart: '21',
-      runControlsHidden: true,
-      allFilter: 'true',
-      hiddenRows: 0,
-      checkedRows: 0,
-      learningTopics: 0,
+      checkedIds: ['run'],
+      learningTopics: ['Java'],
     });
+    await evaluate(cdp, sessionId, `localStorage.setItem('job-prep-routine:roadmap:2026-07-12', ${JSON.stringify(legacyRaw)})`);
+    await navigate(cdp, sessionId, staticSite.url);
+
+    const result = await evaluate(cdp, sessionId, `(() => {
+      const legacyKey = 'job-prep-routine:roadmap:2026-07-12';
+      const variants = [...document.querySelectorAll('[data-roadmap-variant]')];
+      return {
+        variantIds: variants.map((node) => node.dataset.roadmapVariant),
+        counts: variants.map((node) => node.querySelectorAll('[data-reference-item]').length),
+        totalRows: document.querySelectorAll('[data-reference-item]').length,
+        inputs: document.querySelectorAll('#roadmap-page input, #roadmap-page textarea, #roadmap-page select').length,
+        storedRaw: localStorage.getItem(legacyKey),
+        roadmapKeys: Object.keys(localStorage).filter((key) => key.startsWith('job-prep-routine:roadmap:')).sort(),
+      };
+    })()`);
+    assert.deepEqual(result.variantIds, ['workout', 'normal', 'running-21', 'running-22', 'maintenance']);
+    assert.deepEqual(result.counts, [16, 15, 15, 15, 11]);
+    assert.equal(result.totalRows, 72);
+    assert.equal(result.inputs, 0);
+    assert.equal(result.storedRaw, legacyRaw);
+    assert.deepEqual(result.roadmapKeys, ['job-prep-routine:roadmap:2026-07-12']);
   } finally {
     cdp?.close();
     await stopChrome(chrome);

@@ -27,16 +27,17 @@ function declarationsFor(source, selector) {
     .join('\n');
 }
 
-test('A4 세로 한 장과 인쇄 전용 숨김 규칙을 선언한다', () => {
+test('A4 세로와 인쇄 전용 숨김 규칙을 선언한다', () => {
   assert.match(css, /@page\s*\{[^}]*size:\s*A4 portrait/s);
 
   const printCss = blockAfter(css, '@media print');
   assert.match(declarationsFor(printCss, '.screen-only'), /display:\s*none/);
   assert.match(declarationsFor(printCss, '.job-link-row'), /display:\s*none/);
 
-  for (const page of ['#daily-page', '#roadmap-page', '#weekly-page']) {
+  for (const page of ['#daily-page', '#weekly-page']) {
     assert.match(declarationsFor(printCss, page), /break-inside:\s*avoid/);
   }
+  assert.doesNotMatch(declarationsFor(printCss, '#roadmap-page'), /break-inside:\s*avoid/);
 });
 
 test('인쇄 시 색상과 입력값은 종이에서도 읽히는 표현을 사용한다', () => {
@@ -47,16 +48,13 @@ test('인쇄 시 색상과 입력값은 종이에서도 읽히는 표현을 사�
   assert.match(declarationsFor(printCss, '.memo-panel textarea'), /background:\s*transparent/);
 });
 
-test('로드맵 인쇄는 화면 필터로 숨긴 현재 모드의 전체 시간표를 다시 표시한다', () => {
+test('로드맵 인쇄는 일정 변형마다 새 페이지에서 시작하고 행 분할을 피한다', () => {
   const printCss = blockAfter(css, '@media print');
-  assert.match(
-    declarationsFor(printCss, '.roadmap-paper #roadmap-schedule [data-schedule-row][hidden]'),
-    /display:\s*grid\s*!important/,
-  );
-  assert.match(
-    declarationsFor(printCss, '.roadmap-paper #roadmap-schedule .schedule-period[hidden]'),
-    /display:\s*block\s*!important/,
-  );
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-before:\s*page/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-inside:\s*auto/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section:first-child'), /break-before:\s*auto/);
+  assert.match(declarationsFor(printCss, '.roadmap-reference-period'), /break-inside:\s*avoid/);
+  assert.match(declarationsFor(printCss, '.roadmap-reference-row'), /break-inside:\s*avoid/);
 });
 
 test('데일리 인쇄는 화면 필터로 숨긴 전체 시간표를 다시 표시한다', () => {

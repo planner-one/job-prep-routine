@@ -6,7 +6,6 @@ const historyHtml = await readFile(new URL('../history.html', import.meta.url), 
 const indexHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8').catch(() => '');
 const dailyHtml = await readFile(new URL('../daily.html', import.meta.url), 'utf8').catch(() => '');
 const weeklyHtml = await readFile(new URL('../weekly.html', import.meta.url), 'utf8').catch(() => '');
-const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
 const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'utf8').catch(() => '');
 const historyApp = await readFile(new URL('../src/history-app.js', import.meta.url), 'utf8').catch(() => '');
 
@@ -29,8 +28,8 @@ test('홈은 네 번째 기록·분석 보드를 제공한다', () => {
   assert.match(indexHtml, /오전 2시/);
 });
 
-test('기존 세 보드에서 기록·분석으로 바로 이동할 수 있다', () => {
-  for (const html of [dailyHtml, weeklyHtml, roadmapHtml]) {
+test('데일리와 주간 보드에서 기록·분석으로 바로 이동할 수 있다', () => {
+  for (const html of [dailyHtml, weeklyHtml]) {
     assert.match(html, /class="board-link[^\"]*"[^>]+href="\.\/history\.html"/);
   }
 });
