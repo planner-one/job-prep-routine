@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MODES, LEARNING_TOPICS, PLATFORMS, getSchedule } from '../src/routine-data.js';
-import {
+import * as routineCore from '../src/routine-core.js';
+import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
+
+const {
   storageKey,
   loadState,
   saveState,
@@ -10,7 +13,7 @@ import {
   logicalDateString,
   millisecondsUntilNextLogicalDay,
   scheduleLogicalDayRollover,
-} from '../src/routine-core.js';
+} = routineCore;
 
 const rows = (mode, runStart = '21') => getSchedule(mode, runStart).map(({ time, label }) => `${time} ${label}`);
 
@@ -163,6 +166,11 @@ test('지원 완료 수와 단계 수를 계산한다', () => {
     {},
   ]);
   assert.deepEqual(result, { applied: 1, completedSteps: 4, totalSteps: 12 });
+});
+
+test('저장 모델에서 현재 모드 일정·지원 12단계·유효 학습 주제의 완료율을 계산한다', () => {
+  assert.equal(typeof routineCore.calculateDailyProgress, 'function');
+  assert.deepEqual(routineCore.calculateDailyProgress(dailyProgressFixture), dailyProgressExpected);
 });
 
 test('오전 2시를 기준으로 하루 기록 날짜를 나눈다', () => {

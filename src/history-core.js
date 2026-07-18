@@ -1,5 +1,5 @@
 import { LEARNING_TOPICS, MODES, getSchedule } from './routine-data.js';
-import { countPipelineProgress, localDateString, storageKey } from './routine-core.js';
+import { calculateDailyProgress, countPipelineProgress, localDateString, storageKey } from './routine-core.js';
 
 const WEEKDAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
@@ -210,8 +210,7 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
   let total = 0;
   if (dailyState) {
     completionSource = 'daily';
-    completed = dailySchedule.completed.length + pipeline.completedSteps;
-    total = dailySchedule.total + 12;
+    ({ completed, total } = calculateDailyProgress(dailyState));
   } else if (roadmapState) {
     completionSource = 'roadmap';
     completed = roadmapSchedule.completed.length;

@@ -6,6 +6,7 @@ import {
   collectHistoryRecords,
   summarizeHistory,
 } from '../src/history-core.js';
+import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
 
 function memoryStorage(entries = {}) {
   const values = new Map(Object.entries(entries));
@@ -94,8 +95,8 @@ test('하루의 데일리와 주간 체크를 한 기록으로 합친다', () =>
   assert.equal(record.companies.length, 2);
   assert.equal(record.completedSchedule.some((item) => item.id === 'workout'), true);
   assert.equal(record.completion.source, 'daily');
-  assert.equal(record.completion.completed, 8);
-  assert.equal(record.completion.total, 28);
+  assert.equal(record.completion.completed, 10);
+  assert.equal(record.completion.total, 34);
   assert.equal(record.completion.percent, 29);
   assert.equal(record.hasActivity, true);
 });
@@ -122,8 +123,13 @@ test('세 보드 상세는 모두 보존하지만 완료율은 우선순위가 �
   ]);
   assert.deepEqual(record.roadmapCompletedSchedule.map(({ id }) => id), ['run']);
   assert.equal(record.weeklyChecks.completed.length, 6);
-  assert.equal(record.completion.completed, 8);
+  assert.equal(record.completion.completed, 10);
   assert.deepEqual(record.learningTopics, ['Spring', 'Redis', 'Java', 'CS']);
+});
+
+test('데일리 완료율은 공통 저장 모델 계약과 같은 분자·분모·백분율을 사용한다', () => {
+  const record = buildHistoryRecord({ date: '2026-07-18', daily: dailyProgressFixture });
+  assert.deepEqual(record.completion, { source: 'daily', ...dailyProgressExpected });
 });
 
 test('데일리가 없으면 주간 실행 체크와 학습 실행을 하루 완료율로 사용한다', () => {

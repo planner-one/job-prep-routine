@@ -1,5 +1,6 @@
 import { LEARNING_TOPICS, MODES, PLATFORMS, getSchedule } from './routine-data.js';
 import {
+  calculateDailyProgress,
   clearState,
   countPipelineProgress,
   loadState,
@@ -271,10 +272,8 @@ function syncScheduleCompletion(root) {
 }
 
 function updateProgress(root) {
-  const checkboxes = Array.from(root.querySelectorAll('[data-progress-check]'));
-  const completed = checkboxes.filter((input) => input.checked).length;
-  const total = checkboxes.length;
-  const percent = total === 0 ? 0 : (completed / total) * 100;
+  const state = collectDailyState(root);
+  const { completed, total, percent } = calculateDailyProgress(state);
 
   const fill = root.querySelector('#progress-fill');
   if (fill) fill.style.width = `${percent}%`;
@@ -285,7 +284,6 @@ function updateProgress(root) {
     track.setAttribute('aria-valuenow', String(completed));
   }
 
-  const state = collectDailyState(root);
   const pipeline = countPipelineProgress(state.companies);
   const count = root.querySelector('#progress-count');
   if (count) count.textContent = `${completed} / ${total} 완료 · 지원 ${pipeline.applied}개`;

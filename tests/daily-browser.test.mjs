@@ -8,6 +8,9 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { buildHistoryRecord } from '../src/history-core.js';
+import * as routineCore from '../src/routine-core.js';
+import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
 
 const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -423,6 +426,31 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
       memo: '',
       completed: '0',
     });
+
+    await evaluate(
+      cdp,
+      sessionId,
+      `localStorage.setItem('job-prep-routine:daily:' + document.querySelector('#current-date').dateTime, ${JSON.stringify(JSON.stringify(dailyProgressFixture))})`,
+    );
+    await navigate(cdp, sessionId, staticSite.url);
+    const uiProgress = await evaluate(
+      cdp,
+      sessionId,
+      `(() => ({
+        completed: Number(document.querySelector('#progress-track').getAttribute('aria-valuenow')),
+        total: Number(document.querySelector('#progress-track').getAttribute('aria-valuemax')),
+        percent: Math.round(Number.parseFloat(document.querySelector('#progress-fill').style.width)),
+      }))()`,
+    );
+    assert.equal(typeof routineCore.calculateDailyProgress, 'function');
+    const commonProgress = routineCore.calculateDailyProgress(dailyProgressFixture);
+    const historyProgress = buildHistoryRecord({
+      date: '2026-07-18',
+      daily: dailyProgressFixture,
+    }).completion;
+    assert.deepEqual(uiProgress, dailyProgressExpected);
+    assert.deepEqual(commonProgress, dailyProgressExpected);
+    assert.deepEqual(historyProgress, { source: 'daily', ...dailyProgressExpected });
   } finally {
     cdp?.close();
     await stopChrome(chrome);

@@ -1,3 +1,5 @@
+import { LEARNING_TOPICS, MODES, getSchedule } from './routine-data.js';
+
 export const storageKey = (page, date) => `job-prep-routine:${page}:${date}`;
 
 export function localDateString(now = new Date()) {
@@ -86,5 +88,30 @@ export function countPipelineProgress(companies) {
     applied: companies.filter((company) => company.applied).length,
     completedSteps,
     totalSteps: companies.length * 3,
+  };
+}
+
+export function calculateDailyProgress(candidate = {}) {
+  const state = candidate && typeof candidate === 'object' && !Array.isArray(candidate) ? candidate : {};
+  const mode = MODES.includes(state.mode) ? state.mode : MODES[0];
+  const runStart = state.runStart === '22' ? '22' : '21';
+  const schedule = getSchedule(mode, runStart);
+  const checkedIds = new Set(Array.isArray(state.checkedIds) ? state.checkedIds : []);
+  const scheduleCompleted = schedule.filter(({ id }) => checkedIds.has(id)).length;
+  const sourceCompanies = Array.isArray(state.companies) ? state.companies : [];
+  const companies = Array.from({ length: 4 }, (_, index) => {
+    const company = sourceCompanies[index];
+    return company && typeof company === 'object' && !Array.isArray(company) ? company : {};
+  });
+  const pipeline = countPipelineProgress(companies);
+  const sourceTopics = Array.isArray(state.learningTopics) ? state.learningTopics : [];
+  const learningCompleted = LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic)).length;
+  const completed = scheduleCompleted + pipeline.completedSteps + learningCompleted;
+  const total = schedule.length + pipeline.totalSteps + LEARNING_TOPICS.length;
+
+  return {
+    completed,
+    total,
+    percent: total === 0 ? 0 : Math.round((completed / total) * 100),
   };
 }

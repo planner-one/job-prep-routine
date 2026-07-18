@@ -632,47 +632,37 @@ esac
 `package.json`에 다음 스크립트를 추가한다.
 
 ```json
-"export:roadmap-pdf": "sh scripts/export-pdfs.sh http://127.0.0.1:8788 output/pdf roadmap"
+"export:roadmap-pdf": "sh scripts/export-pdfs.sh http://127.0.0.1:8787 output/pdf roadmap"
 ```
 
-- [ ] **Step 4: PDF 생성 전용 로컬 서버 실행**
+- [ ] **Step 4: 기존 8787 실행 패키지의 source 동일성 확인**
 
-Run: `lsof -nP -iTCP:8788 -sTCP:LISTEN`
+기존 8787 서버는 종료하거나 document root를 변경하지 않는다. 내보내기 전에 다음 네 응답을 `curl -fsS`로 임시 파일에 저장해 저장소 원본과 `cmp`한다.
 
-Expected: 출력 없음. 다른 프로세스가 있으면 종료하지 않고 8789를 사용하며 `package.json` 명령도 같은 포트로 맞춘다.
+```bash
+curl -fsS http://127.0.0.1:8787/roadmap.html -o /tmp/roadmap.html
+curl -fsS http://127.0.0.1:8787/assets/routine.css -o /tmp/routine.css
+curl -fsS http://127.0.0.1:8787/src/roadmap-app.js -o /tmp/roadmap-app.js
+curl -fsS http://127.0.0.1:8787/src/routine-data.js -o /tmp/routine-data.js
+cmp roadmap.html /tmp/roadmap.html
+cmp assets/routine.css /tmp/routine.css
+cmp src/roadmap-app.js /tmp/roadmap-app.js
+cmp src/routine-data.js /tmp/routine-data.js
+```
 
-Run in a persistent terminal from the repository root: `python3 -m http.server 8788 --bind 127.0.0.1`
+Expected: 모든 요청과 `cmp`가 exit 0. HTTP 실패나 불일치가 있으면 내보내기를 중단하고 기존 canonical PDF를 보존한다.
 
-Run: `curl -I http://127.0.0.1:8788/roadmap.html`
-
-Expected: `HTTP/1.0 200 OK`.
-
-- [ ] **Step 5: 실제 PDF 생성**
+- [ ] **Step 5: 임시 PDF 생성·검증 후 canonical 원자 교체**
 
 Run: `npm run export:roadmap-pdf`
 
-Expected: `output/pdf/취업준비-운영-로드맵.pdf` 생성, 명령 exit 0.
+Expected: Chrome은 `output/pdf` 안의 임시 파일에 출력한다. 같은 validator가 A4 정확히 5페이지, 세 운영 원칙, 다섯 변형 표제, 72개 일정의 대응 페이지 시간·라벨을 확인한 뒤에만 `mv`로 `output/pdf/취업준비-운영-로드맵.pdf`를 교체한다. 검증 실패 시 기존 canonical 파일은 byte-for-byte 보존된다.
 
 - [ ] **Step 6: PDF 구조와 텍스트 검증**
 
-Run: `pdfinfo output/pdf/취업준비-운영-로드맵.pdf`
+Run: `node scripts/validate-roadmap-pdf.mjs output/pdf/취업준비-운영-로드맵.pdf`
 
-Expected: A4 page size, 4페이지 이상, 파일 크기 0보다 큼.
-
-Run: `pdftotext output/pdf/취업준비-운영-로드맵.pdf /tmp/취업준비-운영-로드맵.txt`
-
-Run each command and expect one or more matches:
-
-```bash
-rg -F "지원은 하루 3~4개" /tmp/취업준비-운영-로드맵.txt
-rg -F "면접 언어를 매일 다듬기" /tmp/취업준비-운영-로드맵.txt
-rg -F "학습은 결과물로 남기기" /tmp/취업준비-운영-로드맵.txt
-rg -F "운동일" /tmp/취업준비-운영-로드맵.txt
-rg -F "비운동일" /tmp/취업준비-운영-로드맵.txt
-rg -F "21시 시작" /tmp/취업준비-운영-로드맵.txt
-rg -F "22시 시작" /tmp/취업준비-운영-로드맵.txt
-rg -F "핵심 유지일" /tmp/취업준비-운영-로드맵.txt
-```
+Expected: `pdfinfo`와 `pdftotext -layout` 파싱 성공, 모든 페이지 A4, 정확히 5페이지, 세 운영 원칙, 다섯 변형 표제, `getRoadmapVariants()`가 제공하는 72개 일정 시간·라벨이 각 대응 페이지에 존재하고 exit 0.
 
 - [ ] **Step 7: PDF 시각 검증**
 
