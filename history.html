@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="데일리·주간·로드맵 활동 기록과 최근 7일·30일 생산성 추이를 확인하는 페이지">
+    <title>기록·분석</title>
+    <link rel="stylesheet" href="./assets/routine.css">
+  </head>
+  <body>
+    <div class="app-shell history-shell">
+      <main class="daily-paper history-paper" id="history-page">
+        <header class="daily-header history-header">
+          <div class="title-block">
+            <p class="eyebrow">기록과 추이</p>
+            <h1>활동 기록·생산성 추이</h1>
+            <p class="date-line"><time id="history-current-date" datetime="">오늘</time> · 오전 2시 기준</p>
+          </div>
+
+          <div class="history-actions screen-only">
+            <a class="board-link" href="./index.html">홈</a>
+            <button type="button" class="pdf-button" id="history-pdf-preview">PDF 미리보기</button>
+          </div>
+        </header>
+
+        <section class="history-overview" aria-labelledby="history-overview-title">
+          <div class="history-section-heading">
+            <div>
+              <p class="section-kicker">선택 기간 요약</p>
+              <h2 id="history-overview-title">실행 흐름을 숫자로 확인</h2>
+            </div>
+            <div class="history-period-switch screen-only" id="history-period-switch" role="group" aria-label="생산성 조회 기간">
+              <button type="button" data-history-period="7" aria-pressed="true">최근 7일</button>
+              <button type="button" data-history-period="30" aria-pressed="false">최근 30일</button>
+            </div>
+          </div>
+
+          <div class="history-kpi-grid" aria-live="polite">
+            <article class="history-kpi-card history-kpi-card--completion" data-history-kpi="completion">
+              <span>평균 완료율</span>
+              <strong id="history-kpi-completion">0%</strong>
+            </article>
+            <article class="history-kpi-card" data-history-kpi="active">
+              <span>실행한 날</span>
+              <strong id="history-kpi-active">0일</strong>
+            </article>
+            <article class="history-kpi-card history-kpi-card--application" data-history-kpi="applications">
+              <span>지원 완료</span>
+              <strong id="history-kpi-applications">0개</strong>
+            </article>
+            <article class="history-kpi-card history-kpi-card--interview" data-history-kpi="interview">
+              <span>면접 실행일</span>
+              <strong id="history-kpi-interview">0일</strong>
+            </article>
+            <article class="history-kpi-card history-kpi-card--learning" data-history-kpi="learning">
+              <span>학습 실행일</span>
+              <strong id="history-kpi-learning">0일</strong>
+            </article>
+            <article class="history-kpi-card history-kpi-card--exercise" data-history-kpi="exercise">
+              <span>운동·러닝일</span>
+              <strong id="history-kpi-exercise">0일</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="history-trend-panel" aria-labelledby="history-trend-title">
+          <div class="history-section-heading">
+            <div>
+              <p class="section-kicker">생산성 추이</p>
+              <h2 id="history-trend-title">날짜별 완료율과 핵심 활동</h2>
+            </div>
+            <p id="history-range-label">최근 7일</p>
+          </div>
+          <div class="history-chart-legend" aria-label="그래프 범례">
+            <span><i class="legend-completion"></i>완료율</span>
+            <span><i class="legend-application"></i>지원</span>
+            <span><i class="legend-interview"></i>면접</span>
+            <span><i class="legend-learning"></i>학습</span>
+            <span><i class="legend-exercise"></i>운동</span>
+          </div>
+          <div class="history-chart-scroll">
+            <div class="history-chart" id="history-chart" role="img" aria-label="최근 7일 생산성 추이"></div>
+          </div>
+        </section>
+
+        <section class="history-records" aria-labelledby="history-records-title">
+          <div class="history-section-heading">
+            <div>
+              <p class="section-kicker">날짜별 원본 기록</p>
+              <h2 id="history-records-title">체크하고 작성한 내용을 한곳에서 확인</h2>
+            </div>
+            <p id="history-record-count">0일 기록</p>
+          </div>
+          <p class="history-empty" id="history-empty" hidden>아직 저장된 실행 기록이 없습니다.</p>
+          <div class="history-record-list" id="history-record-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./src/history-app.js"></script>
+  </body>
+</html>

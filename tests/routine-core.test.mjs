@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MODES, LEARNING_TOPICS, PLATFORMS, getSchedule } from '../src/routine-data.js';
-import { storageKey, loadState, saveState, clearState, countPipelineProgress } from '../src/routine-core.js';
+import {
+  storageKey,
+  loadState,
+  saveState,
+  clearState,
+  countPipelineProgress,
+  logicalDateString,
+  millisecondsUntilNextLogicalDay,
+  scheduleLogicalDayRollover,
+} from '../src/routine-core.js';
 
 const rows = (mode, runStart = '21') => getSchedule(mode, runStart).map(({ time, label }) => `${time} ${label}`);
 
@@ -154,4 +163,100 @@ test('지원 완료 수와 단계 수를 계산한다', () => {
     {},
   ]);
   assert.deepEqual(result, { applied: 1, completedSteps: 4, totalSteps: 12 });
+});
+
+test('오전 2시를 기준으로 하루 기록 날짜를 나눈다', () => {
+  assert.equal(logicalDateString(new Date(2026, 6, 18, 1, 59, 59)), '2026-07-17');
+  assert.equal(logicalDateString(new Date(2026, 6, 18, 2, 0, 0)), '2026-07-18');
+  assert.equal(logicalDateString(new Date(2026, 6, 18, 23, 30, 0)), '2026-07-18');
+});
+
+test('다음 오전 2시까지 남은 시간을 계산한다', () => {
+  assert.equal(
+    millisecondsUntilNextLogicalDay(new Date(2026, 6, 18, 1, 30, 0)),
+    30 * 60 * 1000,
+  );
+  assert.equal(
+    millisecondsUntilNextLogicalDay(new Date(2026, 6, 18, 2, 30, 0)),
+    23.5 * 60 * 60 * 1000,
+  );
+});
+
+test('오전 2시에 논리 날짜가 바뀌면 열린 페이지를 한 번 갱신한다', () => {
+  let now = new Date(2026, 6, 18, 1, 30, 0);
+  let scheduledDelay = 0;
+  let scheduledCallback;
+  let reloads = 0;
+  const view = {
+    setTimeout(callback, delay) {
+      scheduledCallback = callback;
+      scheduledDelay = delay;
+      return 17;
+    },
+    clearTimeout() {},
+    location: {
+      reload() {
+        reloads += 1;
+      },
+    },
+  };
+
+  const cancel = scheduleLogicalDayRollover(view, '2026-07-17', () => now);
+  assert.equal(scheduledDelay, 30 * 60 * 1000);
+  now = new Date(2026, 6, 18, 2, 0, 0);
+  scheduledCallback();
+  assert.equal(reloads, 1);
+  assert.equal(typeof cancel, 'function');
+});
+
+test('절전 뒤 오전 2시가 지나면 다음 입력 전에 열린 페이지를 갱신한다', () => {
+  let now = new Date(2026, 6, 18, 1, 30, 0);
+  let reloads = 0;
+  const viewListeners = new Map();
+  const documentListeners = new Map();
+  const view = {
+    setTimeout() {
+      return 17;
+    },
+    clearTimeout() {},
+    addEventListener(type, listener) {
+      viewListeners.set(type, listener);
+    },
+    removeEventListener(type) {
+      viewListeners.delete(type);
+    },
+    document: {
+      addEventListener(type, listener) {
+        documentListeners.set(type, listener);
+      },
+      removeEventListener(type) {
+        documentListeners.delete(type);
+      },
+    },
+    location: {
+      reload() {
+        reloads += 1;
+      },
+    },
+  };
+
+  const cancel = scheduleLogicalDayRollover(view, '2026-07-17', () => now);
+  now = new Date(2026, 6, 18, 2, 10, 0);
+  let prevented = false;
+  let stopped = false;
+  viewListeners.get('pointerdown')({
+    preventDefault() {
+      prevented = true;
+    },
+    stopImmediatePropagation() {
+      stopped = true;
+    },
+  });
+
+  assert.equal(reloads, 1);
+  assert.equal(prevented, true);
+  assert.equal(stopped, true);
+  cancel();
+  assert.equal(viewListeners.size, 0);
+  assert.equal(documentListeners.size, 0);
 });

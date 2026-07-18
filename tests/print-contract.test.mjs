@@ -74,7 +74,7 @@ test('PDF 내보내기는 Chrome 재정의와 안정적인 한국어 파일명�
   }
 });
 
-test('한국어 홈은 세 보드로 이동하는 상대 링크를 제공한다', () => {
+test('한국어 홈은 네 보드로 이동하는 상대 링크를 제공한다', () => {
   assert.match(home, /<html\s+lang="ko">/);
   assert.match(home, /취업 준비 루틴 보드/);
 
@@ -82,6 +82,7 @@ test('한국어 홈은 세 보드로 이동하는 상대 링크를 제공한다'
     ['./roadmap.html', '운영 로드맵'],
     ['./weekly.html', '주간 실행 보드'],
     ['./daily.html', '데일리 포커스 보드'],
+    ['./history.html', '기록·분석'],
   ]) {
     assert.match(home, new RegExp(`href="${href.replace('.', '\\.')}`));
     assert.match(home, new RegExp(label));

@@ -1,5 +1,11 @@
 import { LEARNING_TOPICS, getSchedule } from './routine-data.js';
-import { clearState, loadState, saveState } from './routine-core.js';
+import {
+  clearState,
+  loadState,
+  logicalDateString,
+  saveState,
+  scheduleLogicalDayRollover,
+} from './routine-core.js';
 
 const WEEKLY_PAGE_NAME = 'weekly';
 const EXECUTION_MODES = ['workout', 'normal', 'running'];
@@ -286,7 +292,7 @@ function updateWeeklyProgress(root, state) {
   }
 }
 
-export function initWeeklyPage(pageDocument, storage, date = localDateString()) {
+export function initWeeklyPage(pageDocument, storage, date = logicalDateString()) {
   const root = pageDocument.getElementById('weekly-page');
   if (!root) return null;
 
@@ -527,7 +533,11 @@ export function initWeeklyPage(pageDocument, storage, date = localDateString()) 
 }
 
 if (typeof document !== 'undefined') {
-  const boot = () => initWeeklyPage(document, window.localStorage, localDateString());
+  const boot = () => {
+    const today = logicalDateString();
+    initWeeklyPage(document, window.localStorage, today);
+    scheduleLogicalDayRollover(window, today);
+  };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
   } else {

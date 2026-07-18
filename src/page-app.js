@@ -1,5 +1,12 @@
 import { LEARNING_TOPICS, MODES, PLATFORMS, getSchedule } from './routine-data.js';
-import { clearState, countPipelineProgress, loadState, saveState } from './routine-core.js';
+import {
+  clearState,
+  countPipelineProgress,
+  loadState,
+  logicalDateString,
+  saveState,
+  scheduleLogicalDayRollover,
+} from './routine-core.js';
 
 const DAILY_PAGE_NAME = 'daily';
 const ROADMAP_PAGE_NAME = 'roadmap';
@@ -202,13 +209,6 @@ export function collectDailyState(root) {
   };
 }
 
-function localDateString(now = new Date()) {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function formatDate(date) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) return date;
@@ -301,7 +301,7 @@ function updateProgress(root) {
   syncScheduleCompletion(root);
 }
 
-export function initDailyPage(pageDocument, storage, date = localDateString()) {
+export function initDailyPage(pageDocument, storage, date = logicalDateString()) {
   const root = pageDocument.getElementById('daily-page');
   if (!root) return null;
 
@@ -490,7 +490,7 @@ function applyRoadmapCategoryFilter(root, category) {
   }
 }
 
-export function initRoadmapPage(pageDocument, storage, date = localDateString()) {
+export function initRoadmapPage(pageDocument, storage, date = logicalDateString()) {
   const root = pageDocument.getElementById('roadmap-page');
   if (!root) return null;
 
@@ -623,9 +623,10 @@ export function initRoadmapPage(pageDocument, storage, date = localDateString())
 
 if (typeof document !== 'undefined') {
   const boot = () => {
-    const today = localDateString();
+    const today = logicalDateString();
     initDailyPage(document, window.localStorage, today);
     initRoadmapPage(document, window.localStorage, today);
+    scheduleLogicalDayRollover(window, today);
   };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
