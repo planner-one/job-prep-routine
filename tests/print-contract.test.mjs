@@ -98,3 +98,8 @@ test('한국어 홈은 네 보드로 이동하는 상대 링크를 제공한다'
     assert.match(home, new RegExp(label));
   }
 });
+
+test('홈은 로드맵을 기준표로, 데일리를 유일한 오늘 실행 화면으로 설명한다', () => {
+  assert.match(home, /읽기 전용 일정 기준표·PDF/);
+  assert.match(home, /오늘의 유일한 실행 기록/);
+});
