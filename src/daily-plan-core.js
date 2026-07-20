@@ -4,7 +4,7 @@ import {
   weekMondayKey,
   weekdayIdForDate,
 } from './weekly-plan-core.js';
-import { LEARNING_TOPICS } from './routine-data.js';
+import { LEARNING_TOPICS, getSchedule } from './routine-data.js';
 import { storageKey } from './routine-core.js';
 
 const SNAPSHOT_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
@@ -160,6 +160,60 @@ export function resolveLegacyDailyPlan(date, dailyCandidate, revision = 0) {
     revision: Number.isInteger(revision) && revision >= 0 ? revision : 0,
   };
   return resolveDailyPlan(date, weekly);
+}
+
+function legacyAnchorId(item) {
+  if (!item) return null;
+  if (/sleep/.test(item.id)) return 'sleep';
+  if (item.category !== 'meal') return null;
+  if (item.time.startsWith('13:')) return 'lunch';
+  if (item.time.startsWith('18:') || item.time.startsWith('19:')) return 'dinner';
+  return 'breakfast';
+}
+
+export function migrateLegacyDailyState(date, dailyCandidate, revision = 0) {
+  const source = isObject(dailyCandidate) ? dailyCandidate : {};
+  const planSnapshot = resolveLegacyDailyPlan(date, source, revision);
+  const snapshotIds = new Set(planSnapshot.items.map(({ id }) => id));
+  const learningId = planSnapshot.items.find(({ category }) => category === 'learning')?.id ?? null;
+  const legacyItems = new Map(getSchedule(planSnapshot.mode, planSnapshot.runStart).map((item) => [item.id, item]));
+  const checkedIds = [];
+  const checked = new Set();
+  const archivedCompletedItems = normalizedArchivedItems(source.archivedCompletedItems);
+  const archivedIds = new Set(archivedCompletedItems.map(({ id }) => id));
+
+  function archive(item) {
+    if (!item || archivedIds.has(item.id)) return;
+    archivedCompletedItems.push({ id: item.id, label: item.label, category: item.category });
+    archivedIds.add(item.id);
+  }
+
+  for (const id of normalizedCheckedIds(source.checkedIds)) {
+    const legacyItem = legacyItems.get(id);
+    const mappedId = snapshotIds.has(id)
+      ? id
+      : legacyAnchorId(legacyItem) ?? (legacyItem?.category === 'learning' ? learningId : null);
+    if (mappedId && snapshotIds.has(mappedId)) {
+      if (checked.has(mappedId)) archive(legacyItem);
+      else {
+        checked.add(mappedId);
+        checkedIds.push(mappedId);
+      }
+      continue;
+    }
+    if (legacyItem) archive(legacyItem);
+    else if (!checked.has(id)) {
+      checked.add(id);
+      checkedIds.push(id);
+    }
+  }
+
+  return {
+    ...source,
+    checkedIds,
+    planSnapshot,
+    archivedCompletedItems,
+  };
 }
 
 export function normalizePlanSnapshot(candidate) {

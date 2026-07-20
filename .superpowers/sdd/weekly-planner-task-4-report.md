@@ -102,3 +102,26 @@
 - `npm run check`: 종료 코드 0.
 - `git diff --check`: 출력 없음.
 - 전체 `npm test`: 110/110 통과, 실패 0개, 건너뜀 0개.
+
+## 2차 수정 후 추가 결함 수정
+
+### RED
+
+- `node --test tests/daily-plan-core.test.mjs`: 10개 중 9개 통과, 1개 실패. legacy 완료 ID를 새 snapshot ID로 이전하고 합쳐지는 완료를 archive하는 migration 계약이 없어 실패했다.
+- `node --test tests/daily-browser.test.mjs`: 실제 headless Chrome 2개 중 1개 통과, 1개 실패. 회사명이 이미 저장된 snapshot 없는 legacy daily가 최초 렌더에서 `러닝일` 대신 현재 주간 계획의 `비운동일`을 표시했다.
+
+### 수정 내용
+
+- snapshot 없는 legacy daily에 회사명·체크·메모 등 기존 실행 입력이 있으면 초기 `prepareDailyPlan()`과 렌더 전에 legacy 실행 계획으로 migration하고 즉시 저장한다.
+- legacy 일정과 새 snapshot에서 동일한 ID는 그대로 유지하고, 모드별 아침·점심·저녁·취침 ID는 공통 앵커 ID로, legacy 학습 ID는 보존된 학습 조합 ID로 매핑한다.
+- 여러 legacy 완료가 하나의 새 ID로 합쳐지거나 더 이상 대응 항목이 없으면 원래 ID·문구·분류를 `archivedCompletedItems`에 보존한다. 알 수 없는 기존 완료 ID도 `checkedIds`에서 삭제하지 않는다.
+- Task 5의 `calculateWeeklyExecutionProgress()`와 7일 daily 집계 구현은 변경하지 않았으며 관련 테스트를 focused 및 전체 검증에 포함했다.
+
+### GREEN
+
+- `node --test tests/daily-plan-core.test.mjs`: 10/10 통과, 실패 0개.
+- `node --test tests/daily-browser.test.mjs`: 실제 headless Chrome 2/2 통과, 실패 0개.
+- `node --test tests/daily-plan-core.test.mjs tests/page-app.test.mjs tests/routine-core.test.mjs tests/daily-contract.test.mjs tests/daily-browser.test.mjs`: Task 4 및 Task 5 daily 집계 focused 41/41 통과, 실패 0개.
+- `npm run check`: 종료 코드 0.
+- `git diff --check`: 출력 없음.
+- 전체 `npm test`: 116/116 통과, 실패 0개, 건너뜀 0개.

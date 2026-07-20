@@ -510,7 +510,7 @@ test('스냅샷 없는 기존 데일리의 호환 필드와 플랫폼·공고 �
       mode: 'running',
       runStart: '22',
       learningTopics: ['CS'],
-      checkedIds: [],
+      checkedIds: ['learning', 'running-breakfast', 'running-sleep'],
       companies: [{
         name: '기존 회사',
         platform: '잡코리아',
@@ -526,6 +526,27 @@ test('스냅샷 없는 기존 데일리의 호환 필드와 플랫폼·공고 �
     }, sessionId);
     await navigate(cdp, sessionId, staticSite.url);
     await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seedScriptId }, sessionId);
+
+    const loaded = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const state = JSON.parse(localStorage.getItem(${JSON.stringify(`job-prep-routine:daily:${date}`)}));
+        return {
+          state,
+          displayedMode: document.querySelector('#daily-plan-mode').textContent,
+          displayedTopics: document.querySelector('#daily-plan-topics').textContent,
+          renderedIds: [...document.querySelectorAll('[data-schedule-id]')].map((input) => input.dataset.scheduleId),
+          checkedIds: [...document.querySelectorAll('[data-schedule-id]:checked')].map((input) => input.dataset.scheduleId),
+        };
+      })()`,
+    );
+    assert.equal(loaded.displayedMode, '러닝일');
+    assert.equal(loaded.displayedTopics, 'CS');
+    assert.equal(loaded.renderedIds.includes('run'), true);
+    assert.deepEqual(loaded.checkedIds, ['breakfast', 'learning:CS', 'sleep']);
+    assert.deepEqual(loaded.state.checkedIds, ['learning:CS', 'breakfast', 'sleep']);
+    assert.equal(loaded.state.planSnapshot.items.some(({ id }) => id === 'run'), true);
 
     const stored = await evaluate(
       cdp,

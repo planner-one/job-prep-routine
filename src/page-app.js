@@ -2,10 +2,10 @@ import { LEARNING_TOPICS, MODES, PLATFORMS } from './routine-data.js';
 import {
   applyUpdatedPlan,
   hasExecutionInput,
+  migrateLegacyDailyState,
   normalizePlanSnapshot,
   prepareDailyPlan,
   resolveDailyPlan,
-  resolveLegacyDailyPlan,
 } from './daily-plan-core.js';
 import {
   calculateDailyProgress,
@@ -353,6 +353,11 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   const weeklyKey = weekMondayKey(date);
   const weekly = normalizeWeeklyState(loadState(storage, 'weekly', weeklyKey, createDefaultWeeklyState()));
   const resolvedPlan = resolveDailyPlan(date, weekly);
+  const usesLegacyPlan = () => Object.values(compatibilityFields).some(Boolean);
+  if (!state.planSnapshot && hasExecutionInput(state) && usesLegacyPlan()) {
+    state = normalizeDailyState(migrateLegacyDailyState(date, state, resolvedPlan.revision));
+    saveState(storage, DAILY_PAGE_NAME, date, state);
+  }
   let prepared = prepareDailyPlan(state, resolvedPlan);
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
@@ -412,9 +417,8 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   function persist(overrides) {
     captureState(overrides);
     if (!state.planSnapshot && hasExecutionInput(state)) {
-      state.planSnapshot = Object.values(compatibilityFields).some(Boolean)
-        ? resolveLegacyDailyPlan(date, state, resolvedPlan.revision)
-        : prepared.renderPlan;
+      if (usesLegacyPlan()) state = migrateLegacyDailyState(date, state, resolvedPlan.revision);
+      else state.planSnapshot = prepared.renderPlan;
     }
     state = normalizeDailyState(state);
     prepared = prepareDailyPlan(state, resolvedPlan);

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as dailyPlanCore from '../src/daily-plan-core.js';
 import {
   applyUpdatedPlan,
   buildDailyExecutionSummary,
@@ -104,6 +105,33 @@ test('실행 입력은 체크, 회사 정보, 비어 있지 않은 메모만 인
   assert.equal(hasExecutionInput({ companies: [{ name: '회사' }] }), true);
   assert.equal(hasExecutionInput({ memos: { blocked: '  막힘  ' } }), true);
   assert.equal(hasExecutionInput({ memos: { blocked: '   ' } }), false);
+});
+
+test('legacy 완료 ID를 새 snapshot ID로 매핑하고 합쳐진 완료는 archive로 보존한다', () => {
+  assert.equal(typeof dailyPlanCore.migrateLegacyDailyState, 'function');
+
+  const running = dailyPlanCore.migrateLegacyDailyState('2026-07-20', {
+    mode: 'running',
+    runStart: '22',
+    learningTopics: ['CS'],
+    checkedIds: ['learning', 'running-breakfast', 'running-sleep', 'run', 'unknown'],
+  }, 5);
+  assert.deepEqual(running.checkedIds, ['learning:CS', 'breakfast', 'sleep', 'run', 'unknown']);
+  assert.deepEqual(running.archivedCompletedItems, []);
+  assert.equal(running.planSnapshot.items.some(({ id }) => id === 'learning:CS'), true);
+
+  const maintenance = dailyPlanCore.migrateLegacyDailyState('2026-07-20', {
+    mode: 'maintenance',
+    runStart: '21',
+    learningTopics: ['CS'],
+    checkedIds: ['maintenance-learning', 'maintenance-planning', 'maintenance-breakfast', 'maintenance-sleep'],
+  }, 3);
+  assert.deepEqual(maintenance.checkedIds, ['learning:CS', 'breakfast', 'sleep']);
+  assert.deepEqual(maintenance.archivedCompletedItems, [{
+    id: 'maintenance-planning',
+    label: '다음 주 일정·학습 주제 선정',
+    category: 'learning',
+  }]);
 });
 
 test('주간 계획만 저장한 날은 진척이 증가하지 않는다', () => {
