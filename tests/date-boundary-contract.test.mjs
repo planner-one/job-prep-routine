@@ -28,7 +28,7 @@ test('새 계획 코어와 데일리 코어는 오전 2시 논리 날짜에서 �
 
 test('면접 목록과 상세도 오전 2시 논리 날짜로 열리고 경계에서 갱신된다', () => {
   for (const source of [templatesApp, templateDetailApp]) {
-    assert.match(source, /logicalDateString/);
-    assert.match(source, /scheduleLogicalDayRollover/);
+    assert.match(source, /const date\s*=\s*logicalDateString\(\s*now\(\)\s*\)/);
+    assert.match(source, /scheduleLogicalDayRollover\(\s*view,\s*date,\s*now\s*\)/);
   }
 });

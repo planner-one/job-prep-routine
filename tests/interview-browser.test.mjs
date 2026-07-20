@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { INTERVIEW_CATEGORIES, INTERVIEW_QUESTIONS } from '../src/interview-data.js';
+import { INTERVIEW_QUESTIONS } from '../src/interview-data.js';
 import { INTERVIEW_STATE_KEY } from '../src/interview-core.js';
 import { resolveChromeBin } from './helpers/chrome-bin.mjs';
 
@@ -95,8 +95,7 @@ async function startChrome(profileDirectory) {
     ],
     { stdio: ['ignore', 'ignore', 'pipe'] },
   );
-  const endpoint = await waitForDevTools(chrome);
-  return { chrome, endpoint };
+  return connectChromeToDevTools(chrome);
 }
 
 async function stopChrome(chrome) {
@@ -104,6 +103,16 @@ async function stopChrome(chrome) {
   chrome.kill('SIGTERM');
   await Promise.race([once(chrome, 'exit'), delay(2_000)]);
   if (chrome.exitCode === null) chrome.kill('SIGKILL');
+}
+
+async function connectChromeToDevTools(chrome, waitForEndpoint = waitForDevTools) {
+  try {
+    const endpoint = await waitForEndpoint(chrome);
+    return { chrome, endpoint };
+  } catch (error) {
+    await stopChrome(chrome);
+    throw error;
+  }
 }
 
 async function createCdpClient(endpoint) {
@@ -244,6 +253,29 @@ async function withBrowser(run, profilePrefix) {
   }
 }
 
+test('DevTools endpoint 연결 실패는 Chrome을 종료하고 원 오류를 다시 던진다', async () => {
+  const signals = [];
+  const chrome = new EventEmitter();
+  chrome.exitCode = null;
+  chrome.kill = (signal) => {
+    signals.push(signal);
+    queueMicrotask(() => {
+      chrome.exitCode = 0;
+      chrome.emit('exit', 0);
+    });
+    return true;
+  };
+  const endpointError = new Error('endpoint 실패');
+
+  await assert.rejects(
+    connectChromeToDevTools(chrome, async () => { throw endpointError; }),
+    (error) => error === endpointError,
+  );
+  assert.deepEqual(signals, ['SIGTERM']);
+  assert.equal(chrome.exitCode, 0);
+  assert.equal(chrome.listenerCount('exit'), 0);
+});
+
 test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 복원한다', { timeout: 45_000 }, async () => {
   await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
     await navigate(cdp, sessionId, `${baseUrl}/templates.html`, 'data-templates-ready');
@@ -258,8 +290,9 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
         queueProgress: document.querySelector('#interview-queue-progress').textContent,
       }))()`,
     );
+    assert.equal(initial.questionIds.length, 152);
     assert.deepEqual(initial.questionIds, INTERVIEW_QUESTIONS.map(({ id }) => id));
-    assert.equal(initial.categoryCount, INTERVIEW_CATEGORIES.length + 1);
+    assert.equal(initial.categoryCount, 9);
     assert.equal(initial.queueIds.length, 5);
     assert.equal(initial.queueProgress, '오늘 0 / 5 완료');
 
@@ -427,6 +460,7 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
           learning: document.querySelector('[data-interview-stat="learning"]').textContent,
           complete: document.querySelector('[data-interview-stat="complete"]').textContent,
           favorite: document.querySelector('[data-interview-stat="favorite"]').textContent,
+          categoryCount: document.querySelectorAll('[data-interview-category-id]').length,
           resultsCount: document.querySelector('#interview-results-count').textContent,
           rowText: row.textContent,
           rowId: row.dataset.questionId,
@@ -444,8 +478,9 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
         complete: listMirror.complete,
         favorite: listMirror.favorite,
       },
-      { total: String(INTERVIEW_QUESTIONS.length), learning: '1', complete: '0', favorite: '1' },
+      { total: '152', learning: '1', complete: '0', favorite: '1' },
     );
+    assert.equal(listMirror.categoryCount, 9);
     assert.equal(listMirror.resultsCount, '조건에 맞는 1문항');
     assert.equal(listMirror.rowId, targetQuestion.id);
     assert.match(listMirror.rowText, /복습 필요/u);
@@ -491,6 +526,22 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
 
 test('잘못된 면접 문항 ID는 오류만 표시하고 저장소를 쓰지 않는다', { timeout: 45_000 }, async () => {
   await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `(() => {
+        window.__interviewSetItemCalls = 0;
+        window.__interviewSetItemKeys = [];
+        const originalSetItem = Storage.prototype.setItem;
+        Object.defineProperty(Storage.prototype, 'setItem', {
+          configurable: true,
+          writable: true,
+          value(...args) {
+            window.__interviewSetItemCalls += 1;
+            window.__interviewSetItemKeys.push(String(args[0]));
+            return Reflect.apply(originalSetItem, this, args);
+          },
+        });
+      })();`,
+    }, sessionId);
     await navigate(cdp, sessionId, `${baseUrl}/template.html?id=be-999`, 'data-template-detail-ready');
     const invalid = await evaluate(
       cdp,
@@ -499,6 +550,8 @@ test('잘못된 면접 문항 ID는 오류만 표시하고 저장소를 쓰지 �
         invalidHidden: document.querySelector('#interview-invalid').hidden,
         invalidText: document.querySelector('#interview-invalid').textContent,
         detailHidden: document.querySelector('#interview-detail').hidden,
+        setItemCalls: window.__interviewSetItemCalls,
+        setItemKeys: window.__interviewSetItemKeys,
         storageLength: localStorage.length,
         storageKeys: Object.keys(localStorage),
       }))()`,
@@ -506,6 +559,8 @@ test('잘못된 면접 문항 ID는 오류만 표시하고 저장소를 쓰지 �
     assert.equal(invalid.invalidHidden, false);
     assert.match(invalid.invalidText, /요청한 면접 문항이 없습니다/u);
     assert.equal(invalid.detailHidden, true);
+    assert.equal(invalid.setItemCalls, 0);
+    assert.deepEqual(invalid.setItemKeys, []);
     assert.equal(invalid.storageLength, 0);
     assert.deepEqual(invalid.storageKeys, []);
   }, 'job-prep-interview-invalid-chrome-');
