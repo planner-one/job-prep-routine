@@ -218,6 +218,77 @@ test('완료한 snapshot과 archive 사용자 일정의 분류를 학습일과 �
   assert.equal(summarizeHistory([record]).exerciseDays, 1);
 });
 
+test('기본 회복성 exercise 항목만 완료한 날은 운동일로 세지 않는다', () => {
+  const items = [
+    'afternoon-break',
+    'normal-shower',
+    'normal-sleep',
+    'maintenance-rest',
+  ].map((id, index) => ({
+    id,
+    label: id,
+    category: 'exercise',
+    startMinute: 600 + index * 30,
+    endMinute: 630 + index * 30,
+  }));
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: items.map(({ id }) => id),
+      planSnapshot: { revision: 1, items },
+      companies: [],
+    },
+  });
+
+  assert.equal(record.metrics.exercise, 0);
+  assert.equal(summarizeHistory([record]).exerciseDays, 0);
+});
+
+test('사용자 정의 exercise snapshot과 archive 및 기존 workout과 run은 운동일로 센다', () => {
+  const customSnapshot = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: ['custom-stretch'],
+      planSnapshot: {
+        revision: 1,
+        items: [{
+          id: 'custom-stretch',
+          label: '스트레칭',
+          category: 'exercise',
+          startMinute: 600,
+          endMinute: 630,
+        }],
+      },
+      companies: [],
+    },
+  });
+  const customArchive = buildHistoryRecord({
+    date: '2026-07-21',
+    daily: {
+      checkedIds: [],
+      planSnapshot: { revision: 2, items: [] },
+      archivedCompletedItems: [{
+        id: 'custom-walk',
+        label: '산책',
+        category: 'exercise',
+      }],
+      companies: [],
+    },
+  });
+  const workout = buildHistoryRecord({
+    date: '2026-07-22',
+    daily: { mode: 'workout', checkedIds: ['workout'], companies: [] },
+  });
+  const run = buildHistoryRecord({
+    date: '2026-07-23',
+    daily: { mode: 'running', checkedIds: ['run'], companies: [] },
+  });
+
+  for (const record of [customSnapshot, customArchive, workout, run]) {
+    assert.equal(record.metrics.exercise, 1);
+  }
+});
+
 test('snapshot period는 데일리와 같은 13시와 18시 50분 경계를 사용한다', () => {
   const items = [
     { id: 'before-lunch', startMinute: 779, endMinute: 780 },

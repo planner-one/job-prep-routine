@@ -99,3 +99,44 @@
 - 12:59/13:00과 18:49/18:50 양쪽을 함께 검증해 정확한 경계를 고정했다.
 - 기존 8787 서버, `outputs`, 로그인·배포는 변경하지 않았다.
 - 기능상 남은 우려는 없다. 로컬 `jenv` 경고는 기존과 같은 환경 메시지이며 검증 종료 코드에는 영향을 주지 않았다.
+
+## 1차 수정 후 재검토 추가 결함 수정
+
+작업 기준은 `cd7e377`이며, 재검토에서 추가된 Important 1건을 수정했다.
+
+### RED
+
+- 명령: `node --test tests/history-core.test.mjs tests/history-app.test.mjs tests/history-contract.test.mjs`
+- 결과: 27개 중 26개 통과·1개 실패
+- 기대한 실패 이유:
+  - `afternoon-break`, `normal-shower`, `normal-sleep`, `maintenance-rest`처럼 기본 회복성 exercise 항목만 완료한 record의 `metrics.exercise`와 `summarizeHistory().exerciseDays`가 1이었다.
+- 같은 RED 실행에서 사용자 정의 exercise snapshot/archive와 기존 `workout`/`run` 정방향 계약은 통과해 보존할 동작도 함께 확인했다.
+
+### 수정 내용
+
+- `routine-data.js`의 전체 기본 schedule과 `TASK_LIBRARY`에서 exercise ID 집합을 구성했다.
+- daily 완료 항목의 category가 exercise이면서 기본 exercise ID가 아닐 때만 사용자 정의 운동으로 집계한다.
+- 기존 `workout`/`run` ID와 legacy weekly activity 판단은 그대로 유지했다.
+- 학습 category 보강, public record shape, daily > roadmap > legacy weekly 우선순위와 v1/v2 호환은 변경하지 않았다.
+
+### GREEN 및 전체 검증
+
+- focused GREEN
+  - 명령: `node --test tests/history-core.test.mjs tests/history-app.test.mjs tests/history-contract.test.mjs`
+  - 결과: 27/27 통과, 실패 0
+- 정적 검사
+  - 명령: `npm run check`
+  - 결과: 성공
+- 전체 테스트
+  - 승인 실행 명령: `npm test`
+  - 결과: 130/130 통과, 실패 0
+- diff 검사
+  - 명령: `git diff --check`
+  - 결과: 성공
+
+### 자체검토와 우려
+
+- 부정 계약은 기본 break, shower, sleep, rest 네 종류를 함께 검증하고, 정방향 계약은 사용자 정의 snapshot/archive와 기존 workout/run을 각각 검증한다.
+- snapshot에 저장되지 않는 `source`를 추정하지 않고 공용 기본 데이터의 ID를 기준으로 구분하므로 임의의 안정 ID 사용자 일정도 보존한다.
+- 기존 8787 서버, `outputs`, 로그인·배포는 변경하지 않았다.
+- 기능상 남은 우려는 없다. 로컬 `jenv` 경고는 기존과 같은 환경 메시지이며 검증 종료 코드에는 영향을 주지 않았다.

@@ -1,9 +1,14 @@
-import { LEARNING_TOPICS, MODES, getSchedule } from './routine-data.js';
+import { LEARNING_TOPICS, MODES, TASK_LIBRARY, getSchedule } from './routine-data.js';
 import { calculateDailyProgress, countPipelineProgress, localDateString, storageKey } from './routine-core.js';
 
 const WEEKDAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
 const SCHEDULE_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
+const DEFAULT_EXERCISE_IDS = new Set(
+  [...TASK_LIBRARY, ...MODES.flatMap((mode) => getSchedule(mode))]
+    .filter(({ category }) => category === 'exercise')
+    .map(({ id }) => id),
+);
 const MAINTENANCE_TASKS = [
   'deadline',
   'application',
@@ -316,6 +321,9 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
   const dailyCompletedCategories = new Set(
     dailySchedule.completed.map(({ category }) => category),
   );
+  const hasCustomExercise = dailySchedule.completed.some(
+    ({ id, category }) => category === 'exercise' && !DEFAULT_EXERCISE_IDS.has(id),
+  );
   const interview =
     weeklySummary.completed.includes('interview') ||
     ['interview-practice', 'maintenance-interview'].some((id) => completedIds.has(id))
@@ -329,7 +337,7 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
       ? 1
       : 0;
   const exercise =
-    dailyCompletedCategories.has('exercise') ||
+    hasCustomExercise ||
     completedIds.has('workout') ||
     completedIds.has('run') ||
     (weeklySummary.completed.includes('activity') &&
