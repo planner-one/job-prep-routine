@@ -13,3 +13,14 @@ test('로드맵은 조작 없이 다섯 일정 변형을 제공하는 읽기 전
   assert.doesNotMatch(html, /type="checkbox"|type="radio"|data-learning-topic/);
   assert.doesNotMatch(html, /roadmap-current-date|roadmap-reset-today|roadmap-mode-switch/);
 });
+
+test('로드맵은 네 카테고리와 러닝 시작 시각 선택을 제공한다', () => {
+  assert.match(html, /class="roadmap-category-tabs"[^>]*role="tablist"/);
+  for (const category of ['workout', 'normal', 'running', 'maintenance']) {
+    assert.match(html, new RegExp(`data-roadmap-category="${category}"`));
+  }
+  assert.match(html, /id="roadmap-run-time-picker"[^>]*hidden/);
+  assert.match(html, /data-roadmap-run-start="21"/);
+  assert.match(html, /data-roadmap-run-start="22"/);
+  assert.doesNotMatch(html, /type="checkbox"|type="radio"/);
+});

@@ -220,6 +220,46 @@ test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 �
     await cdp.send('Runtime.enable', {}, sessionId);
     await navigate(cdp, sessionId, staticSite.url);
 
+    const initialView = await evaluate(cdp, sessionId, `(() => ({
+      selectedCategory: document.querySelector('[data-roadmap-category][aria-selected="true"]')?.dataset.roadmapCategory,
+      visibleVariants: [...document.querySelectorAll('[data-roadmap-variant]')]
+        .filter((node) => !node.hidden)
+        .map((node) => node.dataset.roadmapVariant),
+      runPickerHidden: document.getElementById('roadmap-run-time-picker').hidden,
+    }))()`);
+    assert.deepEqual(initialView, {
+      selectedCategory: 'workout',
+      visibleVariants: ['workout'],
+      runPickerHidden: true,
+    });
+
+    const views = await evaluate(cdp, sessionId, `(async () => {
+      const visible = () => [...document.querySelectorAll('[data-roadmap-variant]')]
+        .filter((node) => !node.hidden)
+        .map((node) => node.dataset.roadmapVariant);
+      const click = (selector) => document.querySelector(selector).click();
+      const result = {};
+      click('[data-roadmap-category="normal"]');
+      result.normal = visible();
+      click('[data-roadmap-category="running"]');
+      result.running21 = visible();
+      result.runPickerVisible = !document.getElementById('roadmap-run-time-picker').hidden;
+      click('[data-roadmap-run-start="22"]');
+      result.running22 = visible();
+      click('[data-roadmap-category="maintenance"]');
+      result.maintenance = visible();
+      result.runPickerHiddenAfterMaintenance = document.getElementById('roadmap-run-time-picker').hidden;
+      return result;
+    })()`);
+    assert.deepEqual(views, {
+      normal: ['normal'],
+      running21: ['running-21'],
+      runPickerVisible: true,
+      running22: ['running-22'],
+      maintenance: ['maintenance'],
+      runPickerHiddenAfterMaintenance: true,
+    });
+
     const legacyRaw = JSON.stringify({
       mode: 'running',
       runStart: '21',

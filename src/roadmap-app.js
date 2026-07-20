@@ -14,6 +14,8 @@ const CATEGORY_LABELS = {
   meal: '식사·휴식',
 };
 
+const ROADMAP_CATEGORIES = new Set(['workout', 'normal', 'running', 'maintenance']);
+
 export const ROADMAP_VARIANTS = Object.freeze([
   { id: 'workout', mode: 'workout', runStart: '21', label: '운동일', description: '아침 운동으로 시작하는 실행일' },
   { id: 'normal', mode: 'normal', runStart: '21', label: '비운동일', description: '취업 준비와 개발 학습에 집중하는 날' },
@@ -36,10 +38,19 @@ export function formatReferenceTime(value) {
   return value.replaceAll('–', '-').replaceAll('~', '-');
 }
 
+export function resolveRoadmapVariantId(category, runStart = '21') {
+  const safeCategory = ROADMAP_CATEGORIES.has(category) ? category : 'workout';
+  if (safeCategory !== 'running') return safeCategory;
+  return `running-${runStart === '22' ? '22' : '21'}`;
+}
+
 function renderVariant(pageDocument, variant) {
   const section = pageDocument.createElement('section');
+  section.id = `roadmap-panel-${variant.id}`;
   section.className = 'roadmap-mode-section';
   section.dataset.roadmapVariant = variant.id;
+  section.setAttribute('role', 'tabpanel');
+  section.setAttribute('aria-label', variant.label);
   const heading = pageDocument.createElement('header');
   heading.className = 'roadmap-mode-heading';
   const title = pageDocument.createElement('h2');
@@ -84,8 +95,43 @@ export function initRoadmapReference(pageDocument) {
   if (!root || !list) return null;
   const variants = getRoadmapVariants();
   list.replaceChildren(...variants.map((variant) => renderVariant(pageDocument, variant)));
+  let activeCategory = 'workout';
+  let activeRunStart = '21';
+  const categoryButtons = [...pageDocument.querySelectorAll('[data-roadmap-category]')];
+  const runButtons = [...pageDocument.querySelectorAll('[data-roadmap-run-start]')];
+  const runPicker = pageDocument.getElementById('roadmap-run-time-picker');
+  const panels = [...list.querySelectorAll('[data-roadmap-variant]')];
+
+  function updateView() {
+    const activeVariant = resolveRoadmapVariantId(activeCategory, activeRunStart);
+    for (const button of categoryButtons) {
+      const selected = button.dataset.roadmapCategory === activeCategory;
+      button.setAttribute('aria-selected', String(selected));
+      if (selected) button.setAttribute('aria-controls', `roadmap-panel-${activeVariant}`);
+      else button.removeAttribute('aria-controls');
+    }
+    runPicker.hidden = activeCategory !== 'running';
+    for (const button of runButtons) {
+      button.setAttribute('aria-pressed', String(button.dataset.roadmapRunStart === activeRunStart));
+    }
+    for (const panel of panels) panel.hidden = panel.dataset.roadmapVariant !== activeVariant;
+  }
+
+  function selectCategory(category) {
+    activeCategory = ROADMAP_CATEGORIES.has(category) ? category : 'workout';
+    updateView();
+  }
+
+  function selectRunStart(runStart) {
+    activeRunStart = runStart === '22' ? '22' : '21';
+    updateView();
+  }
+
+  categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.roadmapCategory)));
+  runButtons.forEach((button) => button.addEventListener('click', () => selectRunStart(button.dataset.roadmapRunStart)));
+  updateView();
   pageDocument.documentElement.dataset.roadmapReady = 'true';
-  return { variants };
+  return { variants, selectCategory, selectRunStart };
 }
 
 if (typeof document !== 'undefined') {
