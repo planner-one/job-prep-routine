@@ -483,20 +483,14 @@ test('데일리 실행 변경 시 주간 진척과 읽기 전용 행 상태를 �
     const refreshed = await evaluate(
       cdp,
       sessionId,
-      `(() => {
+      `(async () => {
         const weekKey = document.querySelector('#weekly-current-week').dateTime;
         const weeklyKey = 'job-prep-routine:weekly:' + weekKey;
         const dailyKey = 'job-prep-routine:daily:' + weekKey;
         const weekly = JSON.parse(localStorage.getItem(weeklyKey));
         const revision = weekly.days.mon.revision;
-        const snapshotItem = (id, label, category, startMinute, endMinute) => ({ id, label, category, startMinute, endMinute });
-        const planSnapshot = {
-          revision,
-          items: [
-            snapshotItem('portfolio-review', '이력서·포트폴리오 숙지', 'career', 570, 600),
-            snapshotItem('interview-practice', '면접 연습·복기', 'career', 600, 720),
-          ],
-        };
+        const { resolveDailyPlan } = await import('./src/daily-plan-core.js');
+        const planSnapshot = resolveDailyPlan(weekKey, weekly);
         const read = () => ({
           applications: document.querySelector('#weekly-applications-value').textContent,
           ariaNow: document.querySelector('[data-weekly-progress="applications"] [role="progressbar"]').getAttribute('aria-valuenow'),
@@ -530,7 +524,38 @@ test('데일리 실행 변경 시 주간 진척과 읽기 전용 행 상태를 �
         }));
         window.dispatchEvent(new PageTransitionEvent('pageshow'));
         const pageshow = read();
-        return { storage, focus, pageshow };
+
+        document.querySelector('#weekly-time-edit').click();
+        const editRow = document.querySelector('#weekly-plan-list .weekly-plan-row:not(.is-fixed)');
+        const editId = editRow.dataset.planItemId;
+        const startInput = editRow.querySelector('[data-time-start]');
+        startInput.value = '05:55';
+        startInput.focus();
+        localStorage.setItem(dailyKey, JSON.stringify({
+          checkedIds: [editId],
+          companies: [{ applied: true }, { applied: true }, { applied: true }, { applied: true }],
+          planSnapshot,
+        }));
+        const preserved = [];
+        for (const event of [
+          new StorageEvent('storage', { key: dailyKey }),
+          new Event('focus'),
+          new PageTransitionEvent('pageshow'),
+        ]) {
+          window.dispatchEvent(event);
+          const current = document.querySelector('[data-plan-item-id="' + editId + '"] [data-time-start]');
+          preserved.push({
+            sameInput: current === startInput,
+            value: current?.value ?? null,
+            focused: document.activeElement === startInput,
+          });
+        }
+        const editing = {
+          preserved,
+          rowState: document.querySelector('[data-plan-item-id="' + editId + '"] .weekly-plan-state').textContent,
+          applications: document.querySelector('#weekly-applications-value').textContent,
+        };
+        return { storage, focus, pageshow, editing };
       })()`,
     );
 
@@ -549,6 +574,13 @@ test('데일리 실행 변경 시 주간 진척과 읽기 전용 행 상태를 �
     assert.equal(refreshed.pageshow.applications, '1 / 18–24');
     assert.equal(refreshed.pageshow.portfolioState, '계획 변경 대기');
     assert.equal(refreshed.pageshow.portfolioExecutionState, 'plan-update');
+    assert.deepEqual(refreshed.editing.preserved, [
+      { sameInput: true, value: '05:55', focused: true },
+      { sameInput: true, value: '05:55', focused: true },
+      { sameInput: true, value: '05:55', focused: true },
+    ]);
+    assert.equal(refreshed.editing.rowState, '완료');
+    assert.equal(refreshed.editing.applications, '4 / 18–24');
   } finally {
     cdp?.close();
     await stopChrome(chrome);

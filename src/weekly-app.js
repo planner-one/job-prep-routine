@@ -3,6 +3,7 @@ import {
   calculateWeeklyExecutionProgress,
   hasExecutionInput,
   normalizePlanSnapshot,
+  prepareDailyPlan,
 } from './daily-plan-core.js';
 import {
   loadState,
@@ -103,6 +104,11 @@ export function formatWeekRange(weekKey) {
   return `${monday.getFullYear()}년 ${monday.getMonth() + 1}월 ${monday.getDate()}일–${sunday.getMonth() + 1}월 ${sunday.getDate()}일`;
 }
 
+export function resolveWeeklyPageDateKeys(value = logicalDateString()) {
+  const todayKey = value instanceof Date ? logicalDateString(value) : value;
+  return { todayKey, weekKey: weekMondayKey(todayKey) };
+}
+
 function formatSelectedDate(weekKey, dayId) {
   const date = dateAtWeekday(weekKey, dayId);
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -135,12 +141,16 @@ export function planMoveTargetIndex(day, itemId, direction) {
   return Math.max(0, Math.min(currentIndex + offset, day.timelineOrder.length - 1));
 }
 
-export function resolveWeeklyRowState(itemId, dailyState, planRevision, dayDate, today) {
+export function resolveWeeklyRowState(itemId, dailyState, planRevision, dayDate, today, currentPlan = null) {
   const source = dailyState && typeof dailyState === 'object' && !Array.isArray(dailyState) ? dailyState : {};
   if (Array.isArray(source.checkedIds) && source.checkedIds.includes(itemId)) return '완료';
   const snapshot = normalizePlanSnapshot(source.planSnapshot);
-  if (hasExecutionInput(source) && snapshot && snapshot.revision !== planRevision) return '계획 변경 대기';
-  if (dayDate < today && !hasExecutionInput(source)) return '기록 없음';
+  const executionExists = hasExecutionInput(source);
+  const needsPlanUpdate = currentPlan
+    ? prepareDailyPlan(source, currentPlan).needsPlanUpdate
+    : snapshot && snapshot.revision !== planRevision;
+  if (executionExists && needsPlanUpdate) return '계획 변경 대기';
+  if (dayDate < today && !executionExists) return '기록 없음';
   return '예정';
 }
 
@@ -244,6 +254,12 @@ export function renderPlanRow(document, item, { editingTime = false, errorMessag
   return row;
 }
 
+function paintRowExecutionState(row, stateLabel) {
+  row.dataset.executionState = ROW_STATE_KEYS[stateLabel];
+  const badge = row.querySelector('.weekly-plan-state');
+  if (badge) badge.textContent = stateLabel;
+}
+
 function renderUnscheduledRow(document, item) {
   const row = document.createElement('li');
   row.dataset.planItemId = item.id;
@@ -268,8 +284,7 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
   const root = pageDocument.getElementById('weekly-page');
   if (!root) return null;
 
-  const todayKey = typeof date === 'string' ? date : localDateString(date);
-  const weekKey = weekMondayKey(date);
+  const { todayKey, weekKey } = resolveWeeklyPageDateKeys(date);
   let state = normalizeWeeklyState(loadState(storage, WEEKLY_PAGE_NAME, weekKey, createDefaultWeeklyState()));
   let editingTime = false;
   let draggedItemId = null;
@@ -343,11 +358,12 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     const daily = selectedDailyState();
     const dayDate = selectedDateKey();
     const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
+    const currentPlan = { revision: day.revision, items: timeline };
     const list = root.querySelector('#weekly-plan-list');
     list.replaceChildren(...timeline.map((item) => renderPlanRow(pageDocument, item, {
       editingTime,
       errorMessage: timeErrors.get(item.id) ?? '',
-      stateLabel: resolveWeeklyRowState(item.id, daily, day.revision, dayDate, todayKey),
+      stateLabel: resolveWeeklyRowState(item.id, daily, day.revision, dayDate, todayKey, currentPlan),
     })));
 
     const unscheduled = root.querySelector('#weekly-unscheduled');
@@ -358,6 +374,24 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     );
     root.querySelector('#weekly-time-edit').setAttribute('aria-pressed', String(editingTime));
     root.querySelector('#weekly-time-edit').textContent = editingTime ? '시간 편집 닫기' : '시간 편집';
+  }
+
+  function paintPlannerExecutionStates() {
+    const day = selectedDayState();
+    const daily = selectedDailyState();
+    const dayDate = selectedDateKey();
+    const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
+    const currentPlan = { revision: day.revision, items: timeline };
+    for (const row of root.querySelectorAll('#weekly-plan-list [data-plan-item-id]')) {
+      paintRowExecutionState(row, resolveWeeklyRowState(
+        row.dataset.planItemId,
+        daily,
+        day.revision,
+        dayDate,
+        todayKey,
+        currentPlan,
+      ));
+    }
   }
 
   function paintDetail() {
@@ -390,7 +424,8 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
 
   function refreshExecution() {
     paintProgress();
-    paintPlanner();
+    if (editingTime) paintPlannerExecutionStates();
+    else paintPlanner();
   }
 
   function applyDayMutation(nextDay, message) {

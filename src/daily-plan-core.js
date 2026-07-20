@@ -101,6 +101,7 @@ function learningTopicsFor(item) {
   if (item.category !== 'learning') return [];
   if (LEARNING_TOPICS.includes(item.id)) return [item.id];
   if (item.id.startsWith('learning:')) return item.id.slice('learning:'.length).split('|').filter((topic) => LEARNING_TOPICS.includes(topic));
+  if (typeof item.label !== 'string') return [];
   return LEARNING_TOPICS.filter((topic) => item.label.split(' · ').includes(topic));
 }
 
@@ -207,6 +208,12 @@ export function migrateLegacyDailyState(date, dailyCandidate, revision = 0) {
       checkedIds.push(id);
     }
   }
+  const hasLegacyLearningCompletion = Array.isArray(source.learningTopics)
+    && source.learningTopics.some((topic) => LEARNING_TOPICS.includes(topic));
+  if (learningId && hasLegacyLearningCompletion && !checked.has(learningId)) {
+    checked.add(learningId);
+    checkedIds.push(learningId);
+  }
 
   return {
     ...source,
@@ -243,10 +250,14 @@ export function hasExecutionInput(state = {}) {
   const source = isObject(state) ? state : {};
   const companies = Array.isArray(source.companies) ? source.companies : [];
   const memos = isObject(source.memos) ? source.memos : {};
+  const legacyLearningCompleted = !normalizePlanSnapshot(source.planSnapshot)
+    && Array.isArray(source.learningTopics)
+    && source.learningTopics.some((topic) => LEARNING_TOPICS.includes(topic));
   return Boolean(
     normalizedCheckedIds(source.checkedIds).length ||
     companies.some((company) => company?.name || company?.link || company?.analyzed || company?.letter || company?.applied) ||
-    Object.values(memos).some((value) => typeof value === 'string' && value.trim()),
+    Object.values(memos).some((value) => typeof value === 'string' && value.trim()) ||
+    legacyLearningCompleted,
   );
 }
 
@@ -303,11 +314,20 @@ export function buildDailyExecutionSummary(dailyState) {
     runs: 0,
     learning: {},
   };
-  const snapshot = normalizePlanSnapshot(source.planSnapshot);
-  if (!snapshot) return summary;
+  const completedItems = [];
+  const countedIds = new Set();
+  for (const item of normalizePlanSnapshot(source.planSnapshot)?.items ?? []) {
+    if (!checked.has(item.id) || countedIds.has(item.id)) continue;
+    completedItems.push(item);
+    countedIds.add(item.id);
+  }
+  for (const item of normalizedArchivedItems(source.archivedCompletedItems)) {
+    if (countedIds.has(item.id)) continue;
+    completedItems.push(item);
+    countedIds.add(item.id);
+  }
 
-  for (const item of snapshot.items) {
-    if (!checked.has(item.id)) continue;
+  for (const item of completedItems) {
     if (REVIEW_IDS.has(item.id)) summary.reviews += 1;
     if (INTERVIEW_IDS.has(item.id)) summary.interviews += 1;
     if (item.id === 'workout') summary.workouts += 1;

@@ -134,6 +134,26 @@ test('legacy 완료 ID를 새 snapshot ID로 매핑하고 합쳐진 완료는 ar
   }]);
 });
 
+test('legacy learningTopics 단독 완료를 실행으로 감지해 새 snapshot과 주간 집계에 보존한다', () => {
+  const legacy = {
+    mode: 'normal',
+    runStart: '21',
+    learningTopics: ['CS'],
+    checkedIds: [],
+  };
+
+  assert.equal(hasExecutionInput(legacy), true);
+  const migrated = dailyPlanCore.migrateLegacyDailyState('2026-07-20', legacy, 4);
+  assert.equal(migrated.planSnapshot.items.some(({ id }) => id === 'learning:CS'), true);
+  assert.deepEqual(migrated.checkedIds, ['learning:CS']);
+
+  const entries = {
+    'job-prep-routine:daily:2026-07-20': JSON.stringify(migrated),
+  };
+  const storage = { getItem: (key) => entries[key] ?? null };
+  assert.equal(calculateWeeklyExecutionProgress(storage, '2026-07-20').learning.CS, 1);
+});
+
 test('주간 계획만 저장한 날은 진척이 증가하지 않는다', () => {
   const entries = {
     'job-prep-routine:weekly:2026-07-20': JSON.stringify(createDefaultWeeklyState()),
@@ -198,5 +218,31 @@ test('연말을 걸친 7일 데일리 실행을 합치고 손상된 JSON은 건�
     workouts: 1,
     runs: 0,
     learning: { Spring: 1, Redis: 0, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 1 },
+  });
+});
+
+test('계획 반영 뒤 archive로 옮겨진 완료 실행도 주간 진척에 유지한다', () => {
+  const entries = {
+    'job-prep-routine:daily:2026-07-20': JSON.stringify({
+      checkedIds: [],
+      planSnapshot: { revision: 2, items: [] },
+      archivedCompletedItems: [
+        { id: 'portfolio-review', label: '이력서·포트폴리오 숙지', category: 'career' },
+        { id: 'interview-practice', label: '면접 연습·복기', category: 'career' },
+        { id: 'workout', label: '아침 운동', category: 'exercise' },
+        { id: 'run', label: '이동 포함 저녁 러닝', category: 'exercise' },
+        { id: 'learning:Spring|Redis', label: 'Spring · Redis', category: 'learning' },
+      ],
+    }),
+  };
+  const storage = { getItem: (key) => entries[key] ?? null };
+
+  assert.deepEqual(calculateWeeklyExecutionProgress(storage, '2026-07-20'), {
+    applications: 0,
+    reviews: 1,
+    interviews: 1,
+    workouts: 1,
+    runs: 1,
+    learning: { Spring: 1, Redis: 1, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 0 },
   });
 });

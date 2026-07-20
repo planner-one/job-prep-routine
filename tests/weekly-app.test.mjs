@@ -23,6 +23,19 @@ test('연말을 걸치는 주 범위는 시작 연도와 종료 연도를 모두
   assert.equal(weeklyApp.formatWeekRange('2026-12-28'), '2026년 12월 28일–2027년 1월 3일');
 });
 
+test('오전 2시 이전 Date 초기화는 논리 날짜와 같은 주 키를 사용한다', () => {
+  assertFunction('resolveWeeklyPageDateKeys');
+
+  assert.deepEqual(weeklyApp.resolveWeeklyPageDateKeys(new Date(2026, 6, 20, 1, 30)), {
+    todayKey: '2026-07-19',
+    weekKey: '2026-07-13',
+  });
+  assert.deepEqual(weeklyApp.resolveWeeklyPageDateKeys(new Date(2026, 6, 20, 2, 0)), {
+    todayKey: '2026-07-20',
+    weekKey: '2026-07-20',
+  });
+});
+
 test('시간 입력은 분 단위로 바꾸고 24:00 경계를 허용한다', () => {
   assertFunction('minuteFromInput');
   assert.equal(weeklyApp.minuteFromInput('05:40'), 340);
@@ -59,5 +72,33 @@ test('주간 일정 행은 데일리 실행과 날짜 및 계획 revision으로 
     2,
     '2026-07-20',
     '2026-07-20',
+  ), '계획 변경 대기');
+});
+
+test('같은 revision이어도 현재 계획 내용이 snapshot과 다르면 계획 변경 대기다', () => {
+  const oldItem = {
+    id: 'portfolio-review',
+    label: '기존 숙지',
+    category: 'career',
+    startMinute: 570,
+    endMinute: 600,
+  };
+  const daily = {
+    checkedIds: [],
+    companies: [{ name: '실행 기록' }],
+    planSnapshot: { revision: 2, items: [oldItem] },
+  };
+  const currentPlan = {
+    revision: 2,
+    items: [{ ...oldItem, label: '변경된 숙지' }],
+  };
+
+  assert.equal(weeklyApp.resolveWeeklyRowState(
+    oldItem.id,
+    daily,
+    2,
+    '2026-07-20',
+    '2026-07-20',
+    currentPlan,
   ), '계획 변경 대기');
 });
