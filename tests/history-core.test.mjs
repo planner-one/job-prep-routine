@@ -6,6 +6,7 @@ import {
   collectHistoryRecords,
   summarizeHistory,
 } from '../src/history-core.js';
+import { createDefaultWeeklyState, normalizeWeeklyState } from '../src/weekly-plan-core.js';
 import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
 
 function memoryStorage(entries = {}) {
@@ -130,6 +131,118 @@ test('세 보드 상세는 모두 보존하지만 완료율은 우선순위가 �
 test('데일리 완료율은 공통 저장 모델 계약과 같은 분자·분모·백분율을 사용한다', () => {
   const record = buildHistoryRecord({ date: '2026-07-18', daily: dailyProgressFixture });
   assert.deepEqual(record.completion, { source: 'daily', ...dailyProgressExpected });
+});
+
+test('데일리 스냅샷의 사용자 일정 이름과 분 단위 시간을 기록에 보존한다', () => {
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: ['custom-1'],
+      planSnapshot: {
+        revision: 3,
+        items: [{
+          id: 'custom-1',
+          label: 'README 정리',
+          category: 'learning',
+          startMinute: 1000,
+          endMinute: 1040,
+        }],
+      },
+      companies: [],
+    },
+  });
+
+  assert.equal(record.completedSchedule[0].label, 'README 정리');
+  assert.equal(record.completedSchedule[0].time, '16:40–17:20');
+});
+
+test('현재 스냅샷과 이전 계획 완료 항목을 ID 기준 중복 없이 합친다', () => {
+  const current = {
+    id: 'custom-1',
+    label: '현재 일정',
+    category: 'career',
+    startMinute: 600,
+    endMinute: 630,
+  };
+  const archived = {
+    id: 'old-1',
+    label: '이전 계획에서 완료',
+    category: 'learning',
+    startMinute: 630,
+    endMinute: 690,
+  };
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: ['custom-1'],
+      planSnapshot: { revision: 2, items: [current] },
+      archivedCompletedItems: [current, archived, archived],
+      companies: [],
+    },
+  });
+
+  assert.deepEqual(record.dailyCompletedSchedule.map(({ id }) => id), ['custom-1', 'old-1']);
+  assert.equal(record.dailyCompletedSchedule.filter(({ id }) => id === 'custom-1').length, 1);
+});
+
+test('revision 없는 호환 스냅샷도 유효한 항목 배열을 기록에 사용한다', () => {
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: ['compat-1'],
+      planSnapshot: {
+        items: [{
+          id: 'compat-1',
+          label: '호환 일정',
+          category: 'career',
+          startMinute: 570,
+          endMinute: 600,
+        }],
+      },
+      companies: [],
+    },
+  });
+
+  assert.deepEqual(
+    record.completedSchedule.map(({ id, time, label }) => ({ id, time, label })),
+    [{ id: 'compat-1', time: '09:30–10:00', label: '호환 일정' }],
+  );
+});
+
+test('v2에 보존된 레거시 체크는 데일리가 없을 때만 완료율 fallback으로 사용한다', () => {
+  const oldWeeklyFixture = {
+    selectedDay: 'mon',
+    maintenanceDay: 'sun',
+    days: {
+      mon: {
+        mode: 'workout',
+        tasks: { interview: true },
+        applications: [true, false, false, false],
+      },
+    },
+  };
+  const weekly = normalizeWeeklyState(oldWeeklyFixture);
+  const weeklyRecord = buildHistoryRecord({ date: '2026-07-20', weekly });
+  const dailyRecord = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: { checkedIds: [], companies: [] },
+    weekly,
+  });
+
+  assert.equal(weeklyRecord.completion.source, 'weekly');
+  assert.equal(weeklyRecord.weeklyChecks.completed.includes('interview'), true);
+  assert.equal(dailyRecord.completion.source, 'daily');
+});
+
+test('새 주간 계획만 있는 날짜는 활동 기록이 아니다', () => {
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    weekly: createDefaultWeeklyState(),
+  });
+
+  assert.equal(record.hasActivity, false);
+  assert.equal(record.completion.source, null);
+  assert.deepEqual(record.weeklyChecks.completed, []);
 });
 
 test('데일리가 없으면 주간 실행 체크와 학습 실행을 하루 완료율로 사용한다', () => {

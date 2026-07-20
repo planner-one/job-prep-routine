@@ -3,6 +3,7 @@ import { calculateDailyProgress, countPipelineProgress, localDateString, storage
 
 const WEEKDAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
+const SCHEDULE_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
 const MAINTENANCE_TASKS = [
   'deadline',
   'application',
@@ -69,6 +70,68 @@ function normalizeMode(value, fallback = 'normal') {
   return MODES.includes(value) ? value : fallback;
 }
 
+function validMinute(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 1440;
+}
+
+function formatMinute(value) {
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+}
+
+function periodForMinute(value) {
+  if (value < 720) return 'morning';
+  if (value < 1080) return 'afternoon';
+  if (value < 1320) return 'evening';
+  return 'night';
+}
+
+function snapshotScheduleItem(candidate) {
+  const item = objectValue(candidate);
+  if (typeof item.id !== 'string' || !item.id.trim()) return null;
+  if (typeof item.label !== 'string' || !item.label.trim()) return null;
+  if (!SCHEDULE_CATEGORIES.has(item.category)) return null;
+  if (!validMinute(item.startMinute) || !validMinute(item.endMinute) || item.endMinute < item.startMinute) {
+    return null;
+  }
+  return {
+    id: item.id,
+    time: item.startMinute === item.endMinute
+      ? formatMinute(item.startMinute)
+      : `${formatMinute(item.startMinute)}–${formatMinute(item.endMinute)}`,
+    label: item.label,
+    category: item.category,
+    period: periodForMinute(item.startMinute),
+  };
+}
+
+function snapshotSchedule(source) {
+  const snapshot = objectValue(source?.planSnapshot);
+  if (!Array.isArray(snapshot.items)) return null;
+  const seen = new Set();
+  return snapshot.items
+    .map(snapshotScheduleItem)
+    .filter((item) => item && !seen.has(item.id) && seen.add(item.id));
+}
+
+function archivedSchedule(source) {
+  const seen = new Set();
+  return (Array.isArray(source?.archivedCompletedItems) ? source.archivedCompletedItems : [])
+    .map((candidate) => {
+      const item = objectValue(candidate);
+      if (typeof item.id !== 'string' || !item.id.trim()) return null;
+      const normalized = snapshotScheduleItem(item);
+      if (normalized) return normalized;
+      return {
+        id: item.id,
+        time: '',
+        label: typeof item.label === 'string' && item.label.trim() ? item.label : item.id,
+        category: SCHEDULE_CATEGORIES.has(item.category) ? item.category : 'career',
+        period: '',
+      };
+    })
+    .filter((item) => item && !seen.has(item.id) && seen.add(item.id));
+}
+
 function normalizeTopics(...sources) {
   const selected = new Set();
   for (const source of sources) {
@@ -115,17 +178,31 @@ function normalizedMemos(value) {
   };
 }
 
-function buildScheduleSummary(source) {
-  if (!source) return { completed: [], completedIds: [], total: 0 };
+function buildScheduleSummary(source, { preferSnapshot = false } = {}) {
+  if (!source) return { completed: [], completedIds: [], schedule: [], total: 0, usesStoredSchedule: false };
   const mode = normalizeMode(source.mode, 'workout');
   const runStart = source.runStart === '22' ? '22' : '21';
-  const schedule = getSchedule(mode, runStart);
+  const snapshot = preferSnapshot ? snapshotSchedule(source) : null;
+  const schedule = snapshot ?? getSchedule(mode, runStart);
+  const archived = preferSnapshot ? archivedSchedule(source) : [];
   const checked = new Set(Array.isArray(source.checkedIds) ? source.checkedIds : []);
-  const completed = schedule.filter(({ id }) => checked.has(id));
+  const completedById = new Map(
+    schedule.filter(({ id }) => checked.has(id)).map((item) => [item.id, item]),
+  );
+  for (const item of archived) {
+    if (!completedById.has(item.id)) completedById.set(item.id, item);
+  }
+  const scheduleById = new Map(schedule.map((item) => [item.id, item]));
+  for (const item of archived) {
+    if (!scheduleById.has(item.id)) scheduleById.set(item.id, item);
+  }
+  const completed = [...completedById.values()];
   return {
     completed,
     completedIds: completed.map(({ id }) => id),
-    total: schedule.length,
+    schedule: [...scheduleById.values()],
+    total: scheduleById.size,
+    usesStoredSchedule: snapshot !== null || archived.length > 0,
   };
 }
 
@@ -147,12 +224,14 @@ function buildWeeklySummary(weekly, date) {
       completed: [],
       total: 0,
       topics: [],
+      hasLegacyActivity: false,
     };
   }
 
   const { day, isMaintenance } = weeklyDayFrom(weekly, date);
+  const completion = weekly.schemaVersion === 2 ? objectValue(day.legacyCompletion) : day;
   if (isMaintenance) {
-    const maintenance = objectValue(day.maintenance);
+    const maintenance = objectValue(completion.maintenance);
     const completed = MAINTENANCE_TASKS.filter((key) => Boolean(maintenance[key]));
     return {
       isMaintenance: true,
@@ -161,24 +240,28 @@ function buildWeeklySummary(weekly, date) {
       completed,
       total: MAINTENANCE_TASKS.length,
       topics: maintenance.learningReview ? ['학습 복습'] : [],
+      hasLegacyActivity: completed.length > 0,
     };
   }
 
-  const tasks = objectValue(day.tasks);
+  const tasks = objectValue(completion.tasks);
   const applications = Array.from({ length: 4 }, (_, index) =>
-    Boolean(Array.isArray(day.applications) && day.applications[index]),
+    Boolean(Array.isArray(completion.applications) && completion.applications[index]),
   );
   const completedTasks = EXECUTION_TASKS.filter((key) => Boolean(tasks[key]));
   const completedApplications = applications
     .map((checked, index) => (checked ? `application-${index + 1}` : null))
     .filter(Boolean);
+  const topics = Array.isArray(completion.learningTopics) ? completion.learningTopics : [];
+  const completed = [...completedTasks, ...completedApplications];
   return {
     isMaintenance: false,
     mode: normalizeMode(day.mode, 'normal'),
     applications: applications.filter(Boolean).length,
-    completed: [...completedTasks, ...completedApplications],
+    completed,
     total: EXECUTION_TASKS.length + applications.length,
-    topics: Array.isArray(day.learningTopics) ? day.learningTopics : [],
+    topics,
+    hasLegacyActivity: completed.length > 0 || topics.length > 0,
   };
 }
 
@@ -189,7 +272,7 @@ function hasMemo(memos) {
 export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly = null }) {
   const dailyState = daily ? objectValue(daily) : null;
   const roadmapState = roadmap ? objectValue(roadmap) : null;
-  const dailySchedule = buildScheduleSummary(dailyState);
+  const dailySchedule = buildScheduleSummary(dailyState, { preferSnapshot: true });
   const roadmapSchedule = buildScheduleSummary(roadmapState);
   const weeklySummary = buildWeeklySummary(weekly, date);
   const allCompanies = normalizedCompanies(dailyState?.companies);
@@ -210,12 +293,17 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
   let total = 0;
   if (dailyState) {
     completionSource = 'daily';
-    ({ completed, total } = calculateDailyProgress(dailyState));
+    const progressState = dailySchedule.usesStoredSchedule
+      ? { ...dailyState, checkedIds: dailySchedule.completedIds }
+      : dailyState;
+    ({ completed, total } = dailySchedule.usesStoredSchedule
+      ? calculateDailyProgress(progressState, dailySchedule.schedule)
+      : calculateDailyProgress(progressState));
   } else if (roadmapState) {
     completionSource = 'roadmap';
     completed = roadmapSchedule.completed.length;
     total = roadmapSchedule.total;
-  } else if (weekly) {
+  } else if (weeklySummary.hasLegacyActivity) {
     completionSource = 'weekly';
     completed = weeklySummary.completed.length + weeklyLearningCompletion;
     total = weeklySummary.total + (weeklySummary.isMaintenance ? 0 : 1);
