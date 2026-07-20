@@ -108,6 +108,18 @@ test('주간 인쇄는 편집 조작을 숨기고 세로 계획과 읽기 전용
   assert.doesNotMatch(weeklyHtml, /id="weekly-plan-list"[^>]*screen-only/);
 });
 
+test('면접 상세 인쇄는 편집 조작을 숨기고 읽기 전용 값만 표시한다', () => {
+  const printCss = blockAfter(css, '@media print');
+  for (const selector of [
+    '.interview-detail-controls',
+    '.interview-save-status',
+    '.interview-reset',
+  ]) {
+    assert.match(declarationsFor(printCss, selector), /display:\s*none/);
+  }
+  assert.match(declarationsFor(printCss, '#detail-print-values'), /display:\s*block/);
+});
+
 test('PDF 내보내기는 Chrome 재정의와 안정적인 한국어 파일명을 지원한다', () => {
   assert.match(exportScript, /CHROME_BIN/);
   assert.match(exportScript, /Google Chrome\.app\/Contents\/MacOS\/Google Chrome/);
@@ -137,7 +149,7 @@ test('로드맵 PDF npm 명령은 기존 8787 origin을 사용한다', () => {
   );
 });
 
-test('한국어 홈은 네 보드로 이동하는 상대 링크를 제공한다', () => {
+test('한국어 홈은 다섯 보드로 이동하는 상대 링크를 제공한다', () => {
   assert.match(home, /<html\s+lang="ko">/);
   assert.match(home, /취업 준비 루틴 보드/);
 
@@ -146,6 +158,7 @@ test('한국어 홈은 네 보드로 이동하는 상대 링크를 제공한다'
     ['./weekly.html', '주간 실행 보드'],
     ['./daily.html', '데일리 포커스 보드'],
     ['./history.html', '기록·분석'],
+    ['./templates.html', '백엔드 면접 학습'],
   ]) {
     assert.match(home, new RegExp(`href="${href.replace('.', '\\.')}`));
     assert.match(home, new RegExp(label));

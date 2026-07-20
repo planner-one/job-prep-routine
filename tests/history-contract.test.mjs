@@ -22,9 +22,10 @@ test('기록·분석 페이지는 기간 선택, 요약, 그래프, 날짜별 �
 });
 
 test('홈은 네 번째 기록·분석 보드를 제공한다', () => {
-  assert.equal((indexHtml.match(/class="home-board-card/g) ?? []).length, 4);
+  assert.equal((indexHtml.match(/class="home-board-card/g) ?? []).length, 5);
   assert.match(indexHtml, /href="\.\/history\.html"/);
   assert.match(indexHtml, />기록·분석</);
+  assert.match(indexHtml, /<span class="home-board-step">04<\/span>\s*<strong>기록·분석<\/strong>/);
   assert.match(indexHtml, /오전 2시/);
 });
 
