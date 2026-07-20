@@ -5,10 +5,51 @@ import {
   weekdayIdForDate,
 } from './weekly-plan-core.js';
 import { LEARNING_TOPICS } from './routine-data.js';
+import { storageKey } from './routine-core.js';
 
 const SNAPSHOT_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
 const REVIEW_IDS = new Set(['portfolio-review', 'maintenance-portfolio']);
 const INTERVIEW_IDS = new Set(['interview-practice', 'maintenance-interview']);
+
+function addLocalDays(dateKey, offset) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!match) return null;
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  date.setDate(date.getDate() + offset);
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, '0'))
+    .join('-');
+}
+
+function safeParse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function emptyWeeklyProgress() {
+  return {
+    applications: 0,
+    reviews: 0,
+    interviews: 0,
+    workouts: 0,
+    runs: 0,
+    learning: Object.fromEntries(LEARNING_TOPICS.map((topic) => [topic, 0])),
+  };
+}
+
+function mergeExecutionSummary(result, summary) {
+  for (const metric of ['applications', 'reviews', 'interviews', 'workouts', 'runs']) {
+    result[metric] += summary[metric];
+  }
+  for (const topic of LEARNING_TOPICS) {
+    result.learning[topic] += summary.learning[topic] ?? 0;
+  }
+}
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -220,4 +261,16 @@ export function buildDailyExecutionSummary(dailyState) {
     for (const topic of learningTopicsFor(item)) summary.learning[topic] = (summary.learning[topic] ?? 0) + 1;
   }
   return summary;
+}
+
+export function calculateWeeklyExecutionProgress(storage, weekKey) {
+  const result = emptyWeeklyProgress();
+  for (let offset = 0; offset < 7; offset += 1) {
+    const date = addLocalDays(weekKey, offset);
+    if (!date) break;
+    const raw = storage.getItem(storageKey('daily', date));
+    if (!raw) continue;
+    mergeExecutionSummary(result, buildDailyExecutionSummary(safeParse(raw)));
+  }
+  return result;
 }

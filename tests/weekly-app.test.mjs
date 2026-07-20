@@ -41,3 +41,23 @@ test('위·아래 이동은 앵커를 포함한 타임라인의 인접 위치를
   assert.equal(weeklyApp.planMoveTargetIndex(day, 'scan', 'down'), 2);
   assert.equal(weeklyApp.planMoveTargetIndex(day, 'missing', 'down'), null);
 });
+
+test('주간 일정 행은 데일리 실행과 날짜 및 계획 revision으로 읽기 전용 상태를 정한다', () => {
+  assertFunction('resolveWeeklyRowState');
+  const matchedExecution = {
+    checkedIds: ['portfolio-review'],
+    companies: [],
+    planSnapshot: { revision: 2, items: [] },
+  };
+
+  assert.equal(weeklyApp.resolveWeeklyRowState('portfolio-review', matchedExecution, 2, '2026-07-20', '2026-07-20'), '완료');
+  assert.equal(weeklyApp.resolveWeeklyRowState('portfolio-review', {}, 2, '2026-07-19', '2026-07-20'), '기록 없음');
+  assert.equal(weeklyApp.resolveWeeklyRowState('portfolio-review', {}, 2, '2026-07-21', '2026-07-20'), '예정');
+  assert.equal(weeklyApp.resolveWeeklyRowState(
+    'portfolio-review',
+    { checkedIds: [], companies: [{ name: '실행 기록' }], planSnapshot: { revision: 1, items: [] } },
+    2,
+    '2026-07-20',
+    '2026-07-20',
+  ), '계획 변경 대기');
+});

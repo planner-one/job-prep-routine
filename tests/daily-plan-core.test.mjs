@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   applyUpdatedPlan,
   buildDailyExecutionSummary,
+  calculateWeeklyExecutionProgress,
   hasExecutionInput,
   normalizePlanSnapshot,
   prepareDailyPlan,
@@ -103,4 +104,71 @@ test('실행 입력은 체크, 회사 정보, 비어 있지 않은 메모만 인
   assert.equal(hasExecutionInput({ companies: [{ name: '회사' }] }), true);
   assert.equal(hasExecutionInput({ memos: { blocked: '  막힘  ' } }), true);
   assert.equal(hasExecutionInput({ memos: { blocked: '   ' } }), false);
+});
+
+test('주간 계획만 저장한 날은 진척이 증가하지 않는다', () => {
+  const entries = {
+    'job-prep-routine:weekly:2026-07-20': JSON.stringify(createDefaultWeeklyState()),
+  };
+  const storage = { getItem: (key) => entries[key] ?? null };
+
+  assert.deepEqual(calculateWeeklyExecutionProgress(storage, '2026-07-20'), {
+    applications: 0,
+    reviews: 0,
+    interviews: 0,
+    workouts: 0,
+    runs: 0,
+    learning: { Spring: 0, Redis: 0, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 0 },
+  });
+});
+
+test('지원 수치는 데일리 파이프라인의 실제 지원 완료만 센다', () => {
+  const entries = {
+    'job-prep-routine:daily:2026-07-20': JSON.stringify({
+      companies: [{ applied: true }, { applied: true }, { applied: false }],
+      checkedIds: [],
+    }),
+  };
+  const storage = { getItem: (key) => entries[key] ?? null };
+
+  assert.equal(calculateWeeklyExecutionProgress(storage, '2026-07-20').applications, 2);
+});
+
+test('연말을 걸친 7일 데일리 실행을 합치고 손상된 JSON은 건너뛴다', () => {
+  const entries = {
+    'job-prep-routine:daily:2026-12-28': JSON.stringify({
+      checkedIds: ['Spring', 'workout'],
+      companies: [{ applied: true }],
+      planSnapshot: {
+        revision: 0,
+        items: [
+          { id: 'Spring', label: 'Spring', category: 'learning', startMinute: 600, endMinute: 660 },
+          { id: 'workout', label: '아침 운동', category: 'exercise', startMinute: 360, endMinute: 450 },
+        ],
+      },
+    }),
+    'job-prep-routine:daily:2026-12-31': '{broken',
+    'job-prep-routine:daily:2027-01-03': JSON.stringify({
+      checkedIds: ['코딩테스트', 'interview-practice'],
+      companies: [{ applied: true }, { applied: true }],
+      planSnapshot: {
+        revision: 0,
+        items: [
+          { id: '코딩테스트', label: '코딩테스트', category: 'learning', startMinute: 600, endMinute: 660 },
+          { id: 'interview-practice', label: '면접 연습·복기', category: 'career', startMinute: 660, endMinute: 720 },
+        ],
+      },
+    }),
+    'job-prep-routine:daily:2027-01-04': JSON.stringify({ companies: [{ applied: true }] }),
+  };
+  const storage = { getItem: (key) => entries[key] ?? null };
+
+  assert.deepEqual(calculateWeeklyExecutionProgress(storage, '2026-12-28'), {
+    applications: 3,
+    reviews: 0,
+    interviews: 1,
+    workouts: 1,
+    runs: 0,
+    learning: { Spring: 1, Redis: 0, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 1 },
+  });
 });

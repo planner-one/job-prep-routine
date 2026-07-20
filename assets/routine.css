@@ -1426,6 +1426,21 @@ textarea:focus-visible,
   color: #81580f;
 }
 
+.weekly-plan-row[data-execution-state="complete"] .weekly-plan-state {
+  background: #e5f5eb;
+  color: #176b45;
+}
+
+.weekly-plan-row[data-execution-state="missing"] .weekly-plan-state {
+  background: #f1f3f5;
+  color: #69798a;
+}
+
+.weekly-plan-row[data-execution-state="plan-update"] .weekly-plan-state {
+  background: #fff0df;
+  color: #8f5310;
+}
+
 .plan-move-actions button {
   min-width: 2rem;
   min-height: 2rem;
