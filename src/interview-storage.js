@@ -73,8 +73,16 @@ export function loadOrCreateDailyQueue(
     return ensureDailyQueue(questions, state, null, date, now);
   }
 
-  if (isValidStoredQueue(candidate, date, validIds)) {
-    return normalizeInterviewQueue(candidate, date, validIds);
+  const normalized = normalizeInterviewQueue(candidate, date, validIds);
+  if (normalized.ids.length > 0) {
+    if (isValidStoredQueue(candidate, date, validIds)) return normalized;
+    try {
+      return saveInterviewQueue(storage, normalized, date, validIds);
+    } catch (error) {
+      if (typeof onStorageError !== 'function') throw error;
+      onStorageError(error);
+      return normalized;
+    }
   }
 
   const created = ensureDailyQueue(questions, state, null, date, now);

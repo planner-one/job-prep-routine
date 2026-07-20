@@ -121,3 +121,36 @@ test('공용 일일 큐 bootstrap은 invalid ID로 손상된 저장 큐를 5문�
   assert.deepEqual(JSON.parse(storage.snapshot()[key]), recovered);
   assert.equal(storage.writes(), 1);
 });
+
+test('공용 일일 큐 bootstrap은 유효 ID와 invalid ID가 섞인 저장 큐의 유효 항목과 완료를 보존한다', () => {
+  const date = '2026-07-20';
+  const key = interviewQueueKey(date);
+  const storage = memoryStorage({
+    [key]: JSON.stringify({
+      date,
+      ids: ['be-1', 'be-999', 'be-2', 'be-1'],
+      completedIds: ['be-1', 'be-999', 'be-2', 'be-1'],
+      updatedAt: 'saved',
+    }),
+  });
+  const validIds = new Set(INTERVIEW_QUESTIONS.map(({ id }) => id));
+  const state = loadInterviewState(storage, validIds);
+
+  const recovered = interviewStorage.loadOrCreateDailyQueue(
+    storage,
+    INTERVIEW_QUESTIONS,
+    state,
+    date,
+    validIds,
+    new Date('2026-07-20T10:30:00+09:00'),
+  );
+
+  assert.deepEqual(recovered, {
+    date,
+    ids: ['be-1', 'be-2'],
+    completedIds: ['be-1', 'be-2'],
+    updatedAt: 'saved',
+  });
+  assert.deepEqual(JSON.parse(storage.snapshot()[key]), recovered);
+  assert.equal(storage.writes(), 1);
+});
