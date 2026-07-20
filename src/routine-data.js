@@ -2,6 +2,24 @@ export const MODES = ['workout', 'normal', 'running', 'maintenance'];
 
 export const LEARNING_TOPICS = ['Spring', 'Redis', 'Java', '프로젝트 적용', 'CS', '코딩테스트'];
 
+export const TASK_LIBRARY = [
+  { id: 'scan', label: '일정·공고 확인', category: 'career', durationMinutes: 30 },
+  { id: 'job-analysis', label: '공고 분석', category: 'career', durationMinutes: 60 },
+  { id: 'applications', label: '자소서 조정·지원', category: 'career', durationMinutes: 150 },
+  { id: 'portfolio-review', label: '이력서·포트폴리오 숙지', category: 'career', durationMinutes: 30 },
+  { id: 'interview-practice', label: '면접 연습·복기', category: 'career', durationMinutes: 120 },
+  { id: 'Spring', label: 'Spring', category: 'learning', durationMinutes: 60 },
+  { id: 'Redis', label: 'Redis', category: 'learning', durationMinutes: 60 },
+  { id: 'Java', label: 'Java', category: 'learning', durationMinutes: 60 },
+  { id: 'CS', label: 'CS', category: 'learning', durationMinutes: 60 },
+  { id: '코딩테스트', label: '코딩테스트', category: 'learning', durationMinutes: 60 },
+  { id: '프로젝트 적용', label: '프로젝트 적용', category: 'learning', durationMinutes: 60 },
+  { id: 'workout', label: '아침 운동', category: 'exercise', durationMinutes: 90 },
+  { id: 'run', label: '이동 포함 저녁 러닝', category: 'exercise', durationMinutes: 60 },
+  { id: 'shower', label: '샤워·정리', category: 'exercise', durationMinutes: 30 },
+  { id: 'wrap', label: '가벼운 마무리·내일 준비', category: 'career', durationMinutes: 30 },
+];
+
 export const PLATFORMS = ['사람인', '점핏', '원티드', '잡코리아', '기타'];
 
 const scheduleItem = (id, time, label, category, period) => ({ id, time, label, category, period });
