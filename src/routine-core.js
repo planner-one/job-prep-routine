@@ -91,11 +91,12 @@ export function countPipelineProgress(companies) {
   };
 }
 
-export function calculateDailyProgress(candidate = {}) {
+export function calculateDailyProgress(candidate = {}, scheduleItems = null) {
   const state = candidate && typeof candidate === 'object' && !Array.isArray(candidate) ? candidate : {};
   const mode = MODES.includes(state.mode) ? state.mode : MODES[0];
   const runStart = state.runStart === '22' ? '22' : '21';
-  const schedule = getSchedule(mode, runStart);
+  const usesPlanSchedule = Array.isArray(scheduleItems);
+  const schedule = usesPlanSchedule ? scheduleItems : getSchedule(mode, runStart);
   const checkedIds = new Set(Array.isArray(state.checkedIds) ? state.checkedIds : []);
   const scheduleCompleted = schedule.filter(({ id }) => checkedIds.has(id)).length;
   const sourceCompanies = Array.isArray(state.companies) ? state.companies : [];
@@ -105,9 +106,9 @@ export function calculateDailyProgress(candidate = {}) {
   });
   const pipeline = countPipelineProgress(companies);
   const sourceTopics = Array.isArray(state.learningTopics) ? state.learningTopics : [];
-  const learningCompleted = LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic)).length;
+  const learningCompleted = usesPlanSchedule ? 0 : LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic)).length;
   const completed = scheduleCompleted + pipeline.completedSteps + learningCompleted;
-  const total = schedule.length + pipeline.totalSteps + LEARNING_TOPICS.length;
+  const total = schedule.length + pipeline.totalSteps + (usesPlanSchedule ? 0 : LEARNING_TOPICS.length);
 
   return {
     completed,

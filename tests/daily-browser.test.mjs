@@ -8,9 +8,12 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { buildHistoryRecord } from '../src/history-core.js';
 import * as routineCore from '../src/routine-core.js';
-import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
+import {
+  createDefaultWeeklyState,
+  weekMondayKey,
+  weekdayIdForDate,
+} from '../src/weekly-plan-core.js';
 import { resolveChromeBin } from './helpers/chrome-bin.mjs';
 
 const CHROME_PATH = resolveChromeBin();
@@ -222,6 +225,28 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
     await cdp.send('Page.enable', {}, sessionId);
     await cdp.send('Runtime.enable', {}, sessionId);
+
+    const date = routineCore.logicalDateString();
+    const weekKey = weekMondayKey(date);
+    const dayId = weekdayIdForDate(date);
+    const weekly = createDefaultWeeklyState();
+    weekly.maintenanceDay = dayId === 'sun' ? 'sat' : 'sun';
+    weekly.days[dayId] = {
+      mode: 'normal',
+      runStart: '21',
+      revision: 3,
+      items: [
+        { id: 'same', label: '유지 일정', category: 'career', durationMinutes: 30, startMinute: 600, endMinute: 630 },
+        { id: 'old', label: '삭제 예정 일정', category: 'career', durationMinutes: 30, startMinute: 630, endMinute: 660 },
+        { id: 'learning:Spring|Redis', label: 'Spring · Redis', category: 'learning', durationMinutes: 120, startMinute: 660, endMinute: 780 },
+      ],
+      unscheduled: [],
+      timelineOrder: ['breakfast', 'same', 'old', 'learning:Spring|Redis', 'lunch', 'dinner', 'sleep'],
+      legacyCompletion: { applications: [], tasks: {}, learningTopics: [], maintenance: {} },
+    };
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `if (!localStorage.getItem(${JSON.stringify(`job-prep-routine:weekly:${weekKey}`)})) localStorage.setItem(${JSON.stringify(`job-prep-routine:weekly:${weekKey}`)}, ${JSON.stringify(JSON.stringify(weekly))});`,
+    }, sessionId);
     await navigate(cdp, sessionId, staticSite.url);
 
     const printCalls = await evaluate(
@@ -236,34 +261,26 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     );
     assert.equal(printCalls, 1);
 
-    const runningAt21 = await evaluate(
+    const planSource = await evaluate(
       cdp,
       sessionId,
       `(() => {
-        document.querySelector('[data-mode="running"]').click();
-        const run = document.querySelector('[data-schedule-id="run"]');
         return {
-          active: document.querySelector('[data-mode="running"]').getAttribute('aria-pressed'),
-          runStart: document.querySelector('input[name="run-start"]:checked').value,
-          time: run.closest('.schedule-item').querySelector('.schedule-time').textContent,
+          mode: document.querySelector('#daily-plan-mode').textContent,
+          topics: document.querySelector('#daily-plan-topics').textContent,
+          ids: [...document.querySelectorAll('[data-schedule-id]')].map((input) => input.dataset.scheduleId),
+          sameTime: document.querySelector('[data-schedule-id="same"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
+          editableMode: Boolean(document.querySelector('[data-mode], input[name="run-start"], [data-learning-topic]')),
+          updateHidden: document.querySelector('#daily-plan-update').hidden,
         };
       })()`,
     );
-    assert.deepEqual(runningAt21, { active: 'true', runStart: '21', time: '21:00–22:00' });
-
-    const runningAt22 = await evaluate(
-      cdp,
-      sessionId,
-      `(() => {
-        document.querySelector('input[name="run-start"][value="22"]').click();
-        const run = document.querySelector('[data-schedule-id="run"]');
-        return {
-          runStart: document.querySelector('input[name="run-start"]:checked').value,
-          time: run.closest('.schedule-item').querySelector('.schedule-time').textContent,
-        };
-      })()`,
-    );
-    assert.deepEqual(runningAt22, { runStart: '22', time: '22:00–23:00' });
+    assert.equal(planSource.mode, '비운동일');
+    assert.equal(planSource.topics, 'Spring · Redis');
+    assert.deepEqual(planSource.ids, ['breakfast', 'same', 'old', 'learning:Spring|Redis', 'lunch', 'dinner', 'sleep']);
+    assert.equal(planSource.sameTime, '10:00–10:30');
+    assert.equal(planSource.editableMode, false);
+    assert.equal(planSource.updateHidden, true);
 
     const stored = await evaluate(
       cdp,
@@ -281,14 +298,10 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
         };
 
         setValue('#company-1-name', '테스트 회사');
-        const platform = document.querySelector('#company-1-platform');
-        platform.value = '원티드';
-        platform.dispatchEvent(new Event('change', { bubbles: true }));
         check('.company-card[data-company-index="0"] [data-field="analyzed"]');
-        setValue('.company-card[data-company-index="0"] [data-field="link"]', 'https://example.com/job');
-        check('[data-learning-topic][value="CS"]');
         setValue('[data-memo="implemented"]', 'CDP 상호작용 테스트');
-        check('[data-schedule-id="run"]');
+        check('[data-schedule-id="same"]');
+        check('[data-schedule-id="old"]');
 
         const date = document.querySelector('#current-date').dateTime;
         const key = 'job-prep-routine:daily:' + date;
@@ -301,15 +314,15 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
         };
       })()`,
     );
-    assert.equal(stored.state.mode, 'running');
-    assert.equal(stored.state.runStart, '22');
+    assert.equal(stored.state.mode, 'normal');
+    assert.equal(stored.state.runStart, '21');
     assert.equal(stored.state.companies[0].name, '테스트 회사');
-    assert.equal(stored.state.companies[0].platform, '원티드');
     assert.equal(stored.state.companies[0].analyzed, true);
-    assert.equal(stored.state.companies[0].link, 'https://example.com/job');
-    assert.equal(stored.state.learningTopics.includes('CS'), true);
+    assert.deepEqual(stored.state.learningTopics, ['Spring', 'Redis']);
     assert.equal(stored.state.memos.implemented, 'CDP 상호작용 테스트');
-    assert.equal(stored.state.checkedIds.includes('run'), true);
+    assert.equal(stored.state.checkedIds.includes('same'), true);
+    assert.equal(stored.state.checkedIds.includes('old'), true);
+    assert.equal(stored.state.planSnapshot.revision, 3);
     assert.equal(Number(stored.progress) >= 3, true);
     assert.match(stored.pipeline, /1 \/ 12단계/);
 
@@ -340,65 +353,77 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     assert.deepEqual(filtered.visibleCategories, ['learning']);
     assert.equal(filtered.hiddenPeriods > 0, true);
 
-    const retainedAfterModeChange = await evaluate(
+    const updatedWeekly = structuredClone(weekly);
+    updatedWeekly.days[dayId] = {
+      ...updatedWeekly.days[dayId],
+      revision: 4,
+      items: [
+        { id: 'learning:Spring|Redis', label: 'Spring · Redis', category: 'learning', durationMinutes: 120, startMinute: 600, endMinute: 720 },
+        { id: 'same', label: '유지 일정', category: 'career', durationMinutes: 30, startMinute: 720, endMinute: 750 },
+        { id: 'new', label: '새 일정', category: 'career', durationMinutes: 30, startMinute: 750, endMinute: 780 },
+      ],
+      timelineOrder: ['breakfast', 'learning:Spring|Redis', 'same', 'new', 'lunch', 'dinner', 'sleep'],
+    };
+    await evaluate(
       cdp,
       sessionId,
-      `(() => {
-        document.querySelector('[data-mode="normal"]').click();
-        const normalRows = [...document.querySelectorAll('#daily-schedule [data-schedule-row]')];
-        const normal = {
-          pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
-          visibleCategories: [...new Set(normalRows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
-        };
-        document.querySelector('[data-mode="running"]').click();
-        const runningRows = [...document.querySelectorAll('#daily-schedule [data-schedule-row]')];
-        return {
-          normal,
-          running: {
-            pressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
-            visibleCategories: [...new Set(runningRows.filter((row) => !row.hidden).map((row) => row.dataset.category))],
-          },
-        };
-      })()`,
+      `localStorage.setItem(${JSON.stringify(`job-prep-routine:weekly:${weekKey}`)}, ${JSON.stringify(JSON.stringify(updatedWeekly))})`,
     );
-    assert.deepEqual(retainedAfterModeChange, {
-      normal: { pressed: 'true', visibleCategories: ['learning'] },
-      running: { pressed: 'true', visibleCategories: ['learning'] },
-    });
-
     await navigate(cdp, sessionId, staticSite.url);
-    const restored = await evaluate(
+    const frozen = await evaluate(
       cdp,
       sessionId,
       `(() => ({
-        mode: document.querySelector('[data-mode="running"]').getAttribute('aria-pressed'),
-        runStart: document.querySelector('input[name="run-start"]:checked').value,
-        runTime: document.querySelector('[data-schedule-id="run"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
-        runChecked: document.querySelector('[data-schedule-id="run"]').checked,
+        updateHidden: document.querySelector('#daily-plan-update').hidden,
+        sameTime: document.querySelector('[data-schedule-id="same"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
+        sameChecked: document.querySelector('[data-schedule-id="same"]').checked,
+        oldChecked: document.querySelector('[data-schedule-id="old"]').checked,
+        hasNew: Boolean(document.querySelector('[data-schedule-id="new"]')),
         name: document.querySelector('#company-1-name').value,
-        platform: document.querySelector('#company-1-platform').value,
         analyzed: document.querySelector('.company-card[data-company-index="0"] [data-field="analyzed"]').checked,
-        link: document.querySelector('.company-card[data-company-index="0"] [data-field="link"]').value,
-        cs: document.querySelector('[data-learning-topic][value="CS"]').checked,
         memo: document.querySelector('[data-memo="implemented"]').value,
-        allPressed: document.querySelector('[data-category-filter="all"]').getAttribute('aria-pressed'),
-        learningPressed: document.querySelector('[data-category-filter="learning"]').getAttribute('aria-pressed'),
       }))()`,
     );
-    assert.deepEqual(restored, {
-      mode: 'true',
-      runStart: '22',
-      runTime: '22:00–23:00',
-      runChecked: true,
+    assert.deepEqual(frozen, {
+      updateHidden: false,
+      sameTime: '10:00–10:30',
+      sameChecked: true,
+      oldChecked: true,
+      hasNew: false,
       name: '테스트 회사',
-      platform: '원티드',
       analyzed: true,
-      link: 'https://example.com/job',
-      cs: true,
       memo: 'CDP 상호작용 테스트',
-      allPressed: 'true',
-      learningPressed: 'false',
     });
+
+    const merged = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        document.querySelector('#apply-daily-plan-update').click();
+        const state = JSON.parse(localStorage.getItem('job-prep-routine:daily:' + document.querySelector('#current-date').dateTime));
+        return {
+          updateHidden: document.querySelector('#daily-plan-update').hidden,
+          ids: [...document.querySelectorAll('[data-schedule-id]')].map((input) => input.dataset.scheduleId),
+          sameTime: document.querySelector('[data-schedule-id="same"]').closest('.schedule-item').querySelector('.schedule-time').textContent,
+          sameChecked: document.querySelector('[data-schedule-id="same"]').checked,
+          checkedIds: state.checkedIds,
+          revision: state.planSnapshot.revision,
+          archivedIds: state.archivedCompletedItems.map((item) => item.id),
+          name: state.companies[0].name,
+          memo: state.memos.implemented,
+        };
+      })()`,
+    );
+    assert.equal(merged.updateHidden, true);
+    assert.deepEqual(merged.ids, ['breakfast', 'learning:Spring|Redis', 'same', 'new', 'lunch', 'dinner', 'sleep']);
+    assert.equal(merged.sameTime, '12:00–12:30');
+    assert.equal(merged.sameChecked, true);
+    assert.equal(merged.checkedIds.includes('same'), true);
+    assert.equal(merged.checkedIds.includes('old'), true);
+    assert.equal(merged.revision, 4);
+    assert.deepEqual(merged.archivedIds, ['old']);
+    assert.equal(merged.name, '테스트 회사');
+    assert.equal(merged.memo, 'CDP 상호작용 테스트');
 
     const reset = await evaluate(
       cdp,
@@ -407,11 +432,10 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
         document.querySelector('#reset-today').click();
         return {
           stored: localStorage.getItem(${JSON.stringify('job-prep-routine:daily:')} + document.querySelector('#current-date').dateTime),
-          mode: document.querySelector('[data-mode="workout"]').getAttribute('aria-pressed'),
-          runStart: document.querySelector('input[name="run-start"]:checked').value,
+          mode: document.querySelector('#daily-plan-mode').textContent,
+          hasNew: Boolean(document.querySelector('[data-schedule-id="new"]')),
           name: document.querySelector('#company-1-name').value,
           platform: document.querySelector('#company-1-platform').value,
-          cs: document.querySelector('[data-learning-topic][value="CS"]').checked,
           memo: document.querySelector('[data-memo="implemented"]').value,
           completed: document.querySelector('#progress-track').getAttribute('aria-valuenow'),
         };
@@ -419,39 +443,13 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     );
     assert.deepEqual(reset, {
       stored: null,
-      mode: 'true',
-      runStart: '21',
+      mode: '비운동일',
+      hasNew: true,
       name: '',
       platform: '사람인',
-      cs: false,
       memo: '',
       completed: '0',
     });
-
-    await evaluate(
-      cdp,
-      sessionId,
-      `localStorage.setItem('job-prep-routine:daily:' + document.querySelector('#current-date').dateTime, ${JSON.stringify(JSON.stringify(dailyProgressFixture))})`,
-    );
-    await navigate(cdp, sessionId, staticSite.url);
-    const uiProgress = await evaluate(
-      cdp,
-      sessionId,
-      `(() => ({
-        completed: Number(document.querySelector('#progress-track').getAttribute('aria-valuenow')),
-        total: Number(document.querySelector('#progress-track').getAttribute('aria-valuemax')),
-        percent: Math.round(Number.parseFloat(document.querySelector('#progress-fill').style.width)),
-      }))()`,
-    );
-    assert.equal(typeof routineCore.calculateDailyProgress, 'function');
-    const commonProgress = routineCore.calculateDailyProgress(dailyProgressFixture);
-    const historyProgress = buildHistoryRecord({
-      date: '2026-07-18',
-      daily: dailyProgressFixture,
-    }).completion;
-    assert.deepEqual(uiProgress, dailyProgressExpected);
-    assert.deepEqual(commonProgress, dailyProgressExpected);
-    assert.deepEqual(historyProgress, { source: 'daily', ...dailyProgressExpected });
   } finally {
     cdp?.close();
     await stopChrome(chrome);

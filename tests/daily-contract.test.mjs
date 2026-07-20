@@ -32,6 +32,21 @@ test('데일리형은 시간표와 지원 파이프라인의 두 열을 가진�
   assert.match(html, /id="application-pipeline"/);
 });
 
+test('주간 계획을 데일리 체크 일정으로 연결하고 계획 편집은 주간 화면으로 보낸다', () => {
+  assert.match(html, /id="daily-plan-source"/);
+  assert.match(html, /id="daily-plan-mode"/);
+  assert.match(html, /id="daily-plan-topics"/);
+  assert.match(html, /href="\.\/weekly\.html"[^>]*>주간 계획 수정</);
+  assert.match(html, /id="daily-plan-update"[^>]*hidden/);
+  assert.match(html, /id="apply-daily-plan-update"/);
+});
+
+test('운영 유형·러닝 시간·학습 조합은 데일리에서 편집할 수 없다', () => {
+  assert.doesNotMatch(html, /data-mode=/);
+  assert.doesNotMatch(html, /name="run-start"/);
+  assert.doesNotMatch(html, /data-learning-topic/);
+});
+
 test('데일리는 시간표 카테고리 필터와 빈 결과 안내를 제공한다', () => {
   assert.match(html, /id="daily-category-filters"/);
   for (const [value, label] of [

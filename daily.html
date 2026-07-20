@@ -16,26 +16,26 @@
             <p class="date-line"><time id="current-date" datetime="">오늘</time></p>
           </div>
 
-          <div class="header-actions screen-only">
-            <div class="mode-bar" role="group" aria-label="오늘의 루틴 모드">
-              <button type="button" class="mode-button" data-mode="workout" aria-pressed="true">운동일</button>
-              <button type="button" class="mode-button" data-mode="normal" aria-pressed="false">비운동일</button>
-              <button type="button" class="mode-button" data-mode="running" aria-pressed="false">러닝일</button>
-              <button type="button" class="mode-button" data-mode="maintenance" aria-pressed="false">핵심 유지일</button>
+          <div class="header-actions">
+            <div class="daily-plan-source" id="daily-plan-source">
+              <div><span>주간 계획</span><strong id="daily-plan-mode">운영 유형</strong><span id="daily-plan-topics">학습 일정 없음</span></div>
+              <a href="./weekly.html">주간 계획 수정</a>
+            </div>
+            <div class="mode-bar screen-only">
               <a class="board-link" href="./history.html">기록·분석</a>
               <button type="button" class="pdf-button" id="pdf-preview">PDF 미리보기</button>
             </div>
 
-            <div class="sub-actions">
-              <fieldset class="run-picker" id="run-start-controls" hidden>
-                <legend>러닝 시작</legend>
-                <label><input type="radio" name="run-start" value="21" checked> 21시</label>
-                <label><input type="radio" name="run-start" value="22"> 22시</label>
-              </fieldset>
+            <div class="sub-actions screen-only">
               <button type="button" class="reset-button" id="reset-today">현재 날짜 초기화</button>
             </div>
           </div>
         </header>
+
+        <div class="daily-plan-update screen-only" id="daily-plan-update" hidden>
+          <p>실행을 시작한 뒤 주간 계획이 변경되었습니다.</p>
+          <button type="button" id="apply-daily-plan-update">변경 계획 반영</button>
+        </div>
 
         <section class="progress-card" aria-labelledby="progress-title">
           <h2 id="progress-title">오늘 진척</h2>
@@ -170,18 +170,6 @@
                 </div>
                 <label class="job-link-row screen-only">지원 공고 링크 <input type="url" data-field="link" aria-label="회사 4 지원 공고 링크" placeholder="https://" inputmode="url"></label>
               </article>
-            </section>
-
-            <section class="side-panel learning-panel" aria-labelledby="learning-title">
-              <h3 id="learning-title">학습 조합</h3>
-              <div class="learning-options">
-                <label><input type="checkbox" data-learning-topic value="Spring" data-progress-check> Spring</label>
-                <label><input type="checkbox" data-learning-topic value="Redis" data-progress-check> Redis</label>
-                <label><input type="checkbox" data-learning-topic value="Java" data-progress-check> Java</label>
-                <label><input type="checkbox" data-learning-topic value="프로젝트 적용" data-progress-check> 프로젝트 적용</label>
-                <label><input type="checkbox" data-learning-topic value="CS" data-progress-check> CS</label>
-                <label><input type="checkbox" data-learning-topic value="코딩테스트" data-progress-check> 코딩테스트</label>
-              </div>
             </section>
 
             <section class="side-panel memo-panel" aria-labelledby="memo-title">

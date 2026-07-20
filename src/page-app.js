@@ -1,4 +1,11 @@
-import { LEARNING_TOPICS, MODES, PLATFORMS, getSchedule } from './routine-data.js';
+import { LEARNING_TOPICS, MODES, PLATFORMS } from './routine-data.js';
+import {
+  applyUpdatedPlan,
+  hasExecutionInput,
+  normalizePlanSnapshot,
+  prepareDailyPlan,
+  resolveDailyPlan,
+} from './daily-plan-core.js';
 import {
   calculateDailyProgress,
   clearState,
@@ -8,6 +15,12 @@ import {
   saveState,
   scheduleLogicalDayRollover,
 } from './routine-core.js';
+import {
+  createDefaultWeeklyState,
+  formatMinuteRange,
+  normalizeWeeklyState,
+  weekMondayKey,
+} from './weekly-plan-core.js';
 
 const DAILY_PAGE_NAME = 'daily';
 const PERIODS = [
@@ -17,6 +30,12 @@ const PERIODS = [
   { id: 'night', label: '밤', description: '정리와 회복' },
 ];
 const SCHEDULE_CATEGORIES = new Set(['all', 'exercise', 'career', 'learning', 'meal']);
+const MODE_LABELS = {
+  workout: '운동일',
+  normal: '비운동일',
+  running: '러닝일',
+  maintenance: '핵심 유지일',
+};
 
 const emptyCompany = () => ({
   name: '',
@@ -38,6 +57,8 @@ const createDefaultState = () => ({
     blocked: '',
     firstAction: '',
   },
+  planSnapshot: null,
+  archivedCompletedItems: [],
 });
 
 const stringValue = (value) => (typeof value === 'string' ? value : '');
@@ -53,6 +74,22 @@ function normalizeCompany(company = {}) {
     applied: Boolean(source.applied),
     link: stringValue(source.link),
   };
+}
+
+function normalizeArchivedCompletedItems(candidate) {
+  const seen = new Set();
+  return (Array.isArray(candidate) ? candidate : []).flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || typeof entry.id !== 'string' || !entry.id.trim() || seen.has(entry.id)) return [];
+    seen.add(entry.id);
+    const item = { id: entry.id };
+    if (typeof entry.label === 'string') item.label = entry.label;
+    if (SCHEDULE_CATEGORIES.has(entry.category) && entry.category !== 'all') item.category = entry.category;
+    if (Number.isInteger(entry.startMinute) && Number.isInteger(entry.endMinute) && entry.startMinute >= 0 && entry.endMinute <= 1440 && entry.endMinute >= entry.startMinute) {
+      item.startMinute = entry.startMinute;
+      item.endMinute = entry.endMinute;
+    }
+    return [item];
+  });
 }
 
 export function normalizeDailyState(candidate = {}) {
@@ -80,6 +117,8 @@ export function normalizeDailyState(candidate = {}) {
       blocked: stringValue(memos.blocked),
       firstAction: stringValue(memos.firstAction),
     },
+    planSnapshot: normalizePlanSnapshot(source.planSnapshot),
+    archivedCompletedItems: normalizeArchivedCompletedItems(source.archivedCompletedItems),
   };
 }
 
@@ -117,7 +156,7 @@ export function renderSchedule(container, schedule, checkedIds = []) {
     list.className = 'schedule-list';
     list.setAttribute('role', 'list');
 
-    for (const item of schedule.filter((entry) => entry.period === period.id)) {
+    for (const item of schedule.filter((entry) => schedulePeriod(entry) === period.id)) {
       const row = pageDocument.createElement('label');
       row.className = 'schedule-item';
       row.setAttribute('role', 'listitem');
@@ -129,11 +168,12 @@ export function renderSchedule(container, schedule, checkedIds = []) {
       checkbox.checked = completed.has(item.id);
       checkbox.dataset.scheduleId = item.id;
       checkbox.dataset.progressCheck = '';
-      checkbox.setAttribute('aria-label', `${item.time} ${item.label} 완료`);
+      const timeText = scheduleTime(item);
+      checkbox.setAttribute('aria-label', `${timeText} ${item.label} 완료`);
 
       const time = pageDocument.createElement('span');
       time.className = 'schedule-time';
-      time.textContent = item.time;
+      time.textContent = timeText;
 
       const label = pageDocument.createElement('span');
       label.className = 'schedule-label';
@@ -149,6 +189,32 @@ export function renderSchedule(container, schedule, checkedIds = []) {
   }
 
   return container;
+}
+
+function schedulePeriod(item) {
+  if (PERIODS.some(({ id }) => id === item?.period)) return item.period;
+  const startMinute = Number.isInteger(item?.startMinute) ? item.startMinute : 0;
+  if (startMinute < 780) return 'morning';
+  if (startMinute < 1130) return 'afternoon';
+  if (startMinute < 1320) return 'evening';
+  return 'night';
+}
+
+function scheduleTime(item) {
+  if (typeof item?.time === 'string') return item.time;
+  if (Number.isInteger(item?.startMinute) && Number.isInteger(item?.endMinute)) {
+    return formatMinuteRange(item.startMinute, item.endMinute);
+  }
+  return '';
+}
+
+function learningTopicsFromPlan(items) {
+  const learningItems = Array.isArray(items) ? items.filter(({ category }) => category === 'learning') : [];
+  return LEARNING_TOPICS.filter((topic) => learningItems.some((item) => {
+    if (item.id === topic) return true;
+    if (item.id?.startsWith('learning:') && item.id.slice('learning:'.length).split('|').includes(topic)) return true;
+    return item.label?.split(' · ').includes(topic);
+  }));
 }
 
 export function applyDailyCategoryFilter(root, category) {
@@ -174,11 +240,6 @@ function fieldIn(card, field) {
 }
 
 export function collectDailyState(root) {
-  const activeMode =
-    root.querySelector('[data-mode][aria-pressed="true"]') ?? root.querySelector('[data-mode].active');
-  const selectedRunStart =
-    root.querySelector('input[name="run-start"]:checked') ?? root.querySelector('[data-run][aria-pressed="true"]');
-
   const checkedIds = Array.from(root.querySelectorAll('[data-schedule-id]:checked'), (input) => input.dataset.scheduleId);
   const companies = Array.from(root.querySelectorAll('.company-card'), (card) => ({
     name: fieldIn(card, 'name')?.value ?? '',
@@ -188,21 +249,14 @@ export function collectDailyState(root) {
     applied: Boolean(fieldIn(card, 'applied')?.checked),
     link: fieldIn(card, 'link')?.value ?? '',
   }));
-  const learningTopics = Array.from(
-    root.querySelectorAll('[data-learning-topic]:checked'),
-    (input) => input.value,
-  );
   const memos = { implemented: '', blocked: '', firstAction: '' };
   for (const input of root.querySelectorAll('[data-memo]')) {
     if (input.dataset.memo in memos) memos[input.dataset.memo] = input.value;
   }
 
   return {
-    mode: activeMode?.dataset.mode ?? MODES[0],
-    runStart: selectedRunStart?.value ?? selectedRunStart?.dataset.run ?? '21',
     checkedIds,
     companies,
-    learningTopics,
     memos,
   };
 }
@@ -225,20 +279,6 @@ function formatDate(date) {
   return `${Number(year)}년 ${Number(month)}월 ${Number(day)}일 ${weekday}`;
 }
 
-function setPressedMode(root, mode) {
-  for (const button of root.querySelectorAll('[data-mode]')) {
-    button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
-  }
-}
-
-function setRunStart(root, runStart, mode) {
-  for (const input of root.querySelectorAll('input[name="run-start"]')) {
-    input.checked = input.value === runStart;
-  }
-  const controls = root.querySelector('#run-start-controls');
-  if (controls) controls.hidden = mode !== 'running';
-}
-
 function applyCompanyState(root, companies) {
   const cards = root.querySelectorAll('.company-card');
   cards.forEach((card, index) => {
@@ -250,13 +290,6 @@ function applyCompanyState(root, companies) {
     fieldIn(card, 'applied').checked = company.applied;
     fieldIn(card, 'link').value = company.link;
   });
-}
-
-function applyLearningState(root, selectedTopics) {
-  const selected = new Set(selectedTopics);
-  for (const input of root.querySelectorAll('[data-learning-topic]')) {
-    input.checked = selected.has(input.value);
-  }
 }
 
 function applyMemoState(root, memos) {
@@ -271,9 +304,8 @@ function syncScheduleCompletion(root) {
   }
 }
 
-function updateProgress(root) {
-  const state = collectDailyState(root);
-  const { completed, total, percent } = calculateDailyProgress(state);
+function updateProgress(root, scheduleItems, state) {
+  const { completed, total, percent } = calculateDailyProgress(state, scheduleItems);
 
   const fill = root.querySelector('#progress-fill');
   if (fill) fill.style.width = `${percent}%`;
@@ -301,6 +333,10 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   if (!root) return null;
 
   let state = normalizeDailyState(loadState(storage, DAILY_PAGE_NAME, date, createDefaultState()));
+  const weeklyKey = weekMondayKey(date);
+  const weekly = normalizeWeeklyState(loadState(storage, 'weekly', weeklyKey, createDefaultWeeklyState()));
+  const resolvedPlan = resolveDailyPlan(date, weekly);
+  let prepared = prepareDailyPlan(state, resolvedPlan);
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
   let activeCategory = 'all';
@@ -317,28 +353,37 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   }
 
   function renderCurrentSchedule() {
-    const schedule = getSchedule(state.mode, state.runStart);
+    const schedule = prepared.renderPlan.items;
     renderedIds = new Set(schedule.map((item) => item.id));
     renderSchedule(root.querySelector('#daily-schedule'), schedule, checkedIds);
     activeCategory = applyDailyCategoryFilter(root, activeCategory);
+    const mode = state.planSnapshot ? state.mode : resolvedPlan.mode;
+    const topics = schedule.filter(({ category }) => category === 'learning').map(({ label }) => label);
+    const modeElement = root.querySelector('#daily-plan-mode');
+    if (modeElement) modeElement.textContent = MODE_LABELS[mode] ?? MODE_LABELS.normal;
+    const topicsElement = root.querySelector('#daily-plan-topics');
+    if (topicsElement) topicsElement.textContent = topics.length ? [...new Set(topics)].join(' · ') : '학습 일정 없음';
+    const update = root.querySelector('#daily-plan-update');
+    if (update) update.hidden = !prepared.needsPlanUpdate;
   }
 
   function paintState() {
     checkedIds = new Set(state.checkedIds);
-    setPressedMode(root, state.mode);
-    setRunStart(root, state.runStart, state.mode);
     renderCurrentSchedule();
     applyCompanyState(root, state.companies);
-    applyLearningState(root, state.learningTopics);
     applyMemoState(root, state.memos);
-    updateProgress(root);
+    updateProgress(root, prepared.renderPlan.items, state);
   }
 
   function captureState(overrides = {}) {
     syncVisibleScheduleChecks();
     state = normalizeDailyState({
+      ...state,
       ...collectDailyState(root),
       ...overrides,
+      mode: state.planSnapshot ? state.mode : resolvedPlan.mode,
+      runStart: state.planSnapshot ? state.runStart : resolvedPlan.runStart,
+      learningTopics: state.planSnapshot ? state.learningTopics : learningTopicsFromPlan(prepared.renderPlan.items),
       checkedIds: Array.from(checkedIds),
     });
     checkedIds = new Set(state.checkedIds);
@@ -347,32 +392,18 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
 
   function persist(overrides) {
     captureState(overrides);
+    if (!state.planSnapshot && hasExecutionInput(state)) state.planSnapshot = prepared.renderPlan;
+    state = normalizeDailyState(state);
+    prepared = prepareDailyPlan(state, resolvedPlan);
     saveState(storage, DAILY_PAGE_NAME, date, state);
-    updateProgress(root);
-  }
-
-  function changeMode(mode) {
-    if (!MODES.includes(mode) || mode === state.mode) return;
-    captureState({ mode });
-    setPressedMode(root, state.mode);
-    setRunStart(root, state.runStart, state.mode);
     renderCurrentSchedule();
-    saveState(storage, DAILY_PAGE_NAME, date, state);
-    updateProgress(root);
-  }
-
-  function changeRunStart(runStart) {
-    const nextRunStart = runStart === '22' ? '22' : '21';
-    captureState({ runStart: nextRunStart });
-    setRunStart(root, state.runStart, state.mode);
-    if (state.mode === 'running') renderCurrentSchedule();
-    saveState(storage, DAILY_PAGE_NAME, date, state);
-    updateProgress(root);
+    updateProgress(root, prepared.renderPlan.items, state);
   }
 
   function resetToday() {
     clearState(storage, DAILY_PAGE_NAME, date);
-    state = createDefaultState();
+    state = normalizeDailyState(createDefaultState());
+    prepared = prepareDailyPlan(state, resolvedPlan);
     activeCategory = 'all';
     paintState();
   }
@@ -392,9 +423,19 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
       return;
     }
 
-    const modeButton = event.target.closest?.('[data-mode]');
-    if (modeButton && root.contains(modeButton)) {
-      changeMode(modeButton.dataset.mode);
+    if (event.target.closest?.('#apply-daily-plan-update')) {
+      captureState();
+      state = normalizeDailyState({
+        ...applyUpdatedPlan(state, resolvedPlan),
+        mode: resolvedPlan.mode,
+        runStart: resolvedPlan.runStart,
+        learningTopics: learningTopicsFromPlan(resolvedPlan.items),
+      });
+      checkedIds = new Set(state.checkedIds);
+      prepared = prepareDailyPlan(state, resolvedPlan);
+      renderCurrentSchedule();
+      saveState(storage, DAILY_PAGE_NAME, date, state);
+      updateProgress(root, prepared.renderPlan.items, state);
       return;
     }
     if (event.target.closest?.('#reset-today')) {
@@ -405,13 +446,9 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   }
 
   function handleChange(event) {
-    if (event.target.matches('input[name="run-start"]')) {
-      changeRunStart(event.target.value);
-      return;
-    }
     if (
       event.target.matches(
-        '[data-schedule-id], .company-card input[type="checkbox"], .company-card select, [data-learning-topic]',
+        '[data-schedule-id], .company-card input[type="checkbox"], .company-card select',
       )
     ) {
       persist();

@@ -173,6 +173,25 @@ test('저장 모델에서 현재 모드 일정·지원 12단계·유효 학습 �
   assert.deepEqual(routineCore.calculateDailyProgress(dailyProgressFixture), dailyProgressExpected);
 });
 
+test('전달된 계획 스냅샷 일정을 우선해 완료율을 계산한다', () => {
+  const schedule = [
+    { id: 'same', label: '유지 일정', category: 'career', startMinute: 600, endMinute: 630 },
+    { id: 'new', label: '새 일정', category: 'learning', startMinute: 630, endMinute: 690 },
+  ];
+  const state = {
+    mode: 'workout',
+    checkedIds: ['same', getSchedule('workout')[0].id],
+    companies: Array.from({ length: 4 }, () => ({})),
+    learningTopics: ['Spring'],
+  };
+
+  assert.deepEqual(routineCore.calculateDailyProgress(state, schedule), {
+    completed: 1,
+    total: 14,
+    percent: 7,
+  });
+});
+
 test('오전 2시를 기준으로 하루 기록 날짜를 나눈다', () => {
   assert.equal(logicalDateString(new Date(2026, 6, 18, 1, 59, 59)), '2026-07-17');
   assert.equal(logicalDateString(new Date(2026, 6, 18, 2, 0, 0)), '2026-07-18');

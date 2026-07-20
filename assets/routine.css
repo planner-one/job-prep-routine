@@ -116,6 +116,84 @@ textarea:focus-visible,
   min-width: min(100%, 520px);
 }
 
+.daily-plan-source {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9e3ee;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.daily-plan-source > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.daily-plan-source span {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.daily-plan-source strong {
+  color: var(--navy);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.daily-plan-source a {
+  flex: none;
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.daily-plan-source a:hover {
+  text-decoration: underline;
+}
+
+.daily-plan-update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid #e9c46a;
+  border-radius: 12px;
+  background: #fff8e7;
+  color: #76540d;
+}
+
+.daily-plan-update[hidden] {
+  display: none;
+}
+
+.daily-plan-update p {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.daily-plan-update button {
+  flex: none;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #b98212;
+  border-radius: 9px;
+  background: #fff;
+  color: #76540d;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .mode-bar,
 .sub-actions,
 .run-picker {
@@ -2068,6 +2146,14 @@ textarea:focus-visible,
     margin-top: 15px;
   }
 
+  .daily-plan-source {
+    justify-content: space-between;
+  }
+
+  .daily-plan-source > div {
+    justify-content: flex-start;
+  }
+
   .mode-bar,
   .sub-actions,
   .run-picker {
@@ -2205,6 +2291,13 @@ textarea:focus-visible,
   .schedule-item {
     grid-template-columns: 22px 100px minmax(0, 1fr);
     padding-inline: 9px;
+  }
+
+  .daily-plan-source,
+  .daily-plan-source > div,
+  .daily-plan-update {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .roadmap-paper {
