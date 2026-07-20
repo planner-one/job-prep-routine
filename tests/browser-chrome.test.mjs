@@ -60,7 +60,12 @@ test('모든 브라우저 회귀 테스트는 공통 Chrome resolver만 사용�
   const filenames = (await readdir(new URL('.', import.meta.url)))
     .filter((filename) => filename.endsWith('-browser.test.mjs'))
     .sort();
-  assert.deepEqual(filenames, ['daily-browser.test.mjs', 'roadmap-browser.test.mjs', 'weekly-browser.test.mjs']);
+  assert.deepEqual(filenames, [
+    'daily-browser.test.mjs',
+    'interview-browser.test.mjs',
+    'roadmap-browser.test.mjs',
+    'weekly-browser.test.mjs',
+  ]);
 
   for (const filename of filenames) {
     const source = await readFile(new URL(filename, import.meta.url), 'utf8');
