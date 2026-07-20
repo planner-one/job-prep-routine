@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
+    "sync:interview-data": "node scripts/sync-interview-data.mjs",
     "export:roadmap-pdf": "sh scripts/export-pdfs.sh http://127.0.0.1:8787 output/pdf roadmap",
-    "check": "node --check src/routine-data.js && node --check src/weekly-plan-core.js && node --check src/daily-plan-core.js && node --check src/routine-core.js && node --check src/history-core.js && node --check src/page-app.js && node --check src/roadmap-app.js && node --check src/weekly-app.js && node --check src/history-app.js && node --check scripts/validate-roadmap-pdf.mjs"
+    "check": "node --check src/routine-data.js && node --check src/weekly-plan-core.js && node --check src/daily-plan-core.js && node --check src/routine-core.js && node --check src/history-core.js && node --check src/page-app.js && node --check src/roadmap-app.js && node --check src/weekly-app.js && node --check src/history-app.js && node --check src/interview-data.js && node --check scripts/sync-interview-data.mjs && node --check scripts/validate-roadmap-pdf.mjs"
   }
 }
