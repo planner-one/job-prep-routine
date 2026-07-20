@@ -58,3 +58,44 @@
 
 - 기능상 남은 우려는 없다.
 - 로컬 `jenv` 갱신 경고는 모든 명령에서 공통으로 출력되지만 프로젝트 검사 종료 코드에는 영향을 주지 않았다.
+
+## 독립 검토 수정
+
+작업 기준은 `c79dcd3`이며, 독립 검토의 Important 1건과 Minor 1건을 모두 수정했다.
+
+### RED
+
+- 명령: `node --test tests/history-core.test.mjs tests/history-app.test.mjs tests/history-contract.test.mjs`
+- 결과: 25개 중 23개 통과·2개 실패
+- 기대한 실패 이유:
+  - 완료한 snapshot 사용자 학습 일정과 archive 사용자 운동 일정의 `category`를 보지 않아 `metrics.learning`, `metrics.exercise`가 각각 0이었다.
+  - snapshot 시작 시각 12:59를 `afternoon`, 18:49를 `evening`으로 분류해 데일리의 13:00/18:50 경계와 달랐다.
+
+### 수정 내용
+
+- daily snapshot/archive의 ID 중복 제거된 실제 완료 목록에서 category 집합을 만들고, `learning`과 `exercise`를 기존 고정 ID 판단에 추가했다.
+- category 보강 범위를 daily 완료 목록으로 제한해 과거 roadmap과 legacy weekly의 기존 분석 규칙은 바꾸지 않았다.
+- snapshot period의 오전/오후 경계를 780분, 오후/저녁 경계를 1130분으로 바꿔 데일리 렌더와 일치시켰다.
+- public record 필드, 완료율 source 우선순위, v1/v2 완료 호환은 유지했다.
+
+### GREEN 및 전체 검증
+
+- focused GREEN
+  - 명령: `node --test tests/history-core.test.mjs tests/history-app.test.mjs tests/history-contract.test.mjs`
+  - 결과: 25/25 통과, 실패 0
+- 정적 검사
+  - 명령: `npm run check`
+  - 결과: 성공
+- 전체 테스트
+  - 승인 실행 명령: `npm test`
+  - 결과: 128/128 통과, 실패 0
+- diff 검사
+  - 명령: `git diff --check`
+  - 결과: 성공
+
+### 자체검토와 우려
+
+- snapshot 학습 완료와 archive 운동 완료가 기록 metrics뿐 아니라 `summarizeHistory()`의 학습일·운동일에도 반영되는지 공개 API로 검증했다.
+- 12:59/13:00과 18:49/18:50 양쪽을 함께 검증해 정확한 경계를 고정했다.
+- 기존 8787 서버, `outputs`, 로그인·배포는 변경하지 않았다.
+- 기능상 남은 우려는 없다. 로컬 `jenv` 경고는 기존과 같은 환경 메시지이며 검증 종료 코드에는 영향을 주지 않았다.

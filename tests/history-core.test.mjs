@@ -185,6 +185,66 @@ test('현재 스냅샷과 이전 계획 완료 항목을 ID 기준 중복 없이
   assert.equal(record.dailyCompletedSchedule.filter(({ id }) => id === 'custom-1').length, 1);
 });
 
+test('완료한 snapshot과 archive 사용자 일정의 분류를 학습일과 운동일 지표에 반영한다', () => {
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: ['custom-learning'],
+      learningTopics: [],
+      planSnapshot: {
+        revision: 2,
+        items: [{
+          id: 'custom-learning',
+          label: '기술 문서 읽기',
+          category: 'learning',
+          startMinute: 600,
+          endMinute: 660,
+        }],
+      },
+      archivedCompletedItems: [{
+        id: 'custom-exercise',
+        label: '스트레칭',
+        category: 'exercise',
+        startMinute: 660,
+        endMinute: 690,
+      }],
+      companies: [],
+    },
+  });
+
+  assert.equal(record.metrics.learning, 1);
+  assert.equal(record.metrics.exercise, 1);
+  assert.equal(summarizeHistory([record]).learningDays, 1);
+  assert.equal(summarizeHistory([record]).exerciseDays, 1);
+});
+
+test('snapshot period는 데일리와 같은 13시와 18시 50분 경계를 사용한다', () => {
+  const items = [
+    { id: 'before-lunch', startMinute: 779, endMinute: 780 },
+    { id: 'lunch', startMinute: 780, endMinute: 840 },
+    { id: 'before-evening', startMinute: 1129, endMinute: 1130 },
+    { id: 'evening', startMinute: 1130, endMinute: 1160 },
+  ].map((item) => ({ ...item, label: item.id, category: 'career' }));
+  const record = buildHistoryRecord({
+    date: '2026-07-20',
+    daily: {
+      checkedIds: items.map(({ id }) => id),
+      planSnapshot: { revision: 1, items },
+      companies: [],
+    },
+  });
+
+  assert.deepEqual(
+    record.completedSchedule.map(({ id, period }) => ({ id, period })),
+    [
+      { id: 'before-lunch', period: 'morning' },
+      { id: 'lunch', period: 'afternoon' },
+      { id: 'before-evening', period: 'afternoon' },
+      { id: 'evening', period: 'evening' },
+    ],
+  );
+});
+
 test('revision 없는 호환 스냅샷도 유효한 항목 배열을 기록에 사용한다', () => {
   const record = buildHistoryRecord({
     date: '2026-07-20',

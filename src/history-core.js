@@ -79,8 +79,8 @@ function formatMinute(value) {
 }
 
 function periodForMinute(value) {
-  if (value < 720) return 'morning';
-  if (value < 1080) return 'afternoon';
+  if (value < 780) return 'morning';
+  if (value < 1130) return 'afternoon';
   if (value < 1320) return 'evening';
   return 'night';
 }
@@ -313,6 +313,9 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     ...dailySchedule.completedIds,
     ...roadmapSchedule.completedIds,
   ]);
+  const dailyCompletedCategories = new Set(
+    dailySchedule.completed.map(({ category }) => category),
+  );
   const interview =
     weeklySummary.completed.includes('interview') ||
     ['interview-practice', 'maintenance-interview'].some((id) => completedIds.has(id))
@@ -320,11 +323,13 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
       : 0;
   const learning =
     learningTopics.length > 0 ||
+    dailyCompletedCategories.has('learning') ||
     ['learning', 'maintenance-learning'].some((id) => completedIds.has(id)) ||
     weeklySummary.completed.includes('learningReview')
       ? 1
       : 0;
   const exercise =
+    dailyCompletedCategories.has('exercise') ||
     completedIds.has('workout') ||
     completedIds.has('run') ||
     (weeklySummary.completed.includes('activity') &&
