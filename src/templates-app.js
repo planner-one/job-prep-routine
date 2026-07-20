@@ -225,8 +225,19 @@ function renderCategoryFilters(root, categories, selectedId, total) {
   const container = find(root, '#interview-category-filters');
   if (!container) return;
   const document = documentFor(container);
-  container.replaceChildren();
   const options = [{ id: 'all', label: '전체', count: total }, ...categories];
+  const currentButtons = Array.from(container.querySelectorAll('[data-interview-category-id]'));
+  const canReuseButtons = currentButtons.length === options.length
+    && currentButtons.every((button, index) => button.dataset.interviewCategoryId === options[index].id);
+  if (canReuseButtons) {
+    currentButtons.forEach((button, index) => {
+      button.textContent = options[index].label;
+      button.setAttribute('aria-pressed', String(options[index].id === selectedId));
+    });
+    return;
+  }
+
+  container.replaceChildren();
   for (const category of options) {
     const button = document.createElement('button');
     button.type = 'button';

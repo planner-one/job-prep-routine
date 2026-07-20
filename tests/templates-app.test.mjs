@@ -97,10 +97,17 @@ class FakeElement {
   }
 
   replaceChildren(...children) {
+    if (this.ownerDocument.activeElement && this.contains(this.ownerDocument.activeElement)) {
+      this.ownerDocument.activeElement = null;
+    }
     this.children.forEach((child) => { child.parentNode = null; });
     this.children = [];
     this._textContent = '';
     this.append(...children);
+  }
+
+  focus() {
+    this.ownerDocument.activeElement = this;
   }
 
   addEventListener(type, listener) {
@@ -165,6 +172,7 @@ class FakeDocument {
   constructor() {
     this.documentElement = new FakeElement('html', this);
     this.defaultView = null;
+    this.activeElement = null;
   }
 
   createElement(tagName) {
@@ -360,6 +368,69 @@ test('저장된 새 고정 문항은 기존 오늘의 큐에 직접 추가 규�
   assert.deepEqual(storage.json(interviewQueueKey(DATE)).ids, app.getQueue().ids);
 });
 
+test('큐 카드 고정과 해제를 이벤트 경로로 저장하고 교체 가능 상태를 동기화한다', () => {
+  const { document, root, storage, app } = initFixture();
+  const beforeQueue = app.getQueue();
+  const id = beforeQueue.ids[0];
+
+  root.emit('click', action(root, 'toggle-pin', id));
+
+  assert.deepEqual(app.getQueue(), beforeQueue);
+  assert.equal(app.getState().questions[id].queuePinned, true);
+  assert.equal(storage.json(INTERVIEW_STATE_KEY).questions[id].queuePinned, true);
+  assert.equal(action(root, 'replace-queue', id).disabled, true);
+  assert.equal(document.querySelector('#interview-live').textContent, '오늘의 큐에 고정했습니다.');
+
+  root.emit('click', action(root, 'toggle-pin', id));
+
+  assert.deepEqual(app.getQueue(), beforeQueue);
+  assert.equal(app.getState().questions[id].queuePinned, false);
+  assert.equal(storage.json(INTERVIEW_STATE_KEY).questions[id].queuePinned, false);
+  assert.equal(action(root, 'replace-queue', id).disabled, false);
+  assert.equal(document.querySelector('#interview-live').textContent, '고정을 취소했습니다.');
+});
+
+test('카탈로그 직접 추가 성공은 교체 가능한 마지막 문항을 바꾸고 큐에 저장한다', () => {
+  const { document, root, storage, app } = initFixture();
+  const beforeState = app.getState();
+  const beforeQueue = app.getQueue();
+
+  root.emit('click', action(root, 'add-queue', 'be-66'));
+
+  assert.equal(app.getQueue().ids.length, 5);
+  assert.equal(app.getQueue().ids.includes('be-66'), true);
+  assert.equal(app.getQueue().ids.includes(beforeQueue.ids.at(-1)), false);
+  assert.deepEqual(app.getState(), beforeState);
+  assert.deepEqual(storage.json(interviewQueueKey(DATE)).ids, app.getQueue().ids);
+  assert.equal(document.querySelector('#interview-live').textContent, '오늘의 큐에 추가했습니다.');
+});
+
+test('큐 교체 성공과 고정·완료 카드의 교체 disabled 상태를 이벤트 경로로 반영한다', () => {
+  const { root, storage, app } = initFixture();
+  const beforeQueue = app.getQueue();
+  const replacedId = beforeQueue.ids[0];
+
+  root.emit('click', action(root, 'replace-queue', replacedId));
+
+  const afterReplace = app.getQueue();
+  assert.equal(afterReplace.ids.length, 5);
+  assert.equal(afterReplace.ids[0] === replacedId, false);
+  assert.deepEqual(afterReplace.ids.slice(1), beforeQueue.ids.slice(1));
+  assert.equal(new Set(afterReplace.ids).size, 5);
+  assert.deepEqual(storage.json(interviewQueueKey(DATE)).ids, afterReplace.ids);
+
+  const pinnedId = afterReplace.ids[0];
+  root.emit('click', action(root, 'toggle-pin', pinnedId));
+  assert.equal(action(root, 'replace-queue', pinnedId).disabled, true);
+
+  const completedId = afterReplace.ids[1];
+  root.emit('click', action(root, 'toggle-complete', completedId));
+  assert.equal(action(root, 'replace-queue', completedId).disabled, true);
+  const unchanged = app.getQueue();
+  root.emit('click', action(root, 'replace-queue', completedId));
+  assert.deepEqual(app.getQueue(), unchanged);
+});
+
 test('오늘 완료와 취소는 전역 상태를 바꾸지 않고 마지막 학습 시각만 유지한다', () => {
   const { document, root, app } = initFixture();
   const id = app.getQueue().ids[0];
@@ -407,10 +478,41 @@ test('직접 추가가 불가능하면 큐를 유지하고 코어 이유를 live
   const { document, root, app } = initFixture({
     [interviewQueueKey(DATE)]: JSON.stringify(completedQueue),
   });
+  const beforeState = app.getState();
   const beforeQueue = app.getQueue();
 
   root.emit('click', action(root, 'add-queue', 'be-66'));
 
+  assert.deepEqual(app.getState(), beforeState);
   assert.deepEqual(app.getQueue(), beforeQueue);
   assert.equal(document.querySelector('#interview-live').textContent, '오늘의 큐에 교체 가능한 질문이 없습니다.');
+});
+
+test('카테고리를 선택하면 활성 버튼 포커스를 유지하고 다른 필터 포커스를 빼앗지 않는다', () => {
+  const { document, root } = initFixture();
+  const category = root.querySelectorAll('[data-interview-category-id]')
+    .find((button) => button.dataset.interviewCategoryId === 'distributed-cache');
+  category.focus();
+
+  root.emit('click', category);
+
+  assert.equal(document.activeElement, category);
+  assert.equal(document.activeElement.getAttribute('aria-pressed'), 'true');
+
+  const search = document.querySelector('#interview-search');
+  search.focus();
+  search.value = 'redis';
+  root.emit('input', search);
+  assert.equal(document.activeElement, search);
+
+  const status = document.querySelector('#interview-status-filter');
+  status.focus();
+  status.value = 'review';
+  root.emit('change', status);
+  assert.equal(document.activeElement, status);
+
+  const favorites = document.querySelector('#interview-favorites-only');
+  favorites.focus();
+  root.emit('click', favorites);
+  assert.equal(document.activeElement, favorites);
 });
