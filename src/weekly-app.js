@@ -189,7 +189,7 @@ export function createCompactTimeEditor(document, item, errorMessage = '') {
   editor.dataset.timeEditor = item.id;
   editor.innerHTML = `
     <label>시작 <input type="time" step="300" value="${minuteInputValue(item.startMinute)}" data-time-start aria-describedby="${errorId}"></label>
-    <label>종료 <input type="time" step="300" value="${minuteInputValue(item.endMinute)}" data-time-end aria-describedby="${errorId}"></label>
+    <label>종료 <input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="(?:[01]\\d|2[0-3]):[0-5]\\d|24:00" value="${minuteInputValue(item.endMinute)}" data-time-end aria-describedby="${errorId}"></label>
     <button type="submit" data-time-save>저장</button>
     <button type="button" data-time-cancel>취소</button>
     <p id="${errorId}" class="plan-time-error" role="alert">${errorMessage}</p>
@@ -510,22 +510,32 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     handle.closest('[data-plan-item-id]')?.classList.add('is-dragging');
   }
 
-  function handlePointerUp(event) {
-    if (!draggedItemId) return;
-    const target = event.target.closest?.('[data-plan-item-id]');
+  function clearDragState() {
     const dragged = draggedItemId;
     draggedItemId = null;
     root.querySelector('.is-dragging')?.classList.remove('is-dragging');
+    return dragged;
+  }
+
+  function handlePointerUp(event) {
+    if (!draggedItemId) return;
+    const target = event.target.closest?.('[data-plan-item-id]');
+    const dragged = clearDragState();
     if (!target || target.dataset.planItemId === dragged) return;
     const targetIndex = selectedDayState().timelineOrder.indexOf(target.dataset.planItemId);
     moveItem(dragged, targetIndex);
+  }
+
+  function handlePointerCancel() {
+    clearDragState();
   }
 
   root.addEventListener('click', handleClick);
   root.addEventListener('change', handleChange);
   root.addEventListener('submit', handleSubmit);
   root.addEventListener('pointerdown', handlePointerDown);
-  root.addEventListener('pointerup', handlePointerUp);
+  pageDocument.addEventListener('pointerup', handlePointerUp);
+  pageDocument.addEventListener('pointercancel', handlePointerCancel);
   persist();
   paintAll();
   pageDocument.documentElement.dataset.weeklyReady = 'true';
@@ -539,7 +549,8 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
       root.removeEventListener('change', handleChange);
       root.removeEventListener('submit', handleSubmit);
       root.removeEventListener('pointerdown', handlePointerDown);
-      root.removeEventListener('pointerup', handlePointerUp);
+      pageDocument.removeEventListener('pointerup', handlePointerUp);
+      pageDocument.removeEventListener('pointercancel', handlePointerCancel);
       delete pageDocument.documentElement.dataset.weeklyReady;
     },
   };

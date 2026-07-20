@@ -113,6 +113,7 @@ function defaultPlanItems(mode, runStart) {
       label: scheduleItem.label,
       category: scheduleItem.category,
       durationMinutes: durationForScheduleItem(scheduleItem, schedule[index + 1]),
+      defaultStartMinute: minuteFromTime(scheduleItem.time),
       source: 'default',
       modeDependent: isModeDependentScheduleItem(scheduleItem.id),
     });
@@ -136,14 +137,14 @@ export function getFixedAnchors(mode, runStart = '21') {
   }));
 }
 
-function reflow(day) {
+function reflow(day, { honorDefaultTimes = false, honorManualTimes = false } = {}) {
   const next = cloneDay(day);
   const anchors = getFixedAnchors(next.mode, next.runStart);
   const byId = new Map([...next.items, ...next.unscheduled].map((item) => [item.id, cloneItem(item)]));
   const scheduled = [];
   const unscheduled = [];
   let cursor = DAY_START[next.mode];
-  for (const token of next.timelineOrder) {
+  for (const [tokenIndex, token] of next.timelineOrder.entries()) {
     const anchor = anchors.find(({ id }) => id === token);
     if (anchor) {
       cursor = anchor.endMinute;
@@ -151,8 +152,24 @@ function reflow(day) {
     }
     const item = byId.get(token);
     if (!item) continue;
+    if (honorManualTimes && item.manualTime && validMinute(item.startMinute) && validMinute(item.endMinute)) {
+      scheduled.push({ ...item });
+      cursor = Math.max(cursor, item.endMinute);
+      continue;
+    }
+    if (honorDefaultTimes && validMinute(item.defaultStartMinute)) {
+      cursor = Math.max(cursor, item.defaultStartMinute);
+    }
     const nextAnchor = anchors.find(({ startMinute }) => startMinute >= cursor);
-    const boundary = nextAnchor?.startMinute ?? anchors.at(-1).startMinute;
+    const nextManual = honorManualTimes
+      ? next.timelineOrder.slice(tokenIndex + 1)
+        .map((id) => byId.get(id))
+        .find((candidate) => candidate?.manualTime && validMinute(candidate.startMinute) && candidate.startMinute >= cursor)
+      : null;
+    const boundary = Math.min(
+      nextAnchor?.startMinute ?? anchors.at(-1).startMinute,
+      nextManual?.startMinute ?? 1440,
+    );
     if (cursor + item.durationMinutes > boundary) {
       unscheduled.push({ ...item, reason: 'insufficient-time' });
       continue;
@@ -175,7 +192,7 @@ function createDefaultDay(dayId, mode = DEFAULT_MODES[dayId] ?? 'normal', runSta
     timelineOrder: plan.timelineOrder,
     revision: 0,
     legacyCompletion: emptyLegacyCompletion(),
-  });
+  }, { honorDefaultTimes: true });
 }
 
 export function createDefaultWeeklyState() {
@@ -199,6 +216,8 @@ function normalizeItem(candidate) {
     durationMinutes: candidate.durationMinutes,
   };
   if (typeof candidate.source === 'string') item.source = candidate.source;
+  if (validMinute(candidate.defaultStartMinute)) item.defaultStartMinute = candidate.defaultStartMinute;
+  if (candidate.manualTime === true) item.manualTime = true;
   if (candidate.modeDependent === true) item.modeDependent = true;
   if (validMinute(candidate.startMinute) && validMinute(candidate.endMinute) && candidate.endMinute > candidate.startMinute) {
     item.startMinute = candidate.startMinute;
@@ -354,7 +373,10 @@ function addItem(day, item) {
   const timelineOrder = [...next.timelineOrder];
   const insertionIndex = insertionIndexForItem({ ...next, items: [...next.items, item] }, timelineOrder, item);
   timelineOrder.splice(insertionIndex, 0, item.id);
-  return bumpRevision(reflow({ ...next, items: [...next.items, item], timelineOrder }));
+  return bumpRevision(reflow(
+    { ...next, items: [...next.items, item], timelineOrder },
+    { honorManualTimes: true },
+  ));
 }
 
 export function addLibraryPlanItem(day, taskId, options = {}) {
@@ -411,7 +433,7 @@ export function updatePlanItemTime(day, itemId, startMinute, endMinute) {
   if (anchors.some((anchor) => overlaps(startMinute, endMinute, anchor))) throw new Error('고정 일정과 겹칩니다.');
   const others = [...next.items, ...next.unscheduled].filter(({ id }) => id !== itemId);
   if (others.some((other) => validMinute(other.startMinute) && validMinute(other.endMinute) && overlaps(startMinute, endMinute, other))) throw new Error('다른 일정과 겹칩니다.');
-  const updated = { ...item, startMinute, endMinute, durationMinutes: endMinute - startMinute };
+  const updated = { ...item, startMinute, endMinute, durationMinutes: endMinute - startMinute, manualTime: true };
   return bumpRevision({
     ...next,
     items: [...next.items.filter(({ id }) => id !== itemId), updated].sort((left, right) => left.startMinute - right.startMinute),
@@ -434,7 +456,10 @@ export function changeDayMode(day, mode, runStart = '21') {
     if (timelineOrder.includes(item.id)) continue;
     timelineOrder.splice(insertionIndexForItem(resultingDay, timelineOrder, item), 0, item.id);
   }
-  return bumpRevision(reflow({ ...next, mode: selectedMode, runStart: selectedRunStart, items: [...retained, ...modeItems], unscheduled: [], timelineOrder }));
+  return bumpRevision(reflow(
+    { ...next, mode: selectedMode, runStart: selectedRunStart, items: [...retained, ...modeItems], unscheduled: [], timelineOrder },
+    { honorDefaultTimes: true },
+  ));
 }
 
 export function resetWeeklyPlans(state) {

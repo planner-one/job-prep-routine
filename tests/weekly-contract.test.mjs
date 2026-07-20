@@ -40,6 +40,12 @@ test('목록 상단 오른쪽에 일정 추가와 시간 편집을 둔다', () =
   assert.match(header, /id="weekly-add-plan"[\s\S]*id="weekly-time-edit"/);
 });
 
+test('PDF 미리보기는 상단 조작의 마지막이며 화면 문구에 물결표를 쓰지 않는다', () => {
+  const actions = html.match(/<div class="weekly-actions[\s\S]*?<\/div>\s*<\/header>/)?.[0] ?? '';
+  assert.match(actions, /id="weekly-pdf-preview"[^>]*>PDF 미리보기<\/button>\s*<\/div>\s*<\/header>$/);
+  assert.doesNotMatch(html, /~/);
+});
+
 test('일정 행의 시간과 이름은 읽기 쉬운 크기이고 고정 행을 구분한다', () => {
   assert.match(css, /\.weekly-plan-row\s*\{[^}]*grid-template-columns\s*:\s*2\.25rem 7\.5rem 1fr auto auto/s);
   assert.match(css, /\.weekly-plan-time\s*\{[^}]*font-size\s*:\s*\.95rem/s);
@@ -55,5 +61,25 @@ test('모바일 이동 조작과 인쇄용 편집 조작 숨김을 제공한다'
   const printCss = blockAfter(css, '@media print');
   for (const selector of ['.weekly-planner-actions', '.weekly-add-panel', '.plan-drag', '.plan-move-actions', '.plan-time-editor', '.plan-remove']) {
     assert.match(printCss, new RegExp(selector.replace('.', '\\\.') + '[\\s\\S]*display\\s*:\\s*none'));
+  }
+});
+
+test('제거된 체크리스트와 보조 시간표 전용 스타일을 남기지 않는다', () => {
+  for (const legacySelector of [
+    'weekly-detail-grid',
+    'weekly-checklist-column',
+    'weekly-schedule-column',
+    'weekly-check-group',
+    'weekly-maintenance-checks',
+    'weekly-check-heading',
+    'weekly-application-checks',
+    'weekly-core-checks',
+    'weekly-learning-options',
+    'weekly-schedule-heading',
+    'weekly-schedule-list',
+    'weekly-schedule-time',
+    'weekly-schedule-label',
+  ]) {
+    assert.doesNotMatch(css, new RegExp(`\\.${legacySelector}(?![a-z0-9-])`));
   }
 });

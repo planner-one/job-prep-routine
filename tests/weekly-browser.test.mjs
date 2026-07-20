@@ -254,6 +254,34 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
     );
     assert.equal(printCalls, 1);
 
+    const runningSchedule = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        document.querySelector('[data-day="wed"]').click();
+        const at21 = document.querySelector('[data-plan-item-id="run"] .weekly-plan-time').textContent;
+        document.querySelector('input[name="weekly-run-start"][value="22"]').click();
+        const at22 = document.querySelector('[data-plan-item-id="run"] .weekly-plan-time').textContent;
+        document.querySelector('#weekly-time-edit').click();
+        const wrap = document.querySelector('[data-plan-item-id="running-wrap"]');
+        const endInput = wrap.querySelector('[data-time-end]');
+        const midnightEditor = { type: endInput.type, value: endInput.value };
+        wrap.querySelector('[data-time-editor]').requestSubmit();
+        midnightEditor.savedTime = document.querySelector('[data-plan-item-id="running-wrap"] .weekly-plan-time').textContent;
+        document.querySelector('[data-day="mon"]').click();
+        return { at21, at22, midnightEditor };
+      })()`,
+    );
+    assert.deepEqual(runningSchedule, {
+      at21: '21:00–22:00',
+      at22: '22:00–23:00',
+      midnightEditor: {
+        type: 'text',
+        value: '24:00',
+        savedTime: '23:30–24:00',
+      },
+    });
+
     const added = await evaluate(
       cdp,
       sessionId,
@@ -311,6 +339,28 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
     assert.notEqual(moved.afterDrag, moved.afterDown);
     assert.match(moved.status, /이동|미배치|시간/);
 
+    const externalDragEnd = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const handle = document.querySelector('[data-plan-item-id="job-analysis"] [data-plan-drag]');
+        const row = handle.closest('[data-plan-item-id]');
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 8 }));
+        document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 8 }));
+        const releasedOutside = row.classList.contains('is-dragging');
+        document.querySelector('#weekly-page').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 8 }));
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 9 }));
+        document.body.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 9 }));
+        const cancelledOutside = row.classList.contains('is-dragging');
+        document.querySelector('#weekly-page').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 9 }));
+        return { releasedOutside, cancelledOutside };
+      })()`,
+    );
+    assert.deepEqual(externalDragEnd, {
+      releasedOutside: false,
+      cancelledOutside: false,
+    });
+
     const edited = await evaluate(
       cdp,
       sessionId,
@@ -324,6 +374,7 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
         const afterCancel = document.querySelector('[data-plan-item-id="' + first.dataset.planItemId + '"] .weekly-plan-time').textContent;
 
         const restoredRow = document.querySelector('[data-plan-item-id="' + first.dataset.planItemId + '"]');
+        restoredRow.querySelector('[data-time-start]').value = '05:45';
         restoredRow.querySelector('[data-time-end]').value = '05:50';
         restoredRow.querySelector('[data-time-save]').click();
         return {
@@ -336,7 +387,7 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
       })()`,
     );
     assert.equal(edited.afterCancel, edited.original);
-    assert.equal(edited.afterSave, '05:40–05:50');
+    assert.equal(edited.afterSave, '05:45–05:50');
     assert.equal(edited.pressed, 'false');
 
     const overflow = await evaluate(
@@ -381,9 +432,25 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
       library: true,
       learning: true,
       custom: true,
-      editedTime: '05:40–05:50',
+      editedTime: '05:45–05:50',
       overflow: true,
     });
+
+    const resetIsolation = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const otherKey = 'job-prep-routine:weekly:2000-01-03';
+        localStorage.setItem(otherKey, JSON.stringify({ marker: '다른 주 보존' }));
+        document.querySelector('#weekly-reset-current').click();
+        return {
+          otherWeek: JSON.parse(localStorage.getItem(otherKey)),
+          currentWeek: JSON.parse(localStorage.getItem('job-prep-routine:weekly:' + document.querySelector('#weekly-current-week').dateTime)),
+        };
+      })()`,
+    );
+    assert.deepEqual(resetIsolation.otherWeek, { marker: '다른 주 보존' });
+    assert.equal(resetIsolation.currentWeek.schemaVersion, 2);
   } finally {
     cdp?.close();
     await stopChrome(chrome);

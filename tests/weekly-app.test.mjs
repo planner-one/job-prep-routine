@@ -17,6 +17,12 @@ test('주간 앱은 계획 코어의 스키마 v2 상태와 단일 시간 범위
   assert.equal(weeklyApp.formatMinuteRange(1440, 1440), '24:00');
 });
 
+test('연말을 걸치는 주 범위는 시작 연도와 종료 연도를 모두 표시한다', () => {
+  assertFunction('formatWeekRange');
+  assert.equal(weeklyApp.formatWeekRange('2026-07-13'), '2026년 7월 13일–19일');
+  assert.equal(weeklyApp.formatWeekRange('2026-12-28'), '2026년 12월 28일–2027년 1월 3일');
+});
+
 test('시간 입력은 분 단위로 바꾸고 24:00 경계를 허용한다', () => {
   assertFunction('minuteFromInput');
   assert.equal(weeklyApp.minuteFromInput('05:40'), 340);
