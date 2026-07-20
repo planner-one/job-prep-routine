@@ -50,10 +50,10 @@
             <p>선택한 시간표 하나만 보여드립니다.</p>
           </div>
           <div class="roadmap-category-tabs" role="tablist" aria-label="운영 일정 카테고리">
-            <button id="roadmap-category-workout" type="button" role="tab" data-roadmap-category="workout" aria-selected="true">운동일</button>
-            <button id="roadmap-category-normal" type="button" role="tab" data-roadmap-category="normal" aria-selected="false">비운동일</button>
-            <button id="roadmap-category-running" type="button" role="tab" data-roadmap-category="running" aria-selected="false">러닝일</button>
-            <button id="roadmap-category-maintenance" type="button" role="tab" data-roadmap-category="maintenance" aria-selected="false">유지일</button>
+            <button id="roadmap-category-workout" type="button" role="tab" data-roadmap-category="workout" aria-selected="true" aria-controls="roadmap-panel-workout" tabindex="0">운동일</button>
+            <button id="roadmap-category-normal" type="button" role="tab" data-roadmap-category="normal" aria-selected="false" aria-controls="roadmap-panel-normal" tabindex="-1">비운동일</button>
+            <button id="roadmap-category-running" type="button" role="tab" data-roadmap-category="running" aria-selected="false" aria-controls="roadmap-panel-running-21 roadmap-panel-running-22" tabindex="-1">러닝일</button>
+            <button id="roadmap-category-maintenance" type="button" role="tab" data-roadmap-category="maintenance" aria-selected="false" aria-controls="roadmap-panel-maintenance" tabindex="-1">유지일</button>
           </div>
           <div id="roadmap-run-time-picker" class="roadmap-run-time-picker" aria-label="러닝 시작 시각" hidden>
             <span>러닝 시작</span>

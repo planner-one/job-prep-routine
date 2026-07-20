@@ -16,7 +16,7 @@ const CATEGORY_LABELS = {
 
 const ROADMAP_CATEGORIES = new Set(['workout', 'normal', 'running', 'maintenance']);
 
-const ROADMAP_PRINCIPLES = Object.freeze([
+export const ROADMAP_PRINCIPLES = Object.freeze([
   { number: '01', title: '지원은 하루 3~4개', description: '공고 분석부터 자소서 조정·제출까지 한 흐름으로 끝낸다.' },
   { number: '02', title: '면접 언어를 매일 다듬기', description: '이력서와 포트폴리오를 내 말로 설명하는 시간을 지킨다.' },
   { number: '03', title: '학습은 결과물로 남기기', description: '선택한 주제를 작은 구현이나 프로젝트 적용으로 연결한다.' },
@@ -76,7 +76,8 @@ function renderVariant(pageDocument, variant) {
   section.className = 'roadmap-mode-section';
   section.dataset.roadmapVariant = variant.id;
   section.setAttribute('role', 'tabpanel');
-  section.setAttribute('aria-label', variant.label);
+  section.setAttribute('aria-labelledby', `roadmap-category-${variant.mode}`);
+  section.tabIndex = 0;
   const heading = pageDocument.createElement('header');
   heading.className = 'roadmap-mode-heading';
   const title = pageDocument.createElement('h2');
@@ -134,8 +135,7 @@ export function initRoadmapReference(pageDocument) {
     for (const button of categoryButtons) {
       const selected = button.dataset.roadmapCategory === activeCategory;
       button.setAttribute('aria-selected', String(selected));
-      if (selected) button.setAttribute('aria-controls', `roadmap-panel-${activeVariant}`);
-      else button.removeAttribute('aria-controls');
+      button.tabIndex = selected ? 0 : -1;
     }
     runPicker.hidden = activeCategory !== 'running';
     for (const button of runButtons) {
@@ -154,7 +154,24 @@ export function initRoadmapReference(pageDocument) {
     updateView();
   }
 
+  function handleCategoryKeydown(event) {
+    const currentIndex = categoryButtons.indexOf(event.currentTarget);
+    if (currentIndex < 0) return;
+    let nextIndex;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + categoryButtons.length) % categoryButtons.length;
+    else if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % categoryButtons.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = categoryButtons.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextButton = categoryButtons[nextIndex];
+    nextButton.focus();
+    selectCategory(nextButton.dataset.roadmapCategory);
+  }
+
   categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.roadmapCategory)));
+  categoryButtons.forEach((button) => button.addEventListener('keydown', handleCategoryKeydown));
   runButtons.forEach((button) => button.addEventListener('click', () => selectRunStart(button.dataset.roadmapRunStart)));
   updateView();
   pageDocument.documentElement.dataset.roadmapReady = 'true';

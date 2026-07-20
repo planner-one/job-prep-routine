@@ -11,8 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { buildHistoryRecord } from '../src/history-core.js';
 import * as routineCore from '../src/routine-core.js';
 import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
+import { resolveChromeBin } from './helpers/chrome-bin.mjs';
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME_PATH = resolveChromeBin();
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',

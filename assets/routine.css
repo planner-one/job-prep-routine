@@ -43,13 +43,15 @@ select {
   cursor: pointer;
 }
 
+a[href]:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-.board-link:focus-visible {
-  outline: 3px solid rgb(57 122 212 / 25%);
-  outline-offset: 2px;
+[tabindex]:focus-visible {
+  outline: 3px solid #0b2647;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 .app-shell {
@@ -1393,11 +1395,6 @@ textarea:focus-visible,
   transform: translateY(-3px);
   border-color: #b9c9dc;
   box-shadow: 0 16px 30px rgb(23 55 94 / 10%);
-}
-
-.home-board-card:focus-visible {
-  outline: 3px solid rgb(57 122 212 / 25%);
-  outline-offset: 3px;
 }
 
 .home-board-card--roadmap {

@@ -8,8 +8,9 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { resolveChromeBin } from './helpers/chrome-bin.mjs';
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME_PATH = resolveChromeBin();
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',
@@ -198,6 +199,44 @@ async function navigate(cdp, sessionId, url) {
   await waitForPageReady(cdp, sessionId);
 }
 
+const KEYBOARD_KEYS = {
+  ArrowLeft: { code: 'ArrowLeft', windowsVirtualKeyCode: 37 },
+  ArrowRight: { code: 'ArrowRight', windowsVirtualKeyCode: 39 },
+  Home: { code: 'Home', windowsVirtualKeyCode: 36 },
+  End: { code: 'End', windowsVirtualKeyCode: 35 },
+  Enter: { code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' },
+  ' ': { code: 'Space', windowsVirtualKeyCode: 32 },
+};
+
+async function pressKey(cdp, sessionId, key) {
+  const { text, ...keyDefinition } = KEYBOARD_KEYS[key];
+  await cdp.send(
+    'Input.dispatchKeyEvent',
+    { type: 'keyDown', key, ...keyDefinition, ...(text ? { text, unmodifiedText: text } : {}) },
+    sessionId,
+  );
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, ...keyDefinition }, sessionId);
+}
+
+async function readTabState(cdp, sessionId) {
+  return evaluate(cdp, sessionId, `(() => {
+    const isActuallyVisible = (node) => {
+      const style = getComputedStyle(node);
+      return style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length > 0;
+    };
+    const selectedTab = document.querySelector('[data-roadmap-category][aria-selected="true"]');
+    return {
+      activeCategory: document.activeElement?.dataset.roadmapCategory ?? null,
+      selectedCategory: selectedTab?.dataset.roadmapCategory ?? null,
+      tabIndexes: [...document.querySelectorAll('[data-roadmap-category]')]
+        .map((node) => node.tabIndex),
+      visibleVariants: [...document.querySelectorAll('[data-roadmap-variant]')]
+        .filter(isActuallyVisible)
+        .map((node) => node.dataset.roadmapVariant),
+    };
+  })()`);
+}
+
 
 test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 기존 저장값을 보존한다', { timeout: 45_000 }, async () => {
   let server;
@@ -220,6 +259,164 @@ test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 �
     await cdp.send('Runtime.enable', {}, sessionId);
     await navigate(cdp, sessionId, staticSite.url);
 
+    const ariaRelationships = await evaluate(cdp, sessionId, `(() => ({
+      tabs: [...document.querySelectorAll('[data-roadmap-category]')].map((node) => ({
+        category: node.dataset.roadmapCategory,
+        id: node.id,
+        role: node.getAttribute('role'),
+        tabIndex: node.tabIndex,
+        selected: node.getAttribute('aria-selected'),
+        controls: node.getAttribute('aria-controls'),
+      })),
+      panels: [...document.querySelectorAll('[data-roadmap-variant]')].map((node) => ({
+        variant: node.dataset.roadmapVariant,
+        id: node.id,
+        role: node.getAttribute('role'),
+        labelledBy: node.getAttribute('aria-labelledby'),
+        tabIndex: node.tabIndex,
+      })),
+    }))()`);
+    assert.deepEqual(ariaRelationships.tabs, [
+      {
+        category: 'workout',
+        id: 'roadmap-category-workout',
+        role: 'tab',
+        tabIndex: 0,
+        selected: 'true',
+        controls: 'roadmap-panel-workout',
+      },
+      {
+        category: 'normal',
+        id: 'roadmap-category-normal',
+        role: 'tab',
+        tabIndex: -1,
+        selected: 'false',
+        controls: 'roadmap-panel-normal',
+      },
+      {
+        category: 'running',
+        id: 'roadmap-category-running',
+        role: 'tab',
+        tabIndex: -1,
+        selected: 'false',
+        controls: 'roadmap-panel-running-21 roadmap-panel-running-22',
+      },
+      {
+        category: 'maintenance',
+        id: 'roadmap-category-maintenance',
+        role: 'tab',
+        tabIndex: -1,
+        selected: 'false',
+        controls: 'roadmap-panel-maintenance',
+      },
+    ]);
+    assert.deepEqual(ariaRelationships.panels, [
+      {
+        variant: 'workout',
+        id: 'roadmap-panel-workout',
+        role: 'tabpanel',
+        labelledBy: 'roadmap-category-workout',
+        tabIndex: 0,
+      },
+      {
+        variant: 'normal',
+        id: 'roadmap-panel-normal',
+        role: 'tabpanel',
+        labelledBy: 'roadmap-category-normal',
+        tabIndex: 0,
+      },
+      {
+        variant: 'running-21',
+        id: 'roadmap-panel-running-21',
+        role: 'tabpanel',
+        labelledBy: 'roadmap-category-running',
+        tabIndex: 0,
+      },
+      {
+        variant: 'running-22',
+        id: 'roadmap-panel-running-22',
+        role: 'tabpanel',
+        labelledBy: 'roadmap-category-running',
+        tabIndex: 0,
+      },
+      {
+        variant: 'maintenance',
+        id: 'roadmap-panel-maintenance',
+        role: 'tabpanel',
+        labelledBy: 'roadmap-category-maintenance',
+        tabIndex: 0,
+      },
+    ]);
+
+    await evaluate(cdp, sessionId, `document.querySelector('[data-roadmap-category="workout"]').focus()`);
+    await pressKey(cdp, sessionId, 'ArrowLeft');
+    const arrowLeftWrap = await readTabState(cdp, sessionId);
+    await pressKey(cdp, sessionId, 'ArrowRight');
+    const arrowRightWrap = await readTabState(cdp, sessionId);
+    await pressKey(cdp, sessionId, 'End');
+    const end = await readTabState(cdp, sessionId);
+    await pressKey(cdp, sessionId, 'Home');
+    const home = await readTabState(cdp, sessionId);
+    await pressKey(cdp, sessionId, 'ArrowRight');
+    const arrowRight = await readTabState(cdp, sessionId);
+    await pressKey(cdp, sessionId, 'ArrowRight');
+    const running = await readTabState(cdp, sessionId);
+    await evaluate(cdp, sessionId, `document.querySelector('[data-roadmap-run-start="22"]').click()`);
+    const running22 = await readTabState(cdp, sessionId);
+    await evaluate(cdp, sessionId, `document.querySelector('[data-roadmap-category="normal"]').focus()`);
+    await pressKey(cdp, sessionId, ' ');
+    const space = await readTabState(cdp, sessionId);
+    await evaluate(cdp, sessionId, `document.querySelector('[data-roadmap-category="maintenance"]').focus()`);
+    await pressKey(cdp, sessionId, 'Enter');
+    const enter = await readTabState(cdp, sessionId);
+
+    assert.deepEqual(arrowLeftWrap, {
+      activeCategory: 'maintenance',
+      selectedCategory: 'maintenance',
+      tabIndexes: [-1, -1, -1, 0],
+      visibleVariants: ['maintenance'],
+    });
+    assert.deepEqual(arrowRightWrap, {
+      activeCategory: 'workout',
+      selectedCategory: 'workout',
+      tabIndexes: [0, -1, -1, -1],
+      visibleVariants: ['workout'],
+    });
+    assert.deepEqual(end, arrowLeftWrap);
+    assert.deepEqual(home, arrowRightWrap);
+    assert.deepEqual(arrowRight, {
+      activeCategory: 'normal',
+      selectedCategory: 'normal',
+      tabIndexes: [-1, 0, -1, -1],
+      visibleVariants: ['normal'],
+    });
+    assert.deepEqual(running, {
+      activeCategory: 'running',
+      selectedCategory: 'running',
+      tabIndexes: [-1, -1, 0, -1],
+      visibleVariants: ['running-21'],
+    });
+    assert.deepEqual(running22, {
+      ...running,
+      visibleVariants: ['running-22'],
+    });
+    assert.deepEqual(space, {
+      activeCategory: 'normal',
+      selectedCategory: 'normal',
+      tabIndexes: [-1, 0, -1, -1],
+      visibleVariants: ['normal'],
+    });
+    assert.deepEqual(enter, {
+      activeCategory: 'maintenance',
+      selectedCategory: 'maintenance',
+      tabIndexes: [-1, -1, -1, 0],
+      visibleVariants: ['maintenance'],
+    });
+
+    await evaluate(cdp, sessionId, `(() => {
+      document.querySelector('[data-roadmap-run-start="21"]').click();
+      document.querySelector('[data-roadmap-category="workout"]').click();
+    })()`);
     const initialView = await evaluate(cdp, sessionId, `(() => ({
       selectedCategory: document.querySelector('[data-roadmap-category][aria-selected="true"]')?.dataset.roadmapCategory,
       visibleVariants: [...document.querySelectorAll('[data-roadmap-variant]')]

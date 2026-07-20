@@ -2,19 +2,29 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { getRoadmapVariants } from '../src/roadmap-app.js';
+import { getRoadmapVariants, ROADMAP_PRINCIPLES } from '../src/roadmap-app.js';
 
 const execFileAsync = promisify(execFile);
-const PRINCIPLES = [
-  '지원은 하루 3~4개',
-  '면접 언어를 매일 다듬기',
-  '학습은 결과물로 남기기',
-];
 
 const normalizeText = (value) => value.replace(/\s+/g, ' ').trim();
+const compactText = (value) => value.replace(/\s+/g, '');
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function requireText(haystack, needle, context) {
   if (!haystack.includes(normalizeText(needle))) {
+    throw new Error(`${context}에 필수 텍스트가 없습니다: ${needle}`);
+  }
+}
+
+function requireBoundedText(haystack, needle, context) {
+  const pattern = new RegExp(`(?:^|\\s)${escapeRegExp(normalizeText(needle))}(?:\\s|$)`);
+  if (!pattern.test(normalizeText(haystack))) {
+    throw new Error(`${context}에 필수 텍스트가 없습니다: ${needle}`);
+  }
+}
+
+function requireCompactText(haystack, needle, context) {
+  if (!compactText(haystack).includes(compactText(needle))) {
     throw new Error(`${context}에 필수 텍스트가 없습니다: ${needle}`);
   }
 }
@@ -28,12 +38,15 @@ async function runTool(command, args) {
   }
 }
 
-export function validateRoadmapPage(page, variant, pageIndex) {
+export function validateRoadmapPage(page, variant, pageIndex, readingOrderPage = page) {
   const context = `${pageIndex + 1}페이지`;
   requireText(page, '취업 준비 운영 로드맵', context);
-  requireText(page, variant.label, context);
+  requireBoundedText(page, variant.label, context);
   requireText(page, variant.description, context);
-  for (const principle of PRINCIPLES) requireText(page, principle, context);
+  for (const principle of ROADMAP_PRINCIPLES) {
+    requireText(page, principle.title, context);
+    requireCompactText(readingOrderPage, principle.description, context);
+  }
   for (const item of variant.schedule) {
     requireText(page, `${item.time} ${item.label}`, context);
   }
@@ -63,16 +76,29 @@ export async function validateRoadmapPdf(pdfPath) {
     process.env.PDFTOTEXT_BIN || 'pdftotext',
     ['-layout', path, '-'],
   );
+  const { stdout: readingOrderText } = await runTool(
+    process.env.PDFTOTEXT_BIN || 'pdftotext',
+    [path, '-'],
+  );
   const pages = text.split('\f').map(normalizeText).filter(Boolean);
   if (pages.length !== 5) throw new Error(`PDF 텍스트 페이지 수가 5가 아닙니다: ${pages.length}`);
+  const readingOrderPages = readingOrderText.split('\f').map(normalizeText).filter(Boolean);
+  if (readingOrderPages.length !== 5) {
+    throw new Error(`PDF 읽기 순서 텍스트 페이지 수가 5가 아닙니다: ${readingOrderPages.length}`);
+  }
   const allText = normalizeText(text);
-  for (const principle of PRINCIPLES) requireText(allText, principle, 'PDF');
+  for (const principle of ROADMAP_PRINCIPLES) requireText(allText, principle.title, 'PDF');
 
   const variants = getRoadmapVariants();
   if (variants.length !== 5) throw new Error(`로드맵 변형 수가 5가 아닙니다: ${variants.length}`);
   let scheduleItemCount = 0;
   variants.forEach((variant, pageIndex) => {
-    scheduleItemCount += validateRoadmapPage(pages[pageIndex], variant, pageIndex);
+    scheduleItemCount += validateRoadmapPage(
+      pages[pageIndex],
+      variant,
+      pageIndex,
+      readingOrderPages[pageIndex],
+    );
   });
   if (scheduleItemCount !== 72) throw new Error(`로드맵 일정 수가 72가 아닙니다: ${scheduleItemCount}`);
 

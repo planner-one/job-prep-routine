@@ -8,8 +8,9 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { resolveChromeBin } from './helpers/chrome-bin.mjs';
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME_PATH = resolveChromeBin();
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',
