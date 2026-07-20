@@ -277,6 +277,9 @@ test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 �
         counts: variants.map((node) => node.querySelectorAll('[data-reference-item]').length),
         totalRows: document.querySelectorAll('[data-reference-item]').length,
         inputs: document.querySelectorAll('#roadmap-page input, #roadmap-page textarea, #roadmap-page select').length,
+        printIntroCount: document.querySelectorAll('.roadmap-print-intro').length,
+        printPrincipleCardCounts: [...document.querySelectorAll('[data-roadmap-variant]')]
+          .map((node) => node.querySelectorAll('.roadmap-print-principles .focus-anchor').length),
         storedRaw: localStorage.getItem(legacyKey),
         roadmapKeys: Object.keys(localStorage).filter((key) => key.startsWith('job-prep-routine:roadmap:')).sort(),
       };
@@ -285,6 +288,8 @@ test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 �
     assert.deepEqual(result.counts, [16, 15, 15, 15, 11]);
     assert.equal(result.totalRows, 72);
     assert.equal(result.inputs, 0);
+    assert.equal(result.printIntroCount, 5);
+    assert.deepEqual(result.printPrincipleCardCounts, [3, 3, 3, 3, 3]);
     assert.equal(result.storedRaw, legacyRaw);
     assert.deepEqual(result.roadmapKeys, ['job-prep-routine:roadmap:2026-07-12']);
   } finally {

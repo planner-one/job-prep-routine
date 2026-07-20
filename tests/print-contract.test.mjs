@@ -52,6 +52,15 @@ test('인쇄 시 색상과 입력값은 종이에서도 읽히는 표현을 사�
 
 test('로드맵 인쇄는 일정 변형마다 새 페이지에서 시작하고 행 분할을 피한다', () => {
   const printCss = blockAfter(css, '@media print');
+  assert.match(roadmapHtml, /class="[^"]*roadmap-header[^"]*screen-only/);
+  assert.match(roadmapHtml, /class="[^"]*roadmap-principles[^"]*screen-only/);
+  assert.match(declarationsFor(printCss, '.print-only'), /display:\s*block\s*!important/);
+  assert.match(
+    declarationsFor(printCss, '#roadmap-page [data-roadmap-variant][hidden]'),
+    /display:\s*block\s*!important/,
+  );
+  assert.match(declarationsFor(printCss, '.roadmap-print-principles'), /display:\s*grid\s*!important/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-principles .focus-anchor'), /position:\s*relative/);
   assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-before:\s*page/);
   assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-inside:\s*auto/);
   assert.match(declarationsFor(printCss, '.roadmap-mode-section:first-child'), /break-before:\s*auto/);

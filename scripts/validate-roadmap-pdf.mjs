@@ -61,7 +61,9 @@ export async function validateRoadmapPdf(pdfPath) {
   let scheduleItemCount = 0;
   variants.forEach((variant, pageIndex) => {
     const page = pages[pageIndex];
+    requireText(page, '취업 준비 운영 로드맵', `${pageIndex + 1}페이지`);
     requireText(page, variant.label, `${pageIndex + 1}페이지`);
+    for (const principle of PRINCIPLES) requireText(page, principle, `${pageIndex + 1}페이지`);
     for (const item of variant.schedule) {
       scheduleItemCount += 1;
       requireText(page, `${item.time} ${item.label}`, `${pageIndex + 1}페이지`);

@@ -573,6 +573,10 @@ textarea:focus-visible,
   display: none !important;
 }
 
+.print-only {
+  display: none !important;
+}
+
 .roadmap-shell {
   width: min(1240px, calc(100% - 40px));
 }
@@ -2200,6 +2204,14 @@ textarea:focus-visible,
     display: none !important;
   }
 
+  .print-only {
+    display: block !important;
+  }
+
+  #roadmap-page [data-roadmap-variant][hidden] {
+    display: block !important;
+  }
+
   .company-head input,
   .company-head select,
   .memo-panel textarea {
@@ -2349,8 +2361,39 @@ textarea:focus-visible,
   }
 
   .roadmap-mode-section {
+    min-height: 278mm;
+    border: 0;
+    border-radius: 0;
     break-before: page;
     break-inside: auto;
+  }
+
+  .roadmap-print-page-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 7mm;
+    padding-bottom: 4mm;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .roadmap-print-principles {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3mm;
+    margin-bottom: 5mm;
+  }
+
+  .roadmap-print-principles .focus-anchor {
+    position: relative;
+    min-height: 25mm;
+    padding: 4mm 4mm 3mm 11mm;
+  }
+
+  .roadmap-reference-row {
+    min-height: 8mm;
+    padding-block: 1.5mm;
   }
 
   .roadmap-mode-section:first-child {
