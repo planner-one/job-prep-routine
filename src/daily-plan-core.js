@@ -77,6 +77,50 @@ export function resolveDailyPlan(date, weeklyCandidate) {
   };
 }
 
+export function resolveLegacyDailyPlan(date, dailyCandidate, revision = 0) {
+  const source = isObject(dailyCandidate) ? dailyCandidate : {};
+  const dayId = weekdayIdForDate(date);
+  const maintenanceDay = source.mode === 'maintenance' ? dayId : (dayId === 'sun' ? 'sat' : 'sun');
+  const weekly = normalizeWeeklyState({
+    selectedDay: dayId,
+    maintenanceDay,
+    days: { [dayId]: { mode: source.mode, runStart: source.runStart } },
+  });
+  let day = weekly.days[dayId];
+  const topics = Array.isArray(source.learningTopics)
+    ? LEARNING_TOPICS.filter((topic) => source.learningTopics.includes(topic))
+    : [];
+  const learningItems = [...day.items, ...day.unscheduled].filter(({ category }) => category === 'learning');
+  if (topics.length && learningItems.length) {
+    const [primary, ...removed] = learningItems;
+    const removedIds = new Set(removed.map(({ id }) => id));
+    const replacement = {
+      ...primary,
+      id: `learning:${topics.join('|')}`,
+      label: topics.join(' · '),
+    };
+    const replaceLearning = (items) => items.flatMap((item) => {
+      if (item.id === primary.id) return [replacement];
+      return removedIds.has(item.id) ? [] : [item];
+    });
+    day = {
+      ...day,
+      items: replaceLearning(day.items),
+      unscheduled: replaceLearning(day.unscheduled),
+      timelineOrder: day.timelineOrder.flatMap((id) => {
+        if (id === primary.id) return [replacement.id];
+        return removedIds.has(id) ? [] : [id];
+      }),
+    };
+  }
+
+  weekly.days[dayId] = {
+    ...day,
+    revision: Number.isInteger(revision) && revision >= 0 ? revision : 0,
+  };
+  return resolveDailyPlan(date, weekly);
+}
+
 export function normalizePlanSnapshot(candidate) {
   if (!isObject(candidate) || !Number.isInteger(candidate.revision) || candidate.revision < 0 || !Array.isArray(candidate.items)) return null;
   const seen = new Set();

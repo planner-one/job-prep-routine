@@ -5,6 +5,7 @@ import {
   normalizePlanSnapshot,
   prepareDailyPlan,
   resolveDailyPlan,
+  resolveLegacyDailyPlan,
 } from './daily-plan-core.js';
 import {
   calculateDailyProgress,
@@ -410,7 +411,11 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
 
   function persist(overrides) {
     captureState(overrides);
-    if (!state.planSnapshot && hasExecutionInput(state)) state.planSnapshot = prepared.renderPlan;
+    if (!state.planSnapshot && hasExecutionInput(state)) {
+      state.planSnapshot = Object.values(compatibilityFields).some(Boolean)
+        ? resolveLegacyDailyPlan(date, state, resolvedPlan.revision)
+        : prepared.renderPlan;
+    }
     state = normalizeDailyState(state);
     prepared = prepareDailyPlan(state, resolvedPlan);
     saveState(storage, DAILY_PAGE_NAME, date, state);

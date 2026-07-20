@@ -534,16 +534,34 @@ test('스냅샷 없는 기존 데일리의 호환 필드와 플랫폼·공고 �
         const memo = document.querySelector('[data-memo="implemented"]');
         memo.value = '첫 저장';
         memo.dispatchEvent(new Event('input', { bubbles: true }));
-        return JSON.parse(localStorage.getItem(${JSON.stringify(`job-prep-routine:daily:${date}`)}));
+        const state = JSON.parse(localStorage.getItem(${JSON.stringify(`job-prep-routine:daily:${date}`)}));
+        return {
+          state,
+          displayedMode: document.querySelector('#daily-plan-mode').textContent,
+          displayedTopics: document.querySelector('#daily-plan-topics').textContent,
+          renderedIds: [...document.querySelectorAll('[data-schedule-id]')].map((input) => input.dataset.scheduleId),
+          snapshotIds: state.planSnapshot.items.map((item) => item.id),
+          run: state.planSnapshot.items.find((item) => item.id === 'run') ?? null,
+        };
       })()`,
     );
 
-    assert.equal(stored.mode, 'running');
-    assert.equal(stored.runStart, '22');
-    assert.deepEqual(stored.learningTopics, ['CS']);
-    assert.equal(stored.companies[0].platform, '잡코리아');
-    assert.equal(stored.companies[0].link, 'https://example.com/legacy-job');
-    assert.equal(stored.planSnapshot.revision, 5);
+    assert.equal(stored.state.mode, 'running');
+    assert.equal(stored.state.runStart, '22');
+    assert.deepEqual(stored.state.learningTopics, ['CS']);
+    assert.equal(stored.state.companies[0].platform, '잡코리아');
+    assert.equal(stored.state.companies[0].link, 'https://example.com/legacy-job');
+    assert.equal(stored.state.planSnapshot.revision, 5);
+    assert.equal(stored.displayedMode, '러닝일');
+    assert.equal(stored.displayedTopics, 'CS');
+    assert.deepEqual(stored.renderedIds, stored.snapshotIds);
+    assert.deepEqual(stored.run, {
+      id: 'run',
+      label: '이동 포함 저녁 러닝',
+      category: 'exercise',
+      startMinute: 1320,
+      endMinute: 1380,
+    });
 
     await navigate(cdp, sessionId, staticSite.url);
     const restored = await evaluate(

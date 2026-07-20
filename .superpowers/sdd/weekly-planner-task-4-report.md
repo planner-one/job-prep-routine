@@ -81,3 +81,24 @@
 - `npm run check`: 종료 코드 0.
 - `git diff --check`: 출력 없음.
 - 전체 `npm test`: 110/110 통과, 실패 0개, 건너뜀 0개.
+
+## 1차 수정 후 추가 결함 수정
+
+### RED
+
+- `node --test tests/daily-browser.test.mjs`: 실제 headless Chrome 2개 중 1개 통과, 1개 실패. snapshot 없는 기존 daily `running`/`22`/`CS`의 첫 입력 직후 표시 학습 조합이 `Spring`으로 바뀌어, 보존된 호환 필드와 주간 계획에서 만든 snapshot의 출처가 갈리는 것을 확인했다.
+- 회귀 테스트는 저장 직후 `#daily-plan-mode`가 `러닝일`, `#daily-plan-topics`가 `CS`인지와 렌더링 일정 ID가 snapshot ID와 같은지, snapshot의 `run`이 `22:00–23:00`인지 함께 검증한다.
+
+### 수정 내용
+
+- 저장된 호환 필드가 있는 snapshot 없는 daily는 첫 실행 입력 시 현재 주간 계획이 아니라 보존된 `mode`·`runStart`·`learningTopics`에서 실행 snapshot을 만든다.
+- legacy 기본 타임라인과 고정 시각은 그대로 유지하고 기존 학습 블록의 ID와 문구만 보존된 학습 조합으로 치환해, 22시 러닝이 학습 항목 처리 때문에 밀리지 않도록 했다.
+- 새 daily는 계속 현재 주간 계획에서 snapshot을 만들며, legacy snapshot과 현재 주간 계획이 다르면 기존 내용 비교를 통해 변경 계획 반영 안내를 제공한다.
+
+### GREEN
+
+- `node --test tests/daily-browser.test.mjs`: 실제 headless Chrome 2/2 통과, 실패 0개.
+- `node --test tests/page-app.test.mjs tests/routine-core.test.mjs tests/daily-contract.test.mjs tests/daily-browser.test.mjs`: Task 4 focused 31/31 통과, 실패 0개.
+- `npm run check`: 종료 코드 0.
+- `git diff --check`: 출력 없음.
+- 전체 `npm test`: 110/110 통과, 실패 0개, 건너뜀 0개.
