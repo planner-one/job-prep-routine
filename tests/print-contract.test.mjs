@@ -98,6 +98,10 @@ test('주간 인쇄는 편집 조작을 숨기고 세로 계획과 읽기 전용
   }
   assert.match(declarationsFor(printCss, '.weekly-plan-row'), /break-inside:\s*avoid/);
   assert.match(declarationsFor(printCss, '.weekly-plan-row'), /page-break-inside:\s*avoid/);
+  assert.match(
+    declarationsFor(printCss, '.weekly-plan-row:not(.is-fixed)'),
+    /grid-template-columns:\s*7\.5rem\s+minmax\(0,\s*1fr\)\s+auto/,
+  );
   assert.match(weeklyHtml, /id="weekly-progress"/);
   assert.match(weeklyHtml, /id="weekly-plan-list"/);
   assert.doesNotMatch(weeklyHtml, /id="weekly-progress"[^>]*screen-only/);

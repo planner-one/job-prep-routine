@@ -73,3 +73,29 @@
 
 - 기존 8787 서버가 없어 재사용하지 못하고 새 로컬 전용 서버를 시작했다.
 - 로컬 `jenv` 갱신 경고는 모든 shell 명령에서 공통으로 출력되지만 프로젝트 검사 종료 코드에는 영향을 주지 않았다.
+
+## 독립 검토 Important 수정
+
+- 수정 기준: `b63dcaf` (`test: 주간 플래너 전체 회귀를 검증`)
+- 발견 사항: 인쇄에서 드래그·이동 조작을 숨긴 뒤 일반 일정 행의 5열 grid가 남아 시간 범위가 2.25rem 열에 배치될 수 있었다.
+
+### RED/GREEN
+
+- RED 명령: `node --test tests/print-contract.test.mjs`
+- RED 결과: 10개 중 9개 통과·1개 실패
+- 실패 이유: `.weekly-plan-row:not(.is-fixed)`의 인쇄용 명시적 3열 grid 계약이 없었다.
+- 수정: 일반 행에만 `7.5rem minmax(0, 1fr) auto` 3열을 적용해 시간·라벨·상태 열을 확보하고 기존 고정 행 계약을 보존했다.
+- GREEN 명령: `node --test tests/print-contract.test.mjs`
+- GREEN 결과: 10/10 통과, 실패 0
+
+### 전체 검증 및 동기화
+
+- `npm run check`: 성공
+- `npm test`: 133/133 통과, 실패 0
+- `git diff --check`: 성공
+- 수정된 `assets/routine.css` 한 파일만 runtime에 다시 복사했고 source/runtime `cmp` 종료 코드 0을 확인했다.
+- 기존 Python PID `13851`을 재시작하거나 종료하지 않았다.
+- `http://127.0.0.1:8787/assets/routine.css`: HTTP 200, source byte `cmp` 0
+- `http://localhost:8787/assets/routine.css`: HTTP 200, source byte `cmp` 0
+- canonical 로드맵 PDF SHA-256은 `bdf93c40389ea307502949c0301d1ff5cf39057ec1e5d1f6935630a1e323056e`로 유지됐다.
+- 검증용 임시 파일만 정리했으며 다른 runtime 파일은 변경하지 않았다.

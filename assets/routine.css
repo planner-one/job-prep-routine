@@ -2411,6 +2411,10 @@ textarea:focus-visible,
     page-break-inside: avoid;
   }
 
+  .weekly-plan-row:not(.is-fixed) {
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  }
+
   .print-only {
     display: block !important;
   }
