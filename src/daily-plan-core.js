@@ -88,6 +88,18 @@ export function normalizePlanSnapshot(candidate) {
   };
 }
 
+function plansHaveSameContent(left, right) {
+  if (!left || !right || left.items.length !== right.items.length) return false;
+  return left.items.every((item, index) => {
+    const other = right.items[index];
+    return item.id === other.id
+      && item.label === other.label
+      && item.category === other.category
+      && item.startMinute === other.startMinute
+      && item.endMinute === other.endMinute;
+  });
+}
+
 export function hasExecutionInput(state = {}) {
   const source = isObject(state) ? state : {};
   const companies = Array.isArray(source.companies) ? source.companies : [];
@@ -105,10 +117,12 @@ export function prepareDailyPlan(state, resolvedPlan) {
   if (!snapshot || !hasExecutionInput(source)) {
     return { state, renderPlan: resolvedPlan, needsPlanUpdate: false };
   }
+  const resolvedSnapshot = normalizePlanSnapshot(resolvedPlan);
   return {
     state,
     renderPlan: snapshot,
-    needsPlanUpdate: snapshot.revision !== resolvedPlan?.revision,
+    needsPlanUpdate: snapshot.revision !== resolvedSnapshot?.revision
+      || !plansHaveSameContent(snapshot, resolvedSnapshot),
   };
 }
 

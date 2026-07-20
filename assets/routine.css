@@ -204,7 +204,6 @@ textarea:focus-visible,
   flex-wrap: wrap;
 }
 
-.mode-button,
 .pdf-button,
 .reset-button,
 .board-link {
@@ -231,12 +230,6 @@ textarea:focus-visible,
 .board-link:hover {
   border-color: #9eb1c8;
   background: #f7f9fc;
-}
-
-.mode-button[aria-pressed="true"] {
-  border-color: var(--navy);
-  background: var(--navy);
-  color: var(--white);
 }
 
 .pdf-button {
@@ -545,8 +538,7 @@ textarea:focus-visible,
   margin-top: 8px;
 }
 
-.pipeline-steps label,
-.learning-options label {
+.pipeline-steps label {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -591,31 +583,8 @@ textarea:focus-visible,
   font-size: 0.72rem;
 }
 
-.learning-panel > h3,
 .memo-panel > h3 {
   margin-bottom: 11px;
-}
-
-.learning-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.learning-options label {
-  padding: 7px 10px;
-}
-
-.learning-options label:has(input:checked) {
-  border-color: #78bd99;
-  background: #e9f7ef;
-  color: #176b45;
-  font-weight: 800;
-}
-
-.learning-options input {
-  margin: 0;
-  accent-color: var(--green);
 }
 
 .memo-panel label {
@@ -2533,17 +2502,8 @@ textarea:focus-visible,
     padding: 3px 6px;
   }
 
-  #daily-page .learning-panel > h3,
   #daily-page .memo-panel > h3 {
     margin-bottom: 7px;
-  }
-
-  #daily-page .learning-options {
-    gap: 5px;
-  }
-
-  #daily-page .learning-options label {
-    padding: 5px 7px;
   }
 
   #daily-page .memo-panel label {

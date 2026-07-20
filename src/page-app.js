@@ -14,6 +14,7 @@ import {
   logicalDateString,
   saveState,
   scheduleLogicalDayRollover,
+  storageKey,
 } from './routine-core.js';
 import {
   createDefaultWeeklyState,
@@ -217,6 +218,20 @@ function learningTopicsFromPlan(items) {
   }));
 }
 
+function storedCompatibilityFields(rawState) {
+  try {
+    const source = JSON.parse(rawState);
+    if (!source || typeof source !== 'object' || Array.isArray(source)) return {};
+    return {
+      mode: Object.hasOwn(source, 'mode'),
+      runStart: Object.hasOwn(source, 'runStart'),
+      learningTopics: Object.hasOwn(source, 'learningTopics'),
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function applyDailyCategoryFilter(root, category) {
   const normalized = SCHEDULE_CATEGORIES.has(category) ? category : 'all';
   for (const button of root.querySelectorAll('#daily-category-filters [data-category-filter]')) {
@@ -332,6 +347,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   const root = pageDocument.getElementById('daily-page');
   if (!root) return null;
 
+  let compatibilityFields = storedCompatibilityFields(storage.getItem(storageKey(DAILY_PAGE_NAME, date)));
   let state = normalizeDailyState(loadState(storage, DAILY_PAGE_NAME, date, createDefaultState()));
   const weeklyKey = weekMondayKey(date);
   const weekly = normalizeWeeklyState(loadState(storage, 'weekly', weeklyKey, createDefaultWeeklyState()));
@@ -381,9 +397,11 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
       ...state,
       ...collectDailyState(root),
       ...overrides,
-      mode: state.planSnapshot ? state.mode : resolvedPlan.mode,
-      runStart: state.planSnapshot ? state.runStart : resolvedPlan.runStart,
-      learningTopics: state.planSnapshot ? state.learningTopics : learningTopicsFromPlan(prepared.renderPlan.items),
+      mode: state.planSnapshot || compatibilityFields.mode ? state.mode : resolvedPlan.mode,
+      runStart: state.planSnapshot || compatibilityFields.runStart ? state.runStart : resolvedPlan.runStart,
+      learningTopics: state.planSnapshot || compatibilityFields.learningTopics
+        ? state.learningTopics
+        : learningTopicsFromPlan(prepared.renderPlan.items),
       checkedIds: Array.from(checkedIds),
     });
     checkedIds = new Set(state.checkedIds);
@@ -402,6 +420,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
 
   function resetToday() {
     clearState(storage, DAILY_PAGE_NAME, date);
+    compatibilityFields = {};
     state = normalizeDailyState(createDefaultState());
     prepared = prepareDailyPlan(state, resolvedPlan);
     activeCategory = 'all';
@@ -436,6 +455,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
       renderCurrentSchedule();
       saveState(storage, DAILY_PAGE_NAME, date, state);
       updateProgress(root, prepared.renderPlan.items, state);
+      root.querySelector('#schedule-title')?.focus();
       return;
     }
     if (event.target.closest?.('#reset-today')) {

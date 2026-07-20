@@ -41,6 +41,12 @@ test('주간 계획을 데일리 체크 일정으로 연결하고 계획 편집�
   assert.match(html, /id="apply-daily-plan-update"/);
 });
 
+test('계획 변경과 반영 결과를 보조기기에 알리고 반영 후 포커스 대상을 제공한다', () => {
+  assert.match(html, /id="daily-plan-update"[^>]*role="status"/);
+  assert.match(html, /id="daily-plan-update"[^>]*aria-live="polite"/);
+  assert.match(html, /id="schedule-title"[^>]*tabindex="-1"/);
+});
+
 test('운영 유형·러닝 시간·학습 조합은 데일리에서 편집할 수 없다', () => {
   assert.doesNotMatch(html, /data-mode=/);
   assert.doesNotMatch(html, /name="run-start"/);
@@ -83,4 +89,10 @@ test('PDF에서 링크와 화면 조작 요소를 숨긴다', () => {
   assert.notEqual(printCss, '');
   assert.equal(hidesInPrint(printCss, '.screen-only'), true);
   assert.equal(hidesInPrint(printCss, '.job-link-row'), true);
+});
+
+test('제거된 데일리 편집 UI의 스타일을 남기지 않는다', () => {
+  assert.doesNotMatch(css, /\.mode-button(?:\[|\s|,|\{)/);
+  assert.doesNotMatch(css, /\.learning-panel(?:\s|>|,|\{)/);
+  assert.doesNotMatch(css, /\.learning-options(?:\s|>|,|\{|:)/);
 });

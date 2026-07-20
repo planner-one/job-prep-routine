@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as pageApp from '../src/page-app.js';
+import { prepareDailyPlan } from '../src/daily-plan-core.js';
 
 test('저장 상태의 최상위 null과 비배열 학습 주제를 기본값으로 정규화한다', () => {
   assert.equal(typeof pageApp.normalizeDailyState, 'function');
@@ -30,4 +31,24 @@ test('계획 스냅샷과 삭제된 완료 항목을 비손실 정규화한다',
   assert.equal(normalized.planSnapshot.revision, 3);
   assert.equal(normalized.planSnapshot.items[0].id, 'custom-1');
   assert.equal(normalized.archivedCompletedItems[0].id, 'old-1');
+});
+
+test('같은 revision이어도 계획 내용이 다르면 변경 대기로 판단한다', () => {
+  const item = {
+    id: 'review',
+    label: '포트폴리오 복기',
+    category: 'career',
+    startMinute: 600,
+    endMinute: 630,
+  };
+  const state = {
+    checkedIds: ['review'],
+    planSnapshot: { revision: 0, items: [item] },
+  };
+
+  assert.equal(prepareDailyPlan(state, { revision: 0, items: [{ ...item }] }).needsPlanUpdate, false);
+  assert.equal(prepareDailyPlan(state, {
+    revision: 0,
+    items: [{ ...item, startMinute: 660, endMinute: 690 }],
+  }).needsPlanUpdate, true);
 });

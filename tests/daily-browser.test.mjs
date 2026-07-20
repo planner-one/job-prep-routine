@@ -298,6 +298,10 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
         };
 
         setValue('#company-1-name', '테스트 회사');
+        const platform = document.querySelector('#company-1-platform');
+        platform.value = '원티드';
+        platform.dispatchEvent(new Event('change', { bubbles: true }));
+        setValue('.company-card[data-company-index="0"] [data-field="link"]', 'https://example.com/job');
         check('.company-card[data-company-index="0"] [data-field="analyzed"]');
         setValue('[data-memo="implemented"]', 'CDP 상호작용 테스트');
         check('[data-schedule-id="same"]');
@@ -317,6 +321,8 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     assert.equal(stored.state.mode, 'normal');
     assert.equal(stored.state.runStart, '21');
     assert.equal(stored.state.companies[0].name, '테스트 회사');
+    assert.equal(stored.state.companies[0].platform, '원티드');
+    assert.equal(stored.state.companies[0].link, 'https://example.com/job');
     assert.equal(stored.state.companies[0].analyzed, true);
     assert.deepEqual(stored.state.learningTopics, ['Spring', 'Redis']);
     assert.equal(stored.state.memos.implemented, 'CDP 상호작용 테스트');
@@ -356,7 +362,7 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     const updatedWeekly = structuredClone(weekly);
     updatedWeekly.days[dayId] = {
       ...updatedWeekly.days[dayId],
-      revision: 4,
+      revision: 3,
       items: [
         { id: 'learning:Spring|Redis', label: 'Spring · Redis', category: 'learning', durationMinutes: 120, startMinute: 600, endMinute: 720 },
         { id: 'same', label: '유지 일정', category: 'career', durationMinutes: 30, startMinute: 720, endMinute: 750 },
@@ -380,7 +386,9 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
         oldChecked: document.querySelector('[data-schedule-id="old"]').checked,
         hasNew: Boolean(document.querySelector('[data-schedule-id="new"]')),
         name: document.querySelector('#company-1-name').value,
+        platform: document.querySelector('#company-1-platform').value,
         analyzed: document.querySelector('.company-card[data-company-index="0"] [data-field="analyzed"]').checked,
+        link: document.querySelector('.company-card[data-company-index="0"] [data-field="link"]').value,
         memo: document.querySelector('[data-memo="implemented"]').value,
       }))()`,
     );
@@ -391,7 +399,9 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
       oldChecked: true,
       hasNew: false,
       name: '테스트 회사',
+      platform: '원티드',
       analyzed: true,
+      link: 'https://example.com/job',
       memo: 'CDP 상호작용 테스트',
     });
 
@@ -411,6 +421,7 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
           archivedIds: state.archivedCompletedItems.map((item) => item.id),
           name: state.companies[0].name,
           memo: state.memos.implemented,
+          activeId: document.activeElement?.id ?? '',
         };
       })()`,
     );
@@ -420,10 +431,11 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
     assert.equal(merged.sameChecked, true);
     assert.equal(merged.checkedIds.includes('same'), true);
     assert.equal(merged.checkedIds.includes('old'), true);
-    assert.equal(merged.revision, 4);
+    assert.equal(merged.revision, 3);
     assert.deepEqual(merged.archivedIds, ['old']);
     assert.equal(merged.name, '테스트 회사');
     assert.equal(merged.memo, 'CDP 상호작용 테스트');
+    assert.equal(merged.activeId, 'schedule-title');
 
     const reset = await evaluate(
       cdp,
@@ -450,6 +462,99 @@ test('데일리 페이지의 핵심 상호작용을 저장·복원·초기화한
       memo: '',
       completed: '0',
     });
+  } finally {
+    cdp?.close();
+    await stopChrome(chrome);
+    if (server) await new Promise((resolveClose) => server.close(resolveClose));
+    if (profileDirectory) await rm(profileDirectory, { recursive: true, force: true });
+  }
+});
+
+test('스냅샷 없는 기존 데일리의 호환 필드와 플랫폼·공고 링크를 첫 저장과 복원에서 보존한다', { timeout: 45_000 }, async () => {
+  let server;
+  let chrome;
+  let cdp;
+  let profileDirectory;
+
+  try {
+    const staticSite = await startStaticServer();
+    server = staticSite.server;
+    profileDirectory = await mkdtemp(resolve(tmpdir(), 'job-prep-routine-legacy-chrome-'));
+
+    const browser = await startChrome(profileDirectory);
+    chrome = browser.chrome;
+    cdp = await createCdpClient(browser.endpoint);
+
+    const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
+    const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
+    await cdp.send('Page.enable', {}, sessionId);
+    await cdp.send('Runtime.enable', {}, sessionId);
+
+    const date = routineCore.logicalDateString();
+    const weekKey = weekMondayKey(date);
+    const dayId = weekdayIdForDate(date);
+    const weekly = createDefaultWeeklyState();
+    weekly.maintenanceDay = dayId === 'sun' ? 'sat' : 'sun';
+    weekly.days[dayId] = {
+      ...weekly.days[dayId],
+      mode: 'normal',
+      runStart: '21',
+      revision: 5,
+      items: [
+        { id: 'weekly-learning', label: 'Spring', category: 'learning', durationMinutes: 30, startMinute: 600, endMinute: 630 },
+      ],
+      unscheduled: [],
+      timelineOrder: ['breakfast', 'weekly-learning', 'lunch', 'dinner', 'sleep'],
+    };
+    const legacyDaily = {
+      mode: 'running',
+      runStart: '22',
+      learningTopics: ['CS'],
+      checkedIds: [],
+      companies: [{
+        name: '기존 회사',
+        platform: '잡코리아',
+        analyzed: false,
+        letter: false,
+        applied: false,
+        link: 'https://example.com/legacy-job',
+      }],
+      memos: { implemented: '', blocked: '', firstAction: '' },
+    };
+    const { identifier: seedScriptId } = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `localStorage.setItem(${JSON.stringify(`job-prep-routine:weekly:${weekKey}`)}, ${JSON.stringify(JSON.stringify(weekly))}); localStorage.setItem(${JSON.stringify(`job-prep-routine:daily:${date}`)}, ${JSON.stringify(JSON.stringify(legacyDaily))});`,
+    }, sessionId);
+    await navigate(cdp, sessionId, staticSite.url);
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seedScriptId }, sessionId);
+
+    const stored = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const memo = document.querySelector('[data-memo="implemented"]');
+        memo.value = '첫 저장';
+        memo.dispatchEvent(new Event('input', { bubbles: true }));
+        return JSON.parse(localStorage.getItem(${JSON.stringify(`job-prep-routine:daily:${date}`)}));
+      })()`,
+    );
+
+    assert.equal(stored.mode, 'running');
+    assert.equal(stored.runStart, '22');
+    assert.deepEqual(stored.learningTopics, ['CS']);
+    assert.equal(stored.companies[0].platform, '잡코리아');
+    assert.equal(stored.companies[0].link, 'https://example.com/legacy-job');
+    assert.equal(stored.planSnapshot.revision, 5);
+
+    await navigate(cdp, sessionId, staticSite.url);
+    const restored = await evaluate(
+      cdp,
+      sessionId,
+      `(() => ({
+        platform: document.querySelector('#company-1-platform').value,
+        link: document.querySelector('.company-card[data-company-index="0"] [data-field="link"]').value,
+      }))()`,
+    );
+    assert.deepEqual(restored, { platform: '잡코리아', link: 'https://example.com/legacy-job' });
   } finally {
     cdp?.close();
     await stopChrome(chrome);

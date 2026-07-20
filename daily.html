@@ -32,7 +32,7 @@
           </div>
         </header>
 
-        <div class="daily-plan-update screen-only" id="daily-plan-update" hidden>
+        <div class="daily-plan-update screen-only" id="daily-plan-update" role="status" aria-live="polite" hidden>
           <p>실행을 시작한 뒤 주간 계획이 변경되었습니다.</p>
           <button type="button" id="apply-daily-plan-update">변경 계획 반영</button>
         </div>
@@ -72,7 +72,7 @@
           <section class="schedule-column" aria-labelledby="schedule-title">
             <div class="section-heading">
               <p class="section-kicker">시간 블록</p>
-              <h2 id="schedule-title">고정 시간표</h2>
+              <h2 id="schedule-title" tabindex="-1">고정 시간표</h2>
             </div>
             <div class="daily-filter-band screen-only">
               <div>
