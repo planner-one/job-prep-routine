@@ -195,9 +195,25 @@ test('고정·복습·낮은 자신감·미학습·오래된 학습 순으로 5�
   state = updateQuestionState(state, 'be-3', { status: 'studying', confidence: 2 });
   state = updateQuestionState(state, 'be-4', { status: 'unseen' });
   state = updateQuestionState(state, 'be-5', { status: 'done', lastStudiedAt: '2026-07-01T00:00:00.000Z' });
+  state = updateQuestionState(state, 'be-6', { status: 'done', lastStudiedAt: '2026-07-18T00:00:00.000Z' });
+  state = updateQuestionState(state, 'be-7', { status: 'done', lastStudiedAt: '2026-07-19T00:00:00.000Z' });
   const queue = ensureDailyQueue(questions, state, null, '2026-07-20', new Date('2026-07-20T03:00:00Z'));
   assert.deepEqual(queue.ids, ['be-1', 'be-2', 'be-3', 'be-4', 'be-5']);
   assert.equal(queue.updatedAt, '2026-07-20T03:00:00.000Z');
+});
+
+test('저장 상태가 없는 질문을 학습 이력이 있는 질문보다 먼저 추천한다', () => {
+  const questions = [
+    { id: 'studied', order: 1, title: '학습한 질문', categoryId: 'test' },
+    { id: 'never-seen', order: 2, title: '미학습 질문', categoryId: 'test' },
+  ];
+  const state = updateQuestionState(createEmptyInterviewState(), 'studied', {
+    status: 'done', lastStudiedAt: '2026-07-01T00:00:00.000Z',
+  });
+
+  const queue = ensureDailyQueue(questions, state, null, '2026-07-20', new Date('2026-07-20T03:00:00Z'));
+
+  assert.deepEqual(queue.ids, ['never-seen', 'studied']);
 });
 
 test('같은 추천 단계에서는 오래된 학습일과 공식 order가 앞선다', () => {
@@ -214,6 +230,23 @@ test('같은 추천 단계에서는 오래된 학습일과 공식 order가 앞�
   state = updateQuestionState(state, 'same-earlier', { status: 'done', lastStudiedAt: '2026-07-10T00:00:00.000Z' });
   const queue = ensureDailyQueue(questions, state, null, '2026-07-20', new Date('2026-07-20T03:00:00Z'));
   assert.deepEqual(queue.ids, ['older', 'same-earlier', 'same-later', 'newer']);
+});
+
+test('신규 추천은 질문 ID의 첫 등장을 보존하고 중복 없는 큐를 만든다', () => {
+  const questions = [
+    { id: 'be-a', order: 1, title: '첫 질문', categoryId: 'test' },
+    { id: 'be-a', order: 0, title: '중복 질문', categoryId: 'test' },
+    ...['b', 'c', 'd', 'e', 'f'].map((suffix, index) => ({
+      id: `be-${suffix}`, order: index + 2, title: `질문 ${suffix}`, categoryId: 'test',
+    })),
+  ];
+  const snapshot = structuredClone(questions);
+
+  const queue = ensureDailyQueue(questions, createEmptyInterviewState(), null, '2026-07-20', new Date('2026-07-20T03:00:00Z'));
+
+  assert.deepEqual(queue.ids, ['be-a', 'be-b', 'be-c', 'be-d', 'be-e']);
+  assert.equal(new Set(queue.ids).size, queue.ids.length);
+  assert.deepEqual(questions, snapshot);
 });
 
 test('같은 날짜의 유효한 저장 큐는 재선정하지 않는다', () => {

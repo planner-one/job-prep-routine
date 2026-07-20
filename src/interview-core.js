@@ -182,9 +182,11 @@ export function normalizeInterviewQueue(candidate, date, validIds) {
 }
 
 function recommendationKey(question, state) {
-  const saved = isPlainObject(state?.questions?.[question.id]) ? state.questions[question.id] : null;
-  const status = saved && STATUS_SET.has(saved.status) ? saved.status : null;
-  const confidence = saved && Number.isInteger(saved.confidence) ? saved.confidence : 0;
+  const saved = isPlainObject(state?.questions?.[question.id])
+    ? state.questions[question.id]
+    : createEmptyQuestionState();
+  const status = STATUS_SET.has(saved.status) ? saved.status : 'unseen';
+  const confidence = Number.isInteger(saved.confidence) ? saved.confidence : 0;
   return {
     pinned: Boolean(saved?.queuePinned),
     reviewOrLowConfidence: status === 'review' || (confidence > 0 && confidence <= 2),
@@ -209,8 +211,13 @@ function compareRecommendations(left, right, state) {
 }
 
 function recommendedQuestions(questions, state, excludedIds = new Set()) {
+  const seen = new Set();
   return questions
-    .filter(({ id }) => !excludedIds.has(id))
+    .filter(({ id }) => {
+      if (excludedIds.has(id) || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
     .sort((left, right) => compareRecommendations(left, right, state));
 }
 
