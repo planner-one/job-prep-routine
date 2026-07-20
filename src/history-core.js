@@ -5,9 +5,12 @@ const WEEKDAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
 const SCHEDULE_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
 const DEFAULT_EXERCISE_IDS = new Set(
-  [...TASK_LIBRARY, ...MODES.flatMap((mode) => getSchedule(mode))]
-    .filter(({ category }) => category === 'exercise')
-    .map(({ id }) => id),
+  [
+    'sleep',
+    ...[...TASK_LIBRARY, ...MODES.flatMap((mode) => getSchedule(mode))]
+      .filter(({ category }) => category === 'exercise')
+      .map(({ id }) => id),
+  ],
 );
 const MAINTENANCE_TASKS = [
   'deadline',

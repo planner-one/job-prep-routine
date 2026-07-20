@@ -6,6 +6,7 @@ import {
   collectHistoryRecords,
   summarizeHistory,
 } from '../src/history-core.js';
+import { resolveDailyPlan } from '../src/daily-plan-core.js';
 import { createDefaultWeeklyState, normalizeWeeklyState } from '../src/weekly-plan-core.js';
 import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
 
@@ -240,6 +241,23 @@ test('기본 회복성 exercise 항목만 완료한 날은 운동일로 세지 �
     },
   });
 
+  assert.equal(record.metrics.exercise, 0);
+  assert.equal(summarizeHistory([record]).exerciseDays, 0);
+});
+
+test('실제 v2 sleep 앵커만 완료한 날은 운동일로 세지 않는다', () => {
+  const planSnapshot = resolveDailyPlan('2026-07-21', createDefaultWeeklyState());
+  const sleep = planSnapshot.items.find(({ id }) => id === 'sleep');
+  const record = buildHistoryRecord({
+    date: '2026-07-21',
+    daily: {
+      checkedIds: ['sleep'],
+      planSnapshot,
+      companies: [],
+    },
+  });
+
+  assert.equal(sleep?.category, 'exercise');
   assert.equal(record.metrics.exercise, 0);
   assert.equal(summarizeHistory([record]).exerciseDays, 0);
 });
