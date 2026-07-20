@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -56,8 +56,13 @@ test('Chrome resolver는 실행 파일이 없을 때 경로와 CHROME_BIN 안내
   );
 });
 
-test('daily, weekly, roadmap 브라우저 테스트는 공통 Chrome resolver만 사용한다', async () => {
-  for (const filename of ['daily-browser.test.mjs', 'weekly-browser.test.mjs', 'roadmap-browser.test.mjs']) {
+test('모든 브라우저 회귀 테스트는 공통 Chrome resolver만 사용한다', async () => {
+  const filenames = (await readdir(new URL('.', import.meta.url)))
+    .filter((filename) => filename.endsWith('-browser.test.mjs'))
+    .sort();
+  assert.deepEqual(filenames, ['daily-browser.test.mjs', 'roadmap-browser.test.mjs', 'weekly-browser.test.mjs']);
+
+  for (const filename of filenames) {
     const source = await readFile(new URL(filename, import.meta.url), 'utf8');
     assert.match(source, /import \{ resolveChromeBin \} from '\.\/helpers\/chrome-bin\.mjs';/);
     assert.match(source, /const CHROME_PATH = resolveChromeBin\(\);/);

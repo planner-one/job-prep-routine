@@ -6,6 +6,7 @@ const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'u
 const home = await readFile(new URL('../index.html', import.meta.url), 'utf8').catch(() => '');
 const exportScript = await readFile(new URL('../scripts/export-pdfs.sh', import.meta.url), 'utf8').catch(() => '');
 const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
+const weeklyHtml = await readFile(new URL('../weekly.html', import.meta.url), 'utf8').catch(() => '');
 const packageJson = await readFile(new URL('../package.json', import.meta.url), 'utf8').catch(() => '');
 
 function blockAfter(source, marker) {
@@ -81,6 +82,26 @@ test('데일리 인쇄는 화면 필터로 숨긴 전체 시간표를 다시 표
     declarationsFor(printCss, '#daily-page #daily-schedule .schedule-period[hidden]'),
     /display:\s*block\s*!important/,
   );
+});
+
+test('주간 인쇄는 편집 조작을 숨기고 세로 계획과 읽기 전용 진척을 남긴다', () => {
+  const printCss = blockAfter(css, '@media print');
+  for (const selector of [
+    '.weekly-planner-actions',
+    '.weekly-add-panel',
+    '.plan-drag',
+    '.plan-move-actions',
+    '.plan-time-editor',
+    '.weekly-unscheduled button',
+  ]) {
+    assert.match(declarationsFor(printCss, selector), /display:\s*none/);
+  }
+  assert.match(declarationsFor(printCss, '.weekly-plan-row'), /break-inside:\s*avoid/);
+  assert.match(declarationsFor(printCss, '.weekly-plan-row'), /page-break-inside:\s*avoid/);
+  assert.match(weeklyHtml, /id="weekly-progress"/);
+  assert.match(weeklyHtml, /id="weekly-plan-list"/);
+  assert.doesNotMatch(weeklyHtml, /id="weekly-progress"[^>]*screen-only/);
+  assert.doesNotMatch(weeklyHtml, /id="weekly-plan-list"[^>]*screen-only/);
 });
 
 test('PDF 내보내기는 Chrome 재정의와 안정적인 한국어 파일명을 지원한다', () => {

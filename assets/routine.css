@@ -2401,8 +2401,14 @@ textarea:focus-visible,
   .plan-drag,
   .plan-move-actions,
   .plan-time-editor,
-  .plan-remove {
+  .plan-remove,
+  .weekly-unscheduled button {
     display: none !important;
+  }
+
+  .weekly-plan-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .print-only {
