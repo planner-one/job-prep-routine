@@ -191,14 +191,24 @@ function memoryStorage(entries = {}) {
   const values = new Map(Object.entries(entries));
   let writes = 0;
   let fail = false;
+  const failedWriteNumbers = new Set();
+  const failedKeys = new Map();
   return {
     getItem(key) { return values.get(key) ?? null; },
     setItem(key, value) {
       writes += 1;
-      if (fail) throw new Error('quota');
+      const remainingKeyFailures = failedKeys.get(key) ?? 0;
+      if (remainingKeyFailures > 0) {
+        failedKeys.set(key, remainingKeyFailures - 1);
+        throw new Error('quota');
+      }
+      if (fail || failedWriteNumbers.delete(writes)) throw new Error('quota');
       values.set(key, value);
     },
     failWrites(value = true) { fail = value; },
+    allowWrites() { fail = false; },
+    failOnWrite(writeNumber) { failedWriteNumbers.add(writeNumber); },
+    failNextWriteForKey(key) { failedKeys.set(key, (failedKeys.get(key) ?? 0) + 1); },
     json(key) { const value = values.get(key); return value ? JSON.parse(value) : null; },
     writes: () => writes,
     keys: () => [...values.keys()],
@@ -341,6 +351,108 @@ test('새 고정은 오늘 큐 밖이면 직접 추가하고 저장 실패 시 �
     failed.document.querySelector('#detail-live').textContent,
     '저장하지 못했습니다. 작성 중인 내용은 화면에 유지됩니다.',
   );
+});
+
+test('텍스트 저장 실패 뒤 모든 비텍스트 조작에서도 현재 draft를 덮어쓰지 않는다', () => {
+  const queue = { date: DATE, ids: ['be-1'], completedIds: [], updatedAt: 'saved' };
+  const { document, page, storage } = initFixture({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-1': { answer: '저장 답변', keywords: '저장 키워드', memo: '저장 메모' } },
+      filters: {},
+    }),
+    [interviewQueueKey(DATE)]: JSON.stringify(queue),
+  });
+  const draft = {
+    answer: '실패 뒤 답변 draft',
+    keywords: '실패 뒤 키워드 draft',
+    memo: '실패 뒤 메모 draft',
+  };
+  const fields = {
+    answer: document.querySelector('#detail-answer'),
+    keywords: document.querySelector('#detail-keywords'),
+    memo: document.querySelector('#detail-memo'),
+  };
+  const assertDraft = () => {
+    assert.deepEqual(
+      Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value])),
+      draft,
+    );
+  };
+
+  storage.failWrites();
+  for (const [key, field] of Object.entries(fields)) {
+    field.value = draft[key];
+    page.emit('input', field);
+  }
+  storage.allowWrites();
+  assertDraft();
+
+  const status = document.querySelector('#detail-status');
+  status.value = 'review';
+  page.emit('change', status);
+  assertDraft();
+
+  const confidence = document.querySelector('#detail-confidence');
+  confidence.value = '4';
+  page.emit('change', confidence);
+  assertDraft();
+
+  page.emit('click', document.querySelector('#detail-favorite'));
+  assertDraft();
+  page.emit('click', document.querySelector('#detail-pinned'));
+  assertDraft();
+  page.emit('click', document.querySelector('.interview-complete-today'));
+  assertDraft();
+});
+
+test('상태 저장 뒤 큐 저장만 실패하면 영속·메모리·DOM을 이전 스냅샷으로 롤백한다', () => {
+  const queue = { date: DATE, ids: ['be-3'], completedIds: [], updatedAt: 'saved' };
+  const { document, page, storage, app } = initFixture({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-3': { status: 'done', answer: '다른 질문' } },
+      filters: { query: '보존', categoryId: 'all', status: 'all', favoritesOnly: false },
+    }),
+    [interviewQueueKey(DATE)]: JSON.stringify(queue),
+  });
+  const previousState = app.getState();
+  const previousQueue = app.getQueue();
+  const answer = document.querySelector('#detail-answer');
+  answer.value = '부분 실패에도 남을 draft';
+  storage.failOnWrite(2);
+
+  page.emit('click', document.querySelector('#detail-pinned'));
+
+  assert.deepEqual(app.getState(), previousState);
+  assert.deepEqual(app.getQueue(), previousQueue);
+  assert.deepEqual(storage.json(INTERVIEW_STATE_KEY), previousState);
+  assert.deepEqual(storage.json(interviewQueueKey(DATE)), previousQueue);
+  assert.equal(document.querySelector('#detail-pinned').getAttribute('aria-pressed'), 'false');
+  assert.equal(answer.value, '부분 실패에도 남을 draft');
+  assert.equal(
+    document.querySelector('#detail-live').textContent,
+    '저장하지 못했습니다. 작성 중인 내용은 화면에 유지됩니다.',
+  );
+});
+
+test('고정 한도 전이라도 큐가 모두 완료되어 추가할 수 없으면 상태와 draft를 유지한다', () => {
+  const ids = INTERVIEW_QUESTIONS.slice(1, 6).map(({ id }) => id);
+  const queue = { date: DATE, ids, completedIds: ids, updatedAt: 'saved' };
+  const { document, page, storage, app } = initFixture({
+    [interviewQueueKey(DATE)]: JSON.stringify(queue),
+  });
+  const answer = document.querySelector('#detail-answer');
+  answer.value = '큐 추가 실패에도 남을 draft';
+
+  page.emit('click', document.querySelector('#detail-pinned'));
+
+  assert.equal(app.getState().questions['be-1'], undefined);
+  assert.deepEqual(app.getQueue(), queue);
+  assert.equal(storage.writes(), 0);
+  assert.equal(document.querySelector('#detail-pinned').getAttribute('aria-pressed'), 'false');
+  assert.equal(answer.value, '큐 추가 실패에도 남을 draft');
+  assert.equal(document.querySelector('#detail-live').textContent, '오늘의 큐에 교체 가능한 질문이 없습니다.');
 });
 
 test('오늘 완료는 큐에 먼저 추가하고 상태를 바꾸지 않으며 취소는 완료 목록만 바꾼다', () => {

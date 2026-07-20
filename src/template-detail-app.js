@@ -221,7 +221,7 @@ export function initTemplateDetailPage(root = document, options = {}) {
     setText(page, '#detail-live', message);
   }
 
-  function renderQuestionState({ preserveText = false } = {}) {
+  function renderQuestionState({ preserveText = true } = {}) {
     const saved = questionStateFor(state, question.id);
     renderStatusOptions(page, saved.status);
     const confidence = find(page, '#detail-confidence');
@@ -284,7 +284,7 @@ export function initTemplateDetailPage(root = document, options = {}) {
     }
   }
 
-  function persistQuestionPatch(patch, preserveText = false) {
+  function persistQuestionPatch(patch, preserveText = true) {
     const candidate = updateQuestionState(state, question.id, patch, now());
     if (!saveStateOnly(candidate)) {
       renderQuestionState({ preserveText });
@@ -369,7 +369,7 @@ export function initTemplateDetailPage(root = document, options = {}) {
       notify(SAVE_ERROR_MESSAGE);
       return;
     }
-    renderQuestionState();
+    renderQuestionState({ preserveText: false });
     notify('저장됨');
   }
 
@@ -439,7 +439,7 @@ export function initTemplateDetailPage(root = document, options = {}) {
   page.addEventListener('input', handleInput);
   page.addEventListener('change', handleChange);
   page.addEventListener('click', handleClick);
-  renderQuestionState();
+  renderQuestionState({ preserveText: false });
   if (startupMessage) notify(startupMessage);
   const cancelRollover = view?.setTimeout && view?.addEventListener
     ? scheduleLogicalDayRollover(view, date, now)
