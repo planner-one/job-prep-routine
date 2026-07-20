@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { getSchedule } from '../src/routine-data.js';
 import {
   addCustomPlanItem,
   addLibraryPlanItem,
@@ -111,4 +112,62 @@ test('초기화는 계획만 기본화하고 레거시 완료 기록은 유지�
   const reset = resetWeeklyPlans(state);
   assert.equal(reset.days.mon.legacyCompletion.tasks.interview, true);
   assert.equal(reset.days.mon.items.some((item) => item.id === 'interview-practice'), true);
+});
+
+test('기본 계획은 식사와 취침을 앵커로 분리하고 나머지 원본 일정을 모두 보존한다', () => {
+  const day = createDefaultWeeklyState().days.mon;
+  const sourceItems = getSchedule('workout', '21').filter((item) => item.category !== 'meal' && !item.id.endsWith('-sleep'));
+
+  assert.deepEqual(
+    day.items.map(({ id, label, category }) => ({ id, label, category })),
+    sourceItems.map(({ id, label, category }) => ({ id, label, category })),
+  );
+  assert.equal(day.items.find(({ id }) => id === 'workout-wake').durationMinutes, 20);
+  assert.equal(day.items.find(({ id }) => id === 'afternoon-break').durationMinutes, 20);
+  assert.equal(day.items.find(({ id }) => id === 'learning').durationMinutes, 120);
+  assert.equal(day.items.find(({ id }) => id === 'workout-evening').durationMinutes, 70);
+  assert.equal(day.items.find(({ id }) => id === 'workout-extension').durationMinutes, 60);
+});
+
+test('v2의 빈 계획과 revision은 기본 계획으로 되살리지 않고 보존한다', () => {
+  const normalized = normalizeWeeklyState({
+    schemaVersion: 2,
+    days: {
+      mon: {
+        mode: 'normal',
+        runStart: '21',
+        items: [],
+        unscheduled: [],
+        timelineOrder: ['breakfast', 'lunch', 'dinner', 'sleep'],
+        revision: 7,
+      },
+    },
+  });
+
+  assert.deepEqual(normalized.days.mon.items, []);
+  assert.deepEqual(normalized.days.mon.unscheduled, []);
+  assert.deepEqual(normalized.days.mon.timelineOrder, ['breakfast', 'lunch', 'dinner', 'sleep']);
+  assert.equal(normalized.days.mon.revision, 7);
+});
+
+test('Date 입력은 오전 2시 전이면 전날 논리 날짜로 주와 요일을 계산한다', () => {
+  const beforeCutoff = new Date(2026, 6, 20, 1, 0, 0);
+
+  assert.equal(weekdayIdForDate(beforeCutoff), 'sun');
+  assert.equal(weekMondayKey(beforeCutoff), '2026-07-13');
+  assert.equal(weekdayIdForDate('2026-07-20'), 'mon');
+  assert.equal(weekMondayKey('2026-07-20'), '2026-07-20');
+});
+
+test('사용자 일정 ID는 앵커와 기존 배치 또는 미배치 일정의 ID를 사용할 수 없다', () => {
+  const blank = { mode: 'normal', runStart: '21', items: [], unscheduled: [], timelineOrder: ['breakfast', 'lunch', 'dinner', 'sleep'], revision: 0 };
+  const input = { label: '개인 일정', category: 'career', durationMinutes: 30 };
+
+  for (const anchorId of ['breakfast', 'lunch', 'dinner', 'sleep']) {
+    assert.throws(() => addCustomPlanItem(blank, input, () => anchorId), /예약된 일정 ID/);
+  }
+  assert.throws(
+    () => addCustomPlanItem({ ...blank, unscheduled: [{ id: 'pending-item', ...input }] }, input, () => 'pending-item'),
+    /이미 사용 중인 일정 ID/,
+  );
 });

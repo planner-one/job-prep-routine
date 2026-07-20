@@ -64,16 +64,6 @@ function cloneDay(day) {
   };
 }
 
-function itemIdForSchedule(scheduleId) {
-  if (LIBRARY_BY_ID.has(scheduleId)) return scheduleId;
-  if (/portfolio/.test(scheduleId)) return 'portfolio-review';
-  if (/interview/.test(scheduleId)) return 'interview-practice';
-  if (/application/.test(scheduleId)) return 'job-analysis';
-  if (/-shower$/.test(scheduleId)) return 'shower';
-  if (/-wrap$/.test(scheduleId)) return 'wrap';
-  return null;
-}
-
 function anchorIdForSchedule(item) {
   if (/sleep/.test(item.id)) return 'sleep';
   if (item.category !== 'meal') return null;
@@ -82,27 +72,51 @@ function anchorIdForSchedule(item) {
   return 'breakfast';
 }
 
+function minuteFromTime(value) {
+  const match = /^(\d{2}):(\d{2})/.exec(value);
+  if (!match) return null;
+  const [, hours, minutes] = match.map(Number);
+  if (hours === 24 && minutes === 0) return 1440;
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function durationForScheduleItem(item, nextItem) {
+  const [startText, endText] = item.time.split('–');
+  const startMinute = minuteFromTime(startText);
+  const endMinute = endText ? minuteFromTime(endText) : minuteFromTime(nextItem?.time ?? '');
+  if (startMinute === null || endMinute === null || endMinute <= startMinute) {
+    throw new Error(`기본 일정 시간을 해석할 수 없습니다: ${item.id}`);
+  }
+  return endMinute - startMinute;
+}
+
+function isModeDependentScheduleItem(id) {
+  return id === 'workout' || id === 'run' || /^(workout|normal|running|maintenance)-/.test(id);
+}
+
 function defaultPlanItems(mode, runStart) {
   const seen = new Set();
   const items = [];
   const timelineOrder = [];
-  for (const scheduleItem of getSchedule(mode, runStart)) {
+  const schedule = getSchedule(mode, runStart);
+  for (const [index, scheduleItem] of schedule.entries()) {
     const anchorId = anchorIdForSchedule(scheduleItem);
     if (anchorId) {
       timelineOrder.push(anchorId);
       continue;
     }
-    const id = itemIdForSchedule(scheduleItem.id);
-    if (!id || seen.has(id)) continue;
-    const libraryItem = LIBRARY_BY_ID.get(id);
-    if (!libraryItem) continue;
-    seen.add(id);
+    if (seen.has(scheduleItem.id)) continue;
+    seen.add(scheduleItem.id);
     items.push({
-      ...libraryItem,
+      id: scheduleItem.id,
+      label: scheduleItem.label,
+      category: scheduleItem.category,
+      durationMinutes: durationForScheduleItem(scheduleItem, schedule[index + 1]),
       source: 'default',
-      modeDependent: ['workout', 'run', 'shower'].includes(id),
+      modeDependent: isModeDependentScheduleItem(scheduleItem.id),
     });
-    timelineOrder.push(id);
+    timelineOrder.push(scheduleItem.id);
   }
   for (const anchorId of ANCHOR_IDS) {
     if (!timelineOrder.includes(anchorId)) timelineOrder.push(anchorId);
@@ -203,7 +217,8 @@ function normalizeV2Day(candidate, dayId) {
     .map(normalizeItem)
     .filter(Boolean);
   const byId = new Map(sourceItems.map((item) => [item.id, item]));
-  if (byId.size === 0) return { ...createDefaultDay(dayId, mode, runStart), legacyCompletion: copy(source.legacyCompletion ?? emptyLegacyCompletion()) };
+  const hasPlanFields = ['items', 'unscheduled', 'timelineOrder', 'revision'].some((key) => Object.hasOwn(source, key));
+  if (!hasPlanFields) return { ...createDefaultDay(dayId, mode, runStart), legacyCompletion: copy(source.legacyCompletion ?? emptyLegacyCompletion()) };
   const anchors = new Set(ANCHOR_IDS);
   const requestedOrder = Array.isArray(source.timelineOrder) ? source.timelineOrder : [];
   const timelineOrder = requestedOrder.filter((id, index) => typeof id === 'string' && (anchors.has(id) || byId.has(id)) && requestedOrder.indexOf(id) === index);
@@ -258,7 +273,11 @@ export function normalizeWeeklyState(candidate = {}) {
 }
 
 function localDateFrom(value) {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const date = new Date(value);
+    if (date.getHours() < 2) date.setDate(date.getDate() - 1);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
+  }
   if (typeof value === 'string') {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (match) {
@@ -320,11 +339,21 @@ function hasItemId(day, id) {
   return [...day.items, ...day.unscheduled].some((item) => item.id === id);
 }
 
+function insertionIndexForItem(day, timelineOrder, item) {
+  const sleepIndex = timelineOrder.indexOf('sleep');
+  const boundary = sleepIndex < 0 ? timelineOrder.length : sleepIndex;
+  const itemsById = new Map([...day.items, ...day.unscheduled].map((candidate) => [candidate.id, candidate]));
+  const fittingIndex = timelineOrder.slice(0, boundary).findLastIndex((id) => !ANCHOR_IDS.includes(id) && itemsById.get(id)?.durationMinutes >= item.durationMinutes);
+  if (fittingIndex >= 0) return fittingIndex;
+  const lastPlanIndex = timelineOrder.slice(0, boundary).findLastIndex((id) => !ANCHOR_IDS.includes(id));
+  return lastPlanIndex < 0 ? boundary : lastPlanIndex;
+}
+
 function addItem(day, item) {
   const next = cloneDay(day);
-  const sleepIndex = next.timelineOrder.indexOf('sleep');
   const timelineOrder = [...next.timelineOrder];
-  timelineOrder.splice(sleepIndex < 0 ? timelineOrder.length : sleepIndex, 0, item.id);
+  const insertionIndex = insertionIndexForItem({ ...next, items: [...next.items, item] }, timelineOrder, item);
+  timelineOrder.splice(insertionIndex, 0, item.id);
   return bumpRevision(reflow({ ...next, items: [...next.items, item], timelineOrder }));
 }
 
@@ -350,7 +379,9 @@ export function addCustomPlanItem(day, input, idFactory) {
   if (!Number.isInteger(candidate.durationMinutes) || candidate.durationMinutes < 10 || candidate.durationMinutes > 480) throw new Error('소요시간은 10분 이상 480분 이하여야 합니다.');
   if (typeof idFactory !== 'function') throw new Error('일정 ID 생성기가 필요합니다.');
   const id = idFactory();
-  if (typeof id !== 'string' || !id.trim() || hasItemId(cloneDay(day), id)) throw new Error('유효한 일정 ID가 필요합니다.');
+  if (typeof id !== 'string' || !id.trim()) throw new Error('유효한 일정 ID가 필요합니다.');
+  if (ANCHOR_IDS.includes(id)) throw new Error('예약된 일정 ID입니다.');
+  if (hasItemId(cloneDay(day), id)) throw new Error('이미 사용 중인 일정 ID입니다.');
   return addItem(day, { id, label, category: candidate.category, durationMinutes: candidate.durationMinutes, source: 'custom' });
 }
 
@@ -398,7 +429,11 @@ export function changeDayMode(day, mode, runStart = '21') {
   const modeItems = target.items.filter((item) => item.modeDependent && !retained.some(({ id }) => id === item.id));
   const itemIds = new Set([...retained, ...modeItems].map(({ id }) => id));
   const timelineOrder = target.timelineOrder.filter((id) => ANCHOR_IDS.includes(id) || itemIds.has(id));
-  for (const item of retained) if (!timelineOrder.includes(item.id)) timelineOrder.splice(Math.max(timelineOrder.indexOf('sleep'), 0), 0, item.id);
+  const resultingDay = { items: [...retained, ...modeItems], unscheduled: [] };
+  for (const item of retained) {
+    if (timelineOrder.includes(item.id)) continue;
+    timelineOrder.splice(insertionIndexForItem(resultingDay, timelineOrder, item), 0, item.id);
+  }
   return bumpRevision(reflow({ ...next, mode: selectedMode, runStart: selectedRunStart, items: [...retained, ...modeItems], unscheduled: [], timelineOrder }));
 }
 
