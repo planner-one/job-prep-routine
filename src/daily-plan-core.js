@@ -304,6 +304,7 @@ export function applyUpdatedPlan(dailyState, resolvedPlan) {
 
 export function buildDailyExecutionSummary(dailyState) {
   const source = isObject(dailyState) ? dailyState : {};
+  const snapshot = normalizePlanSnapshot(source.planSnapshot);
   const checked = new Set(normalizedCheckedIds(source.checkedIds));
   const companies = Array.isArray(source.companies) ? source.companies : [];
   const summary = {
@@ -316,7 +317,7 @@ export function buildDailyExecutionSummary(dailyState) {
   };
   const completedItems = [];
   const countedIds = new Set();
-  for (const item of normalizePlanSnapshot(source.planSnapshot)?.items ?? []) {
+  for (const item of snapshot?.items ?? []) {
     if (!checked.has(item.id) || countedIds.has(item.id)) continue;
     completedItems.push(item);
     countedIds.add(item.id);
@@ -325,6 +326,14 @@ export function buildDailyExecutionSummary(dailyState) {
     if (countedIds.has(item.id)) continue;
     completedItems.push(item);
     countedIds.add(item.id);
+  }
+  if (!snapshot && Array.isArray(source.learningTopics)) {
+    for (const topic of LEARNING_TOPICS) {
+      const id = `learning:${topic}`;
+      if (!source.learningTopics.includes(topic) || countedIds.has(id) || countedIds.has(topic)) continue;
+      completedItems.push({ id, label: topic, category: 'learning' });
+      countedIds.add(id);
+    }
   }
 
   for (const item of completedItems) {

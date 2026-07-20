@@ -127,3 +127,34 @@
 - 편집 중 갱신도 상단 진척과 행 상태는 최신으로 바꾸면서 입력 DOM·값·포커스를 유지한다.
 - Task 4의 최신 legacy migration과 기존 저장값은 보존했으며 `outputs`, 8787 서버, 로그인·배포는 변경하지 않았다.
 - 남은 우려는 없다. `jenv` 경고는 앞선 검증과 동일한 로컬 환경 메시지이며 모든 검증 종료 코드는 0이다.
+
+## 2차 재검토 수정
+
+작업 기준은 `8d4e9cc`이며, 페이지 migration이 실행되기 전 raw legacy 데일리 상태의 학습 완료가 주간 진척에서 누락되는 결함을 수정했다.
+
+### RED
+
+- 명령: `node --test tests/daily-plan-core.test.mjs`
+- 결과: 13개 중 12개 통과·1개 실패
+- 실패 이유: raw storage의 `{ learningTopics: ['CS'], checkedIds: [] }`를 직접 집계하면 `learning.CS`가 기대값 1 대신 0이었다.
+- 같은 fixture에 유효한 `planSnapshot`과 미체크 학습 주제 메타데이터를 추가해 새 모델의 단순 선택은 완료로 세지 않는 조건도 함께 고정했다.
+
+### 수정 내용
+
+- 실행 요약이 유효한 snapshot이 없는 경우에만 legacy `learningTopics`의 유효 주제를 합성 완료 항목으로 해석한다.
+- archive 또는 기존 완료 항목과 ID가 겹치면 중복 집계하지 않는다.
+- 유효한 snapshot이 있으면 기존처럼 `checkedIds`만 완료로 인정하므로 새 모델의 학습 주제 선택 메타데이터는 진척으로 오인하지 않는다.
+
+### GREEN 및 최종 검증
+
+- 단위 GREEN: `node --test tests/daily-plan-core.test.mjs` — 13/13 통과
+- focused + 실제 Chrome: `node --test tests/daily-plan-core.test.mjs tests/weekly-app.test.mjs tests/weekly-browser.test.mjs` — 22/22 통과
+- 정적 검사: `npm run check` — 성공
+- 전체 테스트: `npm test` — 121/121 통과, 실패 0
+- diff 검사: `git diff --check` — 성공
+
+### 자체검토와 우려
+
+- 전체 테스트 전 공유 트리의 임시 `tests/history-core.test.mjs` 변경이 사라진 것을 확인해 다른 작업의 RED 상태를 결과에 섞지 않았다.
+- `outputs`, 기존 8787 서버, 로그인·배포는 변경하지 않았다.
+- 남은 우려는 없다. `jenv` 경고는 기존과 같은 로컬 환경 메시지이며 모든 최종 검증 종료 코드는 0이다.

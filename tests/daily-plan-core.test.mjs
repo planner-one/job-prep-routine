@@ -154,6 +154,28 @@ test('legacy learningTopics 단독 완료를 실행으로 감지해 새 snapshot
   assert.equal(calculateWeeklyExecutionProgress(storage, '2026-07-20').learning.CS, 1);
 });
 
+test('페이지 migration 전 raw legacy 학습 완료도 주간 집계에 반영한다', () => {
+  const entries = {
+    'job-prep-routine:daily:2026-07-20': JSON.stringify({
+      learningTopics: ['CS'],
+      checkedIds: [],
+    }),
+    'job-prep-routine:daily:2026-07-21': JSON.stringify({
+      learningTopics: ['CS'],
+      checkedIds: [],
+      planSnapshot: {
+        revision: 1,
+        items: [
+          { id: 'learning:CS', label: 'CS', category: 'learning', startMinute: 600, endMinute: 660 },
+        ],
+      },
+    }),
+  };
+  const storage = { getItem: (key) => entries[key] ?? null };
+
+  assert.equal(calculateWeeklyExecutionProgress(storage, '2026-07-20').learning.CS, 1);
+});
+
 test('주간 계획만 저장한 날은 진척이 증가하지 않는다', () => {
   const entries = {
     'job-prep-routine:weekly:2026-07-20': JSON.stringify(createDefaultWeeklyState()),
