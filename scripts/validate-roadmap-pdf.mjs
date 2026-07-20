@@ -28,6 +28,18 @@ async function runTool(command, args) {
   }
 }
 
+export function validateRoadmapPage(page, variant, pageIndex) {
+  const context = `${pageIndex + 1}페이지`;
+  requireText(page, '취업 준비 운영 로드맵', context);
+  requireText(page, variant.label, context);
+  requireText(page, variant.description, context);
+  for (const principle of PRINCIPLES) requireText(page, principle, context);
+  for (const item of variant.schedule) {
+    requireText(page, `${item.time} ${item.label}`, context);
+  }
+  return variant.schedule.length;
+}
+
 export async function validateRoadmapPdf(pdfPath) {
   const path = pdfPath instanceof URL ? fileURLToPath(pdfPath) : resolve(pdfPath);
   const { stdout: info } = await runTool(
@@ -60,14 +72,7 @@ export async function validateRoadmapPdf(pdfPath) {
   if (variants.length !== 5) throw new Error(`로드맵 변형 수가 5가 아닙니다: ${variants.length}`);
   let scheduleItemCount = 0;
   variants.forEach((variant, pageIndex) => {
-    const page = pages[pageIndex];
-    requireText(page, '취업 준비 운영 로드맵', `${pageIndex + 1}페이지`);
-    requireText(page, variant.label, `${pageIndex + 1}페이지`);
-    for (const principle of PRINCIPLES) requireText(page, principle, `${pageIndex + 1}페이지`);
-    for (const item of variant.schedule) {
-      scheduleItemCount += 1;
-      requireText(page, `${item.time} ${item.label}`, `${pageIndex + 1}페이지`);
-    }
+    scheduleItemCount += validateRoadmapPage(pages[pageIndex], variant, pageIndex);
   });
   if (scheduleItemCount !== 72) throw new Error(`로드맵 일정 수가 72가 아닙니다: ${scheduleItemCount}`);
 

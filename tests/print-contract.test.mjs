@@ -59,6 +59,9 @@ test('로드맵 인쇄는 일정 변형마다 새 페이지에서 시작하고 �
     declarationsFor(printCss, '#roadmap-page [data-roadmap-variant][hidden]'),
     /display:\s*block\s*!important/,
   );
+  assert.match(declarationsFor(printCss, '.roadmap-mode-heading'), /display:\s*none\s*!important/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading > div:last-child'), /display:\s*grid/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading > div:last-child'), /gap:\s*[\d.]+mm/);
   assert.match(declarationsFor(printCss, '.roadmap-print-principles'), /display:\s*grid\s*!important/);
   assert.match(declarationsFor(printCss, '.roadmap-print-principles .focus-anchor'), /position:\s*relative/);
   assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-before:\s*page/);

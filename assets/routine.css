@@ -2378,6 +2378,17 @@ textarea:focus-visible,
     border-bottom: 1px solid var(--line);
   }
 
+  .roadmap-print-page-heading > div:last-child {
+    display: grid;
+    justify-items: end;
+    gap: 1.5mm;
+    text-align: right;
+  }
+
+  .roadmap-mode-heading {
+    display: none !important;
+  }
+
   .roadmap-print-principles {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
