@@ -358,7 +358,12 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     const daily = selectedDailyState();
     const dayDate = selectedDateKey();
     const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
-    const currentPlan = { revision: day.revision, items: timeline };
+    const currentPlan = {
+      weekKey,
+      dayId: state.selectedDay,
+      revision: day.revision,
+      items: timeline,
+    };
     const list = root.querySelector('#weekly-plan-list');
     list.replaceChildren(...timeline.map((item) => renderPlanRow(pageDocument, item, {
       editingTime,
@@ -381,7 +386,12 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     const daily = selectedDailyState();
     const dayDate = selectedDateKey();
     const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
-    const currentPlan = { revision: day.revision, items: timeline };
+    const currentPlan = {
+      weekKey,
+      dayId: state.selectedDay,
+      revision: day.revision,
+      items: timeline,
+    };
     for (const row of root.querySelectorAll('#weekly-plan-list [data-plan-item-id]')) {
       paintRowExecutionState(row, resolveWeeklyRowState(
         row.dataset.planItemId,

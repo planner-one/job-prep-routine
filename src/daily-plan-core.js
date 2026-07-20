@@ -8,6 +8,7 @@ import { LEARNING_TOPICS, getSchedule } from './routine-data.js';
 import { storageKey } from './routine-core.js';
 
 const SNAPSHOT_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
+const SNAPSHOT_DAY_IDS = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 const REVIEW_IDS = new Set(['portfolio-review', 'maintenance-portfolio']);
 const INTERVIEW_IDS = new Set(['interview-practice', 'maintenance-interview']);
 
@@ -57,6 +58,17 @@ function isObject(value) {
 
 function validMinute(value) {
   return Number.isInteger(value) && value >= 0 && value <= 1440;
+}
+
+function validWeekKey(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? '');
+  if (!match) return false;
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  return date.getFullYear() === year
+    && date.getMonth() === month - 1
+    && date.getDate() === day
+    && date.getDay() === 1;
 }
 
 function normalizeSnapshotItem(candidate) {
@@ -225,8 +237,14 @@ export function migrateLegacyDailyState(date, dailyCandidate, revision = 0) {
 
 export function normalizePlanSnapshot(candidate) {
   if (!isObject(candidate) || !Number.isInteger(candidate.revision) || candidate.revision < 0 || !Array.isArray(candidate.items)) return null;
+  const hasWeekKey = Object.hasOwn(candidate, 'weekKey');
+  const hasDayId = Object.hasOwn(candidate, 'dayId');
+  if (hasWeekKey && !validWeekKey(candidate.weekKey)) return null;
+  if (hasDayId && !SNAPSHOT_DAY_IDS.has(candidate.dayId)) return null;
   const seen = new Set();
   return {
+    ...(hasWeekKey ? { weekKey: candidate.weekKey } : {}),
+    ...(hasDayId ? { dayId: candidate.dayId } : {}),
     revision: candidate.revision,
     items: candidate.items
       .map(normalizeSnapshotItem)
@@ -271,7 +289,9 @@ export function prepareDailyPlan(state, resolvedPlan) {
   return {
     state,
     renderPlan: snapshot,
-    needsPlanUpdate: snapshot.revision !== resolvedSnapshot?.revision
+    needsPlanUpdate: snapshot.weekKey !== resolvedSnapshot?.weekKey
+      || snapshot.dayId !== resolvedSnapshot?.dayId
+      || snapshot.revision !== resolvedSnapshot?.revision
       || !plansHaveSameContent(snapshot, resolvedSnapshot),
   };
 }

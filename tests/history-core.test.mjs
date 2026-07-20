@@ -129,6 +129,49 @@ test('세 보드 상세는 모두 보존하지만 완료율은 우선순위가 �
   assert.deepEqual(record.learningTopics, ['Spring', 'Redis', 'Java', 'CS']);
 });
 
+test('데일리가 있으면 하위 로드맵과 주간 완료가 지표와 운영 유형을 오염시키지 않는다', () => {
+  const record = buildHistoryRecord({
+    date: '2026-07-19',
+    daily: {
+      mode: 'normal',
+      checkedIds: [],
+      companies: [],
+      learningTopics: [],
+      memos: { implemented: '오늘 기록', blocked: '', firstAction: '' },
+    },
+    roadmap: {
+      mode: 'running',
+      runStart: '21',
+      checkedIds: ['run', 'interview-practice', 'learning'],
+      learningTopics: ['Java'],
+    },
+    weekly: weeklyState,
+  });
+
+  assert.equal(record.completion.source, 'daily');
+  assert.equal(record.mode, 'normal');
+  assert.equal(record.isMaintenance, false);
+  assert.deepEqual(record.metrics, {
+    applications: 0,
+    interview: 0,
+    learning: 0,
+    exercise: 0,
+  });
+  assert.deepEqual(record.roadmapCompletedSchedule.map(({ id }) => id), [
+    'interview-practice',
+    'learning',
+    'run',
+  ]);
+  assert.deepEqual(record.weeklyChecks.completed, [
+    'deadline',
+    'review',
+    'interview',
+    'learningReview',
+    'rest',
+  ]);
+  assert.deepEqual(record.learningTopics, ['Java']);
+});
+
 test('데일리 완료율은 공통 저장 모델 계약과 같은 분자·분모·백분율을 사용한다', () => {
   const record = buildHistoryRecord({ date: '2026-07-18', daily: dailyProgressFixture });
   assert.deepEqual(record.completion, { source: 'daily', ...dailyProgressExpected });

@@ -21,6 +21,35 @@ test('날짜에 맞는 요일 계획을 해석한다', () => {
   assert.equal(plan.items.length > 0, true);
 });
 
+test('계획 식별자는 resolve부터 normalize, prepare, apply와 JSON 저장 왕복까지 보존된다', () => {
+  const resolved = resolveDailyPlan('2026-07-22', createDefaultWeeklyState());
+  const normalized = normalizePlanSnapshot(resolved);
+  const storedState = JSON.parse(JSON.stringify({
+    checkedIds: [resolved.items[0].id],
+    planSnapshot: normalized,
+  }));
+  const prepared = prepareDailyPlan(storedState, resolved);
+  const applied = applyUpdatedPlan(storedState, {
+    ...resolved,
+    revision: resolved.revision + 1,
+  });
+  const roundTripped = JSON.parse(JSON.stringify(applied)).planSnapshot;
+
+  assert.deepEqual(
+    [normalized, prepared.renderPlan, roundTripped].map(({ weekKey, dayId }) => ({ weekKey, dayId })),
+    Array.from({ length: 3 }, () => ({ weekKey: '2026-07-20', dayId: 'wed' })),
+  );
+  assert.equal(roundTripped.revision, resolved.revision + 1);
+  assert.deepEqual(roundTripped.items, normalized.items);
+});
+
+test('스냅샷의 잘못된 주간 키와 요일 ID는 거부한다', () => {
+  const resolved = resolveDailyPlan('2026-07-22', createDefaultWeeklyState());
+
+  assert.equal(normalizePlanSnapshot({ ...resolved, weekKey: '2026-07-22' }), null);
+  assert.equal(normalizePlanSnapshot({ ...resolved, dayId: 'monday' }), null);
+});
+
 test('실행 전에는 최신 계획을 쓰고 입력 후에는 스냅샷을 고정한다', () => {
   const weekly = createDefaultWeeklyState();
   const resolved = resolveDailyPlan('2026-07-20', weekly);

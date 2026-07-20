@@ -316,34 +316,52 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     completed = weeklySummary.completed.length + weeklyLearningCompletion;
     total = weeklySummary.total + (weeklySummary.isMaintenance ? 0 : 1);
   }
-  const applications = companies.length > 0 ? pipeline.applied : weeklySummary.applications;
-  const completedIds = new Set([
-    ...dailySchedule.completedIds,
-    ...roadmapSchedule.completedIds,
-  ]);
-  const dailyCompletedCategories = new Set(
-    dailySchedule.completed.map(({ category }) => category),
+  const authoritativeState = completionSource === 'daily'
+    ? dailyState
+    : completionSource === 'roadmap'
+      ? roadmapState
+      : null;
+  const authoritativeSchedule = completionSource === 'daily'
+    ? dailySchedule
+    : completionSource === 'roadmap'
+      ? roadmapSchedule
+      : { completed: [], completedIds: [] };
+  const authoritativeMode = completionSource === 'weekly'
+    ? weeklySummary.mode
+    : authoritativeState?.mode;
+  const mode = normalizeMode(authoritativeMode, 'normal');
+  const sourceLearningTopics = completionSource === 'weekly'
+    ? normalizeTopics(weeklySummary.topics)
+    : normalizeTopics(authoritativeState?.learningTopics);
+  const completedIds = new Set(authoritativeSchedule.completedIds);
+  const completedCategories = new Set(
+    authoritativeSchedule.completed.map(({ category }) => category),
   );
-  const hasCustomExercise = dailySchedule.completed.some(
+  const hasCustomExercise = authoritativeSchedule.completed.some(
     ({ id, category }) => category === 'exercise' && !DEFAULT_EXERCISE_IDS.has(id),
   );
+  const applications = completionSource === 'daily'
+    ? pipeline.applied
+    : completionSource === 'weekly'
+      ? weeklySummary.applications
+      : 0;
   const interview =
-    weeklySummary.completed.includes('interview') ||
+    (completionSource === 'weekly' && weeklySummary.completed.includes('interview')) ||
     ['interview-practice', 'maintenance-interview'].some((id) => completedIds.has(id))
       ? 1
       : 0;
   const learning =
-    learningTopics.length > 0 ||
-    dailyCompletedCategories.has('learning') ||
+    sourceLearningTopics.length > 0 ||
+    completedCategories.has('learning') ||
     ['learning', 'maintenance-learning'].some((id) => completedIds.has(id)) ||
-    weeklySummary.completed.includes('learningReview')
+    (completionSource === 'weekly' && weeklySummary.completed.includes('learningReview'))
       ? 1
       : 0;
   const exercise =
     hasCustomExercise ||
     completedIds.has('workout') ||
     completedIds.has('run') ||
-    (weeklySummary.completed.includes('activity') &&
+    (completionSource === 'weekly' && weeklySummary.completed.includes('activity') &&
       ['workout', 'running'].includes(weeklySummary.mode))
       ? 1
       : 0;
@@ -357,10 +375,8 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
 
   return {
     date,
-    mode: weeklySummary.isMaintenance
-      ? 'maintenance'
-      : normalizeMode(dailyState?.mode ?? roadmapState?.mode, weeklySummary.mode ?? 'normal'),
-    isMaintenance: weeklySummary.isMaintenance,
+    mode,
+    isMaintenance: mode === 'maintenance',
     completion: {
       source: completionSource,
       completed,
