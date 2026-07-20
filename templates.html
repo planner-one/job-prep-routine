@@ -35,15 +35,15 @@
             </article>
             <article class="interview-stat-card interview-stat-card--learning">
               <span>학습 중</span>
-              <strong data-interview-stat="learning">0</strong>
+              <strong data-interview-stat="studying">0</strong>
+            </article>
+            <article class="interview-stat-card interview-stat-card--review">
+              <span>복습 필요</span>
+              <strong data-interview-stat="review">0</strong>
             </article>
             <article class="interview-stat-card interview-stat-card--complete">
               <span>완료</span>
-              <strong data-interview-stat="complete">0</strong>
-            </article>
-            <article class="interview-stat-card interview-stat-card--favorite">
-              <span>즐겨찾기</span>
-              <strong data-interview-stat="favorite">0</strong>
+              <strong data-interview-stat="done">0</strong>
             </article>
           </div>
         </section>
@@ -53,6 +53,7 @@
             <div>
               <p class="section-kicker">오늘의 면접 큐</p>
               <h2 id="interview-queue-title">먼저 답할 다섯 문항</h2>
+              <p>기준일 <time id="interview-queue-date">불러오는 중</time></p>
             </div>
           </div>
           <ol class="interview-queue-list" aria-label="오늘 학습할 면접 문항"></ol>
@@ -91,7 +92,7 @@
           </div>
 
           <div class="interview-results-heading">
-            <p id="interview-results-count">전체 152문항</p>
+            <p id="interview-results-count" aria-live="polite" aria-atomic="true">전체 152문항</p>
           </div>
           <ol class="interview-question-list" id="interview-list"></ol>
           <p class="interview-empty" id="interview-empty" hidden>선택한 조건에 맞는 문항이 없습니다.</p>

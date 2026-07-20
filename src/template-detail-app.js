@@ -9,7 +9,7 @@ import {
   updateQuestionState,
 } from './interview-core.js';
 import {
-  loadInterviewQueue,
+  loadOrCreateDailyQueue,
   loadInterviewState,
   saveInterviewQueue,
   saveInterviewState,
@@ -210,12 +210,15 @@ export function initTemplateDetailPage(root = document, options = {}) {
     state = createEmptyInterviewState();
     startupMessage = SAVE_ERROR_MESSAGE;
   }
-  try {
-    queue = loadInterviewQueue(storage, date, validIds);
-  } catch {
-    queue = { date, ids: [], completedIds: [], updatedAt: null };
-    startupMessage = SAVE_ERROR_MESSAGE;
-  }
+  queue = loadOrCreateDailyQueue(
+    storage,
+    INTERVIEW_QUESTIONS,
+    state,
+    date,
+    validIds,
+    now(),
+    () => { startupMessage = SAVE_ERROR_MESSAGE; },
+  );
 
   function notify(message) {
     setText(page, '#detail-live', message);
@@ -284,8 +287,18 @@ export function initTemplateDetailPage(root = document, options = {}) {
     }
   }
 
+  function currentDraftPatch() {
+    const { answer, keywords, memo } = collectQuestionPatch(page);
+    return { answer, keywords, memo };
+  }
+
   function persistQuestionPatch(patch, preserveText = true) {
-    const candidate = updateQuestionState(state, question.id, patch, now());
+    const candidate = updateQuestionState(
+      state,
+      question.id,
+      { ...currentDraftPatch(), ...patch },
+      now(),
+    );
     if (!saveStateOnly(candidate)) {
       renderQuestionState({ preserveText });
       notify(SAVE_ERROR_MESSAGE);
@@ -299,10 +312,28 @@ export function initTemplateDetailPage(root = document, options = {}) {
   function togglePinned() {
     const current = questionStateFor(state, question.id);
     try {
-      const candidateState = setQueuePinned(state, question.id, !current.queuePinned, now());
+      const currentTime = now();
+      const stateWithDraft = updateQuestionState(
+        state,
+        question.id,
+        currentDraftPatch(),
+        currentTime,
+      );
+      const candidateState = setQueuePinned(
+        stateWithDraft,
+        question.id,
+        !current.queuePinned,
+        currentTime,
+      );
       let candidateQueue = queue;
       if (!current.queuePinned && !queue.ids.includes(question.id)) {
-        candidateQueue = addQuestionToQueue(queue, question.id, INTERVIEW_QUESTIONS, candidateState, now());
+        candidateQueue = addQuestionToQueue(
+          queue,
+          question.id,
+          INTERVIEW_QUESTIONS,
+          candidateState,
+          currentTime,
+        );
       }
       const saved = candidateQueue === queue
         ? saveStateOnly(candidateState)
@@ -346,7 +377,11 @@ export function initTemplateDetailPage(root = document, options = {}) {
         ...state,
         questions: {
           ...state.questions,
-          [question.id]: { ...current, lastStudiedAt: completedAt.toISOString() },
+          [question.id]: {
+            ...current,
+            ...currentDraftPatch(),
+            lastStudiedAt: completedAt.toISOString(),
+          },
         },
       };
       if (!saveStateAndQueue(candidateState, candidateQueue)) {

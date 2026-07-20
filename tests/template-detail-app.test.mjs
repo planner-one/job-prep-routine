@@ -174,7 +174,8 @@ function detailFixture(search = '?id=be-1') {
   const view = {
     document,
     localStorage: null,
-    location: { search, href: '', reload() {} },
+    reloadCalls: 0,
+    location: { search, href: '', reload() { view.reloadCalls += 1; } },
     printCalls: 0,
     print() { this.printCalls += 1; },
     confirm: () => true,
@@ -184,7 +185,7 @@ function detailFixture(search = '?id=be-1') {
     removeEventListener() {},
   };
   document.defaultView = view;
-  return { document, page, view };
+  return { document, page, view, timers };
 }
 
 function memoryStorage(entries = {}) {
@@ -312,6 +313,22 @@ test('유효하지 않은 ID에서는 편집 화면과 저장을 모두 막는�
   assert.equal(document.documentElement.dataset.templateDetailReady, 'true');
 });
 
+test('상세 직접 진입은 오늘의 5문항을 저장하고 현재 문항 고정·완료 뒤에도 구성을 유지한다', () => {
+  const { document, page, storage, app } = initFixture();
+  const initialIds = app.getQueue().ids;
+
+  assert.equal(initialIds.length, 5);
+  assert.deepEqual(storage.json(interviewQueueKey(DATE)).ids, initialIds);
+
+  page.emit('click', document.querySelector('#detail-pinned'));
+  page.emit('click', document.querySelector('.interview-complete-today'));
+
+  assert.deepEqual(app.getQueue().ids, initialIds);
+  assert.equal(app.getState().questions['be-1'].queuePinned, true);
+  assert.deepEqual(app.getQueue().completedIds, ['be-1']);
+  assert.deepEqual(storage.json(interviewQueueKey(DATE)).ids, initialIds);
+});
+
 test('여섯 번째 고정과 큐 추가 실패는 버튼·질문 상태·큐를 직전 값으로 유지한다', () => {
   const pinnedQuestions = Object.fromEntries(
     INTERVIEW_QUESTIONS.slice(1, 6).map(({ id }) => [id, { queuePinned: true }]),
@@ -406,6 +423,63 @@ test('텍스트 저장 실패 뒤 모든 비텍스트 조작에서도 현재 dra
   assertDraft();
 });
 
+test('텍스트 저장 실패 뒤 상태 저장이 성공하면 세 draft를 영속화하고 reload에서 복원한다', () => {
+  const queue = { date: DATE, ids: ['be-1'], completedIds: [], updatedAt: 'saved' };
+  const { document, page, storage } = initFixture({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-1': { answer: '저장 답변', keywords: '저장 키워드', memo: '저장 메모' } },
+      filters: {},
+    }),
+    [interviewQueueKey(DATE)]: JSON.stringify(queue),
+  });
+  const draft = {
+    answer: '복구할 답변 draft',
+    keywords: '복구할 키워드 draft',
+    memo: '복구할 메모 draft',
+  };
+
+  storage.failWrites();
+  for (const [selector, value] of [
+    ['#detail-answer', draft.answer],
+    ['#detail-keywords', draft.keywords],
+    ['#detail-memo', draft.memo],
+  ]) {
+    const field = document.querySelector(selector);
+    field.value = value;
+    page.emit('input', field);
+  }
+  storage.allowWrites();
+  const status = document.querySelector('#detail-status');
+  status.value = 'review';
+  page.emit('change', status);
+
+  const stored = storage.json(INTERVIEW_STATE_KEY);
+  assert.deepEqual(
+    {
+      status: stored.questions['be-1'].status,
+      answer: stored.questions['be-1'].answer,
+      keywords: stored.questions['be-1'].keywords,
+      memo: stored.questions['be-1'].memo,
+    },
+    { status: 'review', ...draft },
+  );
+
+  const reloaded = initFixture({
+    [INTERVIEW_STATE_KEY]: JSON.stringify(stored),
+    [interviewQueueKey(DATE)]: JSON.stringify(storage.json(interviewQueueKey(DATE))),
+  });
+  assert.deepEqual(
+    {
+      status: reloaded.document.querySelector('#detail-status').value,
+      answer: reloaded.document.querySelector('#detail-answer').value,
+      keywords: reloaded.document.querySelector('#detail-keywords').value,
+      memo: reloaded.document.querySelector('#detail-memo').value,
+    },
+    { status: 'review', ...draft },
+  );
+});
+
 test('상태 저장 뒤 큐 저장만 실패하면 영속·메모리·DOM을 이전 스냅샷으로 롤백한다', () => {
   const queue = { date: DATE, ids: ['be-3'], completedIds: [], updatedAt: 'saved' };
   const { document, page, storage, app } = initFixture({
@@ -458,8 +532,9 @@ test('고정 한도 전이라도 큐가 모두 완료되어 추가할 수 없으
 test('오늘 완료는 큐에 먼저 추가하고 상태를 바꾸지 않으며 취소는 완료 목록만 바꾼다', () => {
   const { document, page, app, storage } = initFixture();
   const complete = document.querySelector('.interview-complete-today');
+  const initialIds = app.getQueue().ids;
   page.emit('click', complete);
-  assert.deepEqual(app.getQueue().ids, ['be-1']);
+  assert.deepEqual(app.getQueue().ids, initialIds);
   assert.deepEqual(app.getQueue().completedIds, ['be-1']);
   assert.equal(app.getState().questions['be-1'].status, 'unseen');
   assert.equal(app.getState().questions['be-1'].lastStudiedAt, NOW.toISOString());
@@ -516,4 +591,22 @@ test('학습일이 없으면 빈 datetime을 제거하고 양 끝 이동 버튼�
   assert.equal(next.disabled, false);
   page.emit('click', next);
   assert.equal(view.location.href, `./template.html?id=${encodeURIComponent(INTERVIEW_QUESTIONS[1].id)}`);
+});
+
+test('상세 앱은 주입한 시간이 오전 2시 경계를 넘으면 timer에서 reload한다', () => {
+  const fixture = detailFixture();
+  const storage = memoryStorage();
+  fixture.view.localStorage = storage;
+  let current = new Date(2026, 6, 21, 1, 59, 0);
+  const app = initTemplateDetailPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    now: () => new Date(current),
+  });
+
+  assert.equal(app.getDate(), '2026-07-20');
+  assert.equal(fixture.timers.length, 1);
+  current = new Date(2026, 6, 21, 2, 0, 0);
+  fixture.timers[0].callback();
+  assert.equal(fixture.view.reloadCalls, 1);
 });

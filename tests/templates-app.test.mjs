@@ -203,11 +203,12 @@ function templatesFixture() {
   const document = new FakeDocument();
   const root = appendElement(document, document.documentElement, 'main', { id: 'templates-page' });
   const stats = appendElement(document, root, 'div', { id: 'interview-stats' });
-  for (const key of ['total', 'learning', 'complete', 'favorite']) {
+  for (const key of ['total', 'studying', 'review', 'done']) {
     appendElement(document, stats, 'strong', { data: { interviewStat: key } });
   }
   const queue = appendElement(document, root, 'section', { id: 'interview-queue' });
-  appendElement(document, queue, 'div', { className: 'interview-section-heading' });
+  const queueHeading = appendElement(document, queue, 'div', { className: 'interview-section-heading' });
+  appendElement(document, queueHeading, 'time', { id: 'interview-queue-date' });
   appendElement(document, queue, 'ol', { className: 'interview-queue-list' });
   const filters = appendElement(document, root, 'div', { className: 'interview-filters' });
   appendElement(document, filters, 'input', { id: 'interview-search' });
@@ -225,7 +226,8 @@ function templatesFixture() {
   const view = {
     document,
     localStorage: null,
-    location: { reload() {} },
+    reloadCalls: 0,
+    location: { reload() { view.reloadCalls += 1; } },
     setTimeout(callback, delay) {
       timers.push({ callback, delay });
       return timers.length;
@@ -284,6 +286,31 @@ test('면접 상태를 일관된 한국어로 표시한다', () => {
   );
 });
 
+test('목록 KPI는 학습 중·복습 필요·완료를 서로 합치지 않고 센다', () => {
+  const { document } = initFixture({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: {
+        'be-1': { status: 'studying', favorite: true },
+        'be-2': { status: 'review', favorite: true },
+        'be-3': { status: 'review' },
+        'be-4': { status: 'done' },
+      },
+      filters: {},
+    }),
+  });
+
+  assert.deepEqual(
+    Object.fromEntries(
+      ['total', 'studying', 'review', 'done'].map((key) => [
+        key,
+        document.querySelector(`[data-interview-stat="${key}"]`).textContent,
+      ]),
+    ),
+    { total: '152', studying: '1', review: '2', done: '1' },
+  );
+});
+
 test('초기화하면 전체 문항·공식 카테고리·오늘의 다섯 문항을 원본 순서로 렌더링한다', () => {
   const { document, storage } = initFixture();
   const rows = document.querySelector('#interview-list').children;
@@ -298,12 +325,14 @@ test('초기화하면 전체 문항·공식 카테고리·오늘의 다섯 문�
   );
   assert.equal(queueCards.length, 5);
   assert.equal(document.querySelector('#interview-queue-progress').textContent, '오늘 0 / 5 완료');
+  assert.equal(document.querySelector('#interview-queue-date').textContent, '2026년 7월 20일');
+  assert.equal(document.querySelector('#interview-queue-date').getAttribute('datetime'), DATE);
   assert.match(rows.find((row) => row.dataset.questionId === 'be-5').textContent, /ResponseEntity<T>/u);
   assert.equal(storage.json(interviewQueueKey(DATE)).ids.length, 5);
   assert.equal(document.documentElement.dataset.templatesReady, 'true');
 });
 
-test('검색·상태·즐겨찾기 필터를 즉시 조합하고 새로고침용 상태에 보존한다', () => {
+test('검색·카테고리·상태·즐겨찾기 네 필터를 이벤트로 연속 적용하고 저장한다', () => {
   const savedState = {
     version: 1,
     questions: {
@@ -323,6 +352,11 @@ test('검색·상태·즐겨찾기 필터를 즉시 조합하고 새로고침용
   root.emit('input', search);
   assert.equal(document.querySelector('#interview-list').children.length, 2);
 
+  const category = document.querySelector('#interview-category-filters').children
+    .find((button) => button.dataset.interviewCategoryId === 'distributed-cache');
+  root.emit('click', category);
+  assert.equal(document.querySelector('#interview-list').children.length, 2);
+
   status.value = 'review';
   root.emit('change', status);
   assert.equal(document.querySelector('#interview-list').children.length, 2);
@@ -331,8 +365,26 @@ test('검색·상태·즐겨찾기 필터를 즉시 조합하고 새로고침용
   assert.equal(document.querySelector('#interview-list').children.length, 1);
   assert.equal(document.querySelector('#interview-list').children[0].dataset.questionId, 'be-66');
   assert.deepEqual(storage.json(INTERVIEW_STATE_KEY).filters, {
-    query: 'redis', categoryId: 'all', status: 'review', favoritesOnly: true,
+    query: 'redis', categoryId: 'distributed-cache', status: 'review', favoritesOnly: true,
   });
+});
+
+test('목록 앱은 주입한 시간이 오전 2시 경계를 넘으면 timer에서 reload한다', () => {
+  const fixture = templatesFixture();
+  const storage = memoryStorage();
+  fixture.view.localStorage = storage;
+  let current = new Date(2026, 6, 21, 1, 59, 0);
+  const app = initTemplatesPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    now: () => new Date(current),
+  });
+
+  assert.equal(app.getDate(), '2026-07-20');
+  assert.equal(fixture.timers.length, 1);
+  current = new Date(2026, 6, 21, 2, 0, 0);
+  fixture.timers[0].callback();
+  assert.equal(fixture.view.reloadCalls, 1);
 });
 
 test('현재 데이터에 없는 저장 카테고리는 전체로 복구한다', () => {
@@ -515,4 +567,62 @@ test('카테고리를 선택하면 활성 버튼 포커스를 유지하고 다�
   favorites.focus();
   root.emit('click', favorites);
   assert.equal(document.activeElement, favorites);
+});
+
+test('큐 고정과 해제 성공 뒤 같은 질문의 고정 버튼으로 포커스를 복원한다', () => {
+  const { document, root, app } = initFixture();
+  const id = app.getQueue().ids[0];
+
+  const pin = action(root, 'toggle-pin', id);
+  pin.focus();
+  root.emit('click', pin);
+  assert.equal(document.activeElement === action(root, 'toggle-pin', id), true);
+  assert.equal(document.activeElement.getAttribute('aria-pressed'), 'true');
+
+  const unpin = action(root, 'toggle-pin', id);
+  unpin.focus();
+  root.emit('click', unpin);
+  assert.equal(document.activeElement === action(root, 'toggle-pin', id), true);
+  assert.equal(document.activeElement.getAttribute('aria-pressed'), 'false');
+});
+
+test('오늘 완료와 취소 성공 뒤 같은 질문의 완료 버튼으로 포커스를 복원한다', () => {
+  const { document, root, app } = initFixture();
+  const id = app.getQueue().ids[0];
+
+  const complete = action(root, 'toggle-complete', id);
+  complete.focus();
+  root.emit('click', complete);
+  assert.equal(document.activeElement === action(root, 'toggle-complete', id), true);
+  assert.equal(document.activeElement.getAttribute('aria-pressed'), 'true');
+
+  const cancel = action(root, 'toggle-complete', id);
+  cancel.focus();
+  root.emit('click', cancel);
+  assert.equal(document.activeElement === action(root, 'toggle-complete', id), true);
+  assert.equal(document.activeElement.getAttribute('aria-pressed'), 'false');
+});
+
+test('직접 추가 성공 뒤 같은 카탈로그 질문 버튼으로 포커스를 복원한다', () => {
+  const { document, root } = initFixture();
+  const add = action(root, 'add-queue', 'be-66');
+  add.focus();
+  root.emit('click', add);
+
+  const rendered = action(root, 'add-queue', 'be-66');
+  assert.equal(document.activeElement === rendered, true);
+  assert.equal(rendered.disabled, false);
+  assert.equal(rendered.getAttribute('aria-disabled'), 'true');
+});
+
+test('교체 성공 뒤 같은 큐 위치의 새 교체 버튼으로 포커스를 복원한다', () => {
+  const { document, root, app } = initFixture();
+  const beforeId = app.getQueue().ids[0];
+  const replace = action(root, 'replace-queue', beforeId);
+  replace.focus();
+  root.emit('click', replace);
+
+  const afterId = app.getQueue().ids[0];
+  assert.notEqual(afterId, beforeId);
+  assert.equal(document.activeElement === action(root, 'replace-queue', afterId), true);
 });

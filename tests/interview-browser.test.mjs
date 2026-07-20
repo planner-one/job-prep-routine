@@ -288,6 +288,10 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
         categoryCount: document.querySelectorAll('[data-interview-category-id]').length,
         queueIds: [...document.querySelectorAll('.interview-queue-card')].map((card) => card.dataset.questionId),
         queueProgress: document.querySelector('#interview-queue-progress').textContent,
+        queueDate: document.querySelector('#interview-queue-date')?.textContent ?? null,
+        queueDatetime: document.querySelector('#interview-queue-date')?.getAttribute('datetime') ?? null,
+        resultsLive: document.querySelector('#interview-results-count').getAttribute('aria-live'),
+        resultsAtomic: document.querySelector('#interview-results-count').getAttribute('aria-atomic'),
       }))()`,
     );
     assert.equal(initial.questionIds.length, 152);
@@ -295,6 +299,10 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
     assert.equal(initial.categoryCount, 9);
     assert.equal(initial.queueIds.length, 5);
     assert.equal(initial.queueProgress, '오늘 0 / 5 완료');
+    assert.match(initial.queueDate, /^\d{4}년 \d{1,2}월 \d{1,2}일$/u);
+    assert.match(initial.queueDatetime, /^\d{4}-\d{2}-\d{2}$/u);
+    assert.equal(initial.resultsLive, 'polite');
+    assert.equal(initial.resultsAtomic, 'true');
 
     const targetQuestion = INTERVIEW_QUESTIONS.find(({ id }) => !initial.queueIds.includes(id));
     assert.ok(targetQuestion, '초기 큐 밖의 공식 면접 문항이 있어야 한다');
@@ -331,13 +339,13 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
           .find((candidate) => candidate.dataset.questionId === ${JSON.stringify(targetQuestion.id)});
         return {
           queueIds: [...document.querySelectorAll('.interview-queue-card')].map((card) => card.dataset.questionId),
-          addDisabled: renderedRow.querySelector('[data-interview-action="add-queue"]').disabled,
+          addAriaDisabled: renderedRow.querySelector('[data-interview-action="add-queue"]').getAttribute('aria-disabled'),
         };
       })()`,
     );
     assert.equal(afterAdd.queueIds.length, 5);
     assert.equal(afterAdd.queueIds.includes(targetQuestion.id), true);
-    assert.equal(afterAdd.addDisabled, true);
+    assert.equal(afterAdd.addAriaDisabled, 'true');
 
     await clickAndWaitForNavigation(
       cdp,
@@ -457,9 +465,9 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
           .find((candidate) => candidate.dataset.questionId === ${JSON.stringify(targetQuestion.id)});
         return {
           total: document.querySelector('[data-interview-stat="total"]').textContent,
-          learning: document.querySelector('[data-interview-stat="learning"]').textContent,
-          complete: document.querySelector('[data-interview-stat="complete"]').textContent,
-          favorite: document.querySelector('[data-interview-stat="favorite"]').textContent,
+          studying: document.querySelector('[data-interview-stat="studying"]')?.textContent ?? null,
+          review: document.querySelector('[data-interview-stat="review"]')?.textContent ?? null,
+          done: document.querySelector('[data-interview-stat="done"]')?.textContent ?? null,
           categoryCount: document.querySelectorAll('[data-interview-category-id]').length,
           resultsCount: document.querySelector('#interview-results-count').textContent,
           rowText: row.textContent,
@@ -474,11 +482,11 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
     assert.deepEqual(
       {
         total: listMirror.total,
-        learning: listMirror.learning,
-        complete: listMirror.complete,
-        favorite: listMirror.favorite,
+        studying: listMirror.studying,
+        review: listMirror.review,
+        done: listMirror.done,
       },
-      { total: '152', learning: '1', complete: '0', favorite: '1' },
+      { total: '152', studying: '0', review: '1', done: '0' },
     );
     assert.equal(listMirror.categoryCount, 9);
     assert.equal(listMirror.resultsCount, '조건에 맞는 1문항');
@@ -564,4 +572,198 @@ test('잘못된 면접 문항 ID는 오류만 표시하고 저장소를 쓰지 �
     assert.equal(invalid.storageLength, 0);
     assert.deepEqual(invalid.storageKeys, []);
   }, 'job-prep-interview-invalid-chrome-');
+});
+
+test('상세 직접 진입에서 만든 5문항 큐는 고정·완료 뒤 목록에서도 그대로 유지된다', { timeout: 45_000 }, async () => {
+  await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    await navigate(cdp, sessionId, `${baseUrl}/template.html?id=be-1`, 'data-template-detail-ready');
+
+    const detailQueue = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const queueKey = Object.keys(localStorage)
+          .find((key) => key.startsWith('job-prep-routine:interview:queue:'));
+        const initial = queueKey ? JSON.parse(localStorage.getItem(queueKey)) : null;
+        document.querySelector('#detail-pinned').click();
+        document.querySelector('.interview-complete-today').click();
+        return {
+          queueKey,
+          initial,
+          updated: queueKey ? JSON.parse(localStorage.getItem(queueKey)) : null,
+        };
+      })()`,
+    );
+
+    assert.ok(detailQueue.queueKey);
+    assert.equal(detailQueue.initial.ids.length, 5);
+    assert.deepEqual(detailQueue.updated.ids, detailQueue.initial.ids);
+    assert.deepEqual(detailQueue.updated.completedIds, ['be-1']);
+
+    await clickAndWaitForNavigation(
+      cdp,
+      sessionId,
+      `document.querySelector('.interview-back-nav a')`,
+      'data-templates-ready',
+    );
+    const listQueue = await evaluate(
+      cdp,
+      sessionId,
+      `(() => ({
+        ids: [...document.querySelectorAll('.interview-queue-card')].map((card) => card.dataset.questionId),
+        stored: JSON.parse(localStorage.getItem(${JSON.stringify(detailQueue.queueKey)})),
+        pinned: document.querySelector('.interview-queue-card[data-question-id="be-1"] [data-interview-action="toggle-pin"]')?.getAttribute('aria-pressed'),
+        completed: document.querySelector('.interview-queue-card[data-question-id="be-1"] [data-interview-action="toggle-complete"]')?.getAttribute('aria-pressed'),
+      }))()`,
+    );
+
+    assert.deepEqual(listQueue.ids, detailQueue.initial.ids);
+    assert.deepEqual(listQueue.stored.ids, detailQueue.initial.ids);
+    assert.equal(listQueue.pinned, 'true');
+    assert.equal(listQueue.completed, 'true');
+  }, 'job-prep-interview-direct-entry-chrome-');
+});
+
+test('실패한 상세 draft는 다음 상태 저장에 포함되어 reload 뒤 복원된다', { timeout: 45_000 }, async () => {
+  await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    await navigate(cdp, sessionId, `${baseUrl}/template.html?id=be-1`, 'data-template-detail-ready');
+    const draft = {
+      answer: '브라우저 복구 답변 draft',
+      keywords: '브라우저 복구 키워드 draft',
+      memo: '브라우저 복구 메모 draft',
+    };
+
+    const persisted = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const originalSetItem = Storage.prototype.setItem;
+        let failStateWrites = true;
+        Object.defineProperty(Storage.prototype, 'setItem', {
+          configurable: true,
+          writable: true,
+          value(key, value) {
+            if (failStateWrites && key === ${JSON.stringify(INTERVIEW_STATE_KEY)}) {
+              throw new DOMException('quota', 'QuotaExceededError');
+            }
+            return Reflect.apply(originalSetItem, this, [key, value]);
+          },
+        });
+        const inputValue = (selector, value) => {
+          const input = document.querySelector(selector);
+          input.value = value;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        inputValue('#detail-answer', ${JSON.stringify(draft.answer)});
+        inputValue('#detail-keywords', ${JSON.stringify(draft.keywords)});
+        inputValue('#detail-memo', ${JSON.stringify(draft.memo)});
+        failStateWrites = false;
+        const status = document.querySelector('#detail-status');
+        status.value = 'review';
+        status.dispatchEvent(new Event('change', { bubbles: true }));
+        return JSON.parse(localStorage.getItem(${JSON.stringify(INTERVIEW_STATE_KEY)})).questions['be-1'];
+      })()`,
+    );
+    assert.deepEqual(
+      {
+        status: persisted.status,
+        answer: persisted.answer,
+        keywords: persisted.keywords,
+        memo: persisted.memo,
+      },
+      { status: 'review', ...draft },
+    );
+
+    await reload(cdp, sessionId, 'data-template-detail-ready');
+    const restored = await evaluate(
+      cdp,
+      sessionId,
+      `(() => ({
+        status: document.querySelector('#detail-status').value,
+        answer: document.querySelector('#detail-answer').value,
+        keywords: document.querySelector('#detail-keywords').value,
+        memo: document.querySelector('#detail-memo').value,
+      }))()`,
+    );
+    assert.deepEqual(restored, { status: 'review', ...draft });
+  }, 'job-prep-interview-draft-retry-chrome-');
+});
+
+test('목록 큐 조작 성공 뒤 의미상 대응 버튼이 실제 activeElement가 된다', { timeout: 45_000 }, async () => {
+  await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    await navigate(cdp, sessionId, `${baseUrl}/templates.html`, 'data-templates-ready');
+    const focusResults = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const queueIds = () => [...document.querySelectorAll('.interview-queue-card')]
+          .map((card) => card.dataset.questionId);
+        const button = (action, id) => [...document.querySelectorAll('[data-interview-action]')]
+          .find((candidate) => candidate.dataset.interviewAction === action && candidate.dataset.questionId === id);
+        const focused = (action, id) => document.activeElement === button(action, id);
+        const firstId = queueIds()[0];
+
+        let target = button('toggle-pin', firstId);
+        target.focus();
+        target.click();
+        const pin = focused('toggle-pin', firstId);
+
+        target = button('toggle-pin', firstId);
+        target.focus();
+        target.click();
+        const unpin = focused('toggle-pin', firstId);
+
+        target = button('toggle-complete', firstId);
+        target.focus();
+        target.click();
+        const complete = focused('toggle-complete', firstId);
+
+        target = button('toggle-complete', firstId);
+        target.focus();
+        target.click();
+        const cancel = focused('toggle-complete', firstId);
+
+        const addId = ${JSON.stringify('be-66')};
+        target = button('add-queue', addId);
+        target.focus();
+        target.click();
+        const add = focused('add-queue', addId);
+
+        const replaceIndex = 0;
+        const replacedId = queueIds()[replaceIndex];
+        target = button('replace-queue', replacedId);
+        target.focus();
+        target.click();
+        const replacementId = queueIds()[replaceIndex];
+        const replacementButton = button('replace-queue', replacementId);
+        const replace = document.activeElement === replacementButton;
+
+        return {
+          pin,
+          unpin,
+          complete,
+          cancel,
+          add,
+          addAriaDisabled: button('add-queue', addId).getAttribute('aria-disabled'),
+          replace,
+          replacedId,
+          replacementId,
+        };
+      })()`,
+    );
+
+    assert.deepEqual(
+      {
+        pin: focusResults.pin,
+        unpin: focusResults.unpin,
+        complete: focusResults.complete,
+        cancel: focusResults.cancel,
+        add: focusResults.add,
+        replace: focusResults.replace,
+      },
+      { pin: true, unpin: true, complete: true, cancel: true, add: true, replace: true },
+    );
+    assert.equal(focusResults.addAriaDisabled, 'true');
+    assert.notEqual(focusResults.replacementId, focusResults.replacedId);
+  }, 'job-prep-interview-queue-focus-chrome-');
 });

@@ -44,6 +44,12 @@ test('목록 페이지에 요약·오늘의 큐·복합 필터·세로 목록 �
   assert.match(list, /<label[^>]+for="interview-search"/);
   assert.match(list, /<label[^>]+for="interview-status-filter"/);
   assert.match(list, /id="interview-favorites-only"[^>]+aria-pressed="false"/);
+  assert.match(list, /id="interview-results-count"[^>]+aria-live="polite"[^>]+aria-atomic="true"/);
+  assert.match(list, /<time[^>]+id="interview-queue-date"/);
+  for (const key of ['total', 'studying', 'review', 'done']) {
+    assert.match(list, new RegExp(`data-interview-stat="${key}"`));
+  }
+  assert.doesNotMatch(list, /data-interview-stat="favorite"/);
 });
 
 test('상세 페이지에 편집·출처·이동·인쇄·오류 골격이 있다', () => {
@@ -58,6 +64,7 @@ test('상세 페이지에 편집·출처·이동·인쇄·오류 골격이 있�
   for (const id of ['detail-favorite', 'detail-pinned']) {
     assert.match(detail, new RegExp(`id="${id}"[^>]+aria-pressed="false"`));
   }
+  assert.doesNotMatch(detail, /id="detail-last-studied"[^>]*datetime=""/);
 });
 
 test('면접 카탈로그는 세로 목록·모바일 한 열·상세 인쇄 규칙을 가진다', () => {

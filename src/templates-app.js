@@ -8,14 +8,13 @@ import {
   buildInterviewStats,
   createEmptyInterviewState,
   createEmptyQuestionState,
-  ensureDailyQueue,
   filterInterviewQuestions,
   replaceQueueQuestion,
   setQueueCompleted,
   setQueuePinned,
 } from './interview-core.js';
 import {
-  loadInterviewQueue,
+  loadOrCreateDailyQueue,
   loadInterviewState,
   saveInterviewQueue,
   saveInterviewState,
@@ -89,13 +88,17 @@ export function statusLabel(status) {
   return STATUS_LABELS[status] ?? STATUS_LABELS.unseen;
 }
 
+function formatQueueDate(date) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(date ?? '');
+  if (!match) return '';
+  return `${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}일`;
+}
+
 export function renderInterviewStats(root, stats) {
-  const learning = stats.learning ?? ((stats.studying ?? 0) + (stats.review ?? 0));
-  const complete = stats.complete ?? stats.done ?? 0;
   setText(root, '[data-interview-stat="total"]', stats.total ?? 0);
-  setText(root, '[data-interview-stat="learning"]', learning);
-  setText(root, '[data-interview-stat="complete"]', complete);
-  setText(root, '[data-interview-stat="favorite"]', stats.favorite ?? 0);
+  setText(root, '[data-interview-stat="studying"]', stats.studying ?? 0);
+  setText(root, '[data-interview-stat="review"]', stats.review ?? 0);
+  setText(root, '[data-interview-stat="done"]', stats.done ?? 0);
 }
 
 export function renderInterviewQueue(root, context) {
@@ -145,6 +148,11 @@ export function renderInterviewQueue(root, context) {
   }
 
   const queueRoot = find(root, '#interview-queue') ?? list.parentNode;
+  const queueDate = find(queueRoot, '#interview-queue-date');
+  if (queueDate) {
+    queueDate.textContent = formatQueueDate(queue.date);
+    queueDate.setAttribute('datetime', queue.date);
+  }
   let progress = find(queueRoot, '#interview-queue-progress');
   if (!progress) {
     progress = document.createElement('p');
@@ -199,8 +207,14 @@ export function renderInterviewList(root, context) {
     body.append(meta);
     row.append(body);
 
-    const add = actionButton(document, 'add-queue', question.id, '오늘의 큐에 추가');
-    add.disabled = queueIds.has(question.id);
+    const isQueued = queueIds.has(question.id);
+    const add = actionButton(
+      document,
+      'add-queue',
+      question.id,
+      isQueued ? '오늘의 큐에 있음' : '오늘의 큐에 추가',
+    );
+    add.setAttribute('aria-disabled', String(isQueued));
     row.append(add);
     list.append(row);
   }
@@ -304,19 +318,15 @@ export function initTemplatesPage(root = document, options = {}) {
     }
   }
 
-  let queue;
-  let queueWasGenerated = false;
-  try {
-    queue = loadInterviewQueue(storage, date, validIds);
-  } catch {
-    queue = ensureDailyQueue(INTERVIEW_QUESTIONS, state, null, date, now());
-    queueWasGenerated = true;
-    startupMessage = STORAGE_ERROR_MESSAGE;
-  }
-  if (queue.ids.length === 0 && queue.updatedAt === null) {
-    queue = ensureDailyQueue(INTERVIEW_QUESTIONS, state, null, date, now());
-    queueWasGenerated = true;
-  }
+  let queue = loadOrCreateDailyQueue(
+    storage,
+    INTERVIEW_QUESTIONS,
+    state,
+    date,
+    validIds,
+    now(),
+    () => { startupMessage = STORAGE_ERROR_MESSAGE; },
+  );
 
   const queueBeforePinnedSync = queue;
   let pinnedSyncFailed = false;
@@ -332,12 +342,11 @@ export function initTemplatesPage(root = document, options = {}) {
     startupMessage = error instanceof RangeError ? error.message : STORAGE_ERROR_MESSAGE;
   }
 
-  if (queueWasGenerated || queue !== queueBeforePinnedSync) {
-    const previousQueue = queueWasGenerated ? null : queueBeforePinnedSync;
+  if (queue !== queueBeforePinnedSync) {
     try {
       queue = saveInterviewQueue(storage, queue, date, validIds);
     } catch {
-      if (previousQueue) queue = previousQueue;
+      queue = queueBeforePinnedSync;
       startupMessage = STORAGE_ERROR_MESSAGE;
     }
   } else if (pinnedSyncFailed) {
@@ -349,10 +358,7 @@ export function initTemplatesPage(root = document, options = {}) {
   }
 
   function stats() {
-    return {
-      ...buildInterviewStats(INTERVIEW_QUESTIONS, state),
-      favorite: INTERVIEW_QUESTIONS.filter(({ id }) => Boolean(state.questions[id]?.favorite)).length,
-    };
+    return buildInterviewStats(INTERVIEW_QUESTIONS, state);
   }
 
   function renderFilters() {
@@ -432,19 +438,50 @@ export function initTemplatesPage(root = document, options = {}) {
     }
   }
 
+  function describeActionFocus(button) {
+    const descriptor = {
+      action: button.dataset.interviewAction,
+      questionId: button.dataset.questionId,
+      queueIndex: -1,
+    };
+    if (descriptor.action === 'replace-queue') {
+      const card = button.closest?.('.interview-queue-card');
+      const queueList = find(page, '.interview-queue-list');
+      descriptor.queueIndex = Array.from(queueList?.children ?? []).indexOf(card);
+    }
+    return descriptor;
+  }
+
+  function restoreActionFocus(descriptor) {
+    let target = null;
+    if (descriptor.action === 'replace-queue' && descriptor.queueIndex >= 0) {
+      const queueList = find(page, '.interview-queue-list');
+      target = queueList?.children?.[descriptor.queueIndex]
+        ?.querySelector?.('[data-interview-action="replace-queue"]') ?? null;
+    } else {
+      target = Array.from(page.querySelectorAll?.('[data-interview-action]') ?? [])
+        .find((candidate) => (
+          candidate.dataset.interviewAction === descriptor.action
+          && candidate.dataset.questionId === descriptor.questionId
+        )) ?? null;
+    }
+    target?.focus?.();
+  }
+
   function handleAction(button) {
-    if (button.disabled) return;
+    if (button.disabled || button.getAttribute('aria-disabled') === 'true') return;
     const id = button.dataset.questionId;
     const action = button.dataset.interviewAction;
+    const focus = describeActionFocus(button);
     try {
       if (action === 'add-queue') {
         const candidate = addQuestionToQueue(queue, id, INTERVIEW_QUESTIONS, state, now());
-        saveQueueOnly(candidate, '오늘의 큐에 추가했습니다.');
+        if (saveQueueOnly(candidate, '오늘의 큐에 추가했습니다.')) restoreActionFocus(focus);
         return;
       }
       if (action === 'replace-queue') {
         const candidate = replaceQueueQuestion(queue, id, INTERVIEW_QUESTIONS, state, now());
-        saveQueueOnly(candidate, '오늘의 큐 문항을 교체했습니다.');
+        if (saveQueueOnly(candidate, '오늘의 큐 문항을 교체했습니다.')) restoreActionFocus(focus);
         return;
       }
       if (action === 'toggle-pin') {
@@ -454,7 +491,11 @@ export function initTemplatesPage(root = document, options = {}) {
         if (!current.queuePinned && !queue.ids.includes(id)) {
           candidateQueue = addQuestionToQueue(queue, id, INTERVIEW_QUESTIONS, candidateState, now());
         }
-        saveStateAndQueue(candidateState, candidateQueue, current.queuePinned ? '고정을 취소했습니다.' : '오늘의 큐에 고정했습니다.');
+        if (saveStateAndQueue(
+          candidateState,
+          candidateQueue,
+          current.queuePinned ? '고정을 취소했습니다.' : '오늘의 큐에 고정했습니다.',
+        )) restoreActionFocus(focus);
         return;
       }
       if (action === 'toggle-complete') {
@@ -462,7 +503,7 @@ export function initTemplatesPage(root = document, options = {}) {
         const currentTime = now();
         const candidateQueue = setQueueCompleted(queue, id, !isCompleted, currentTime);
         if (isCompleted) {
-          saveQueueOnly(candidateQueue, '오늘 완료를 취소했습니다.');
+          if (saveQueueOnly(candidateQueue, '오늘 완료를 취소했습니다.')) restoreActionFocus(focus);
           return;
         }
         const current = questionStateFor(state, id);
@@ -473,7 +514,9 @@ export function initTemplatesPage(root = document, options = {}) {
             [id]: { ...current, lastStudiedAt: currentTime.toISOString() },
           },
         };
-        saveStateAndQueue(candidateState, candidateQueue, '오늘 학습을 완료했습니다.');
+        if (saveStateAndQueue(candidateState, candidateQueue, '오늘 학습을 완료했습니다.')) {
+          restoreActionFocus(focus);
+        }
       }
     } catch (error) {
       notify(error instanceof RangeError ? error.message : STORAGE_ERROR_MESSAGE);

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   INTERVIEW_SOURCE,
   INTERVIEW_CATEGORIES,
@@ -40,4 +41,14 @@ test('질문 ID·제목·카테고리·출처가 모두 유효하고 고유하�
     assert.equal(getInterviewQuestion(question.id), question);
   }
   assert.equal(getInterviewQuestion('be-999'), null);
+});
+
+test('공식 snapshot 메타데이터 정규화 digest가 고정되어 있다', () => {
+  const normalized = INTERVIEW_QUESTIONS
+    .map(({ category, id, title }) => `${category}\t${id}\t${title}\n`)
+    .join('');
+  assert.equal(
+    createHash('sha256').update(normalized).digest('hex'),
+    'a9f21746912ebdfb0fca64a8b6e463c23d4a09436634969d83c4ace7a9c01e00',
+  );
 });
