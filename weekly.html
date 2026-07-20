@@ -115,88 +115,26 @@
             </fieldset>
           </div>
 
-          <div class="weekly-detail-grid">
-            <div class="weekly-checklist-column" id="weekly-day-checklist">
-              <div id="execution-checklist">
-                <section class="weekly-check-group weekly-check-group--application" aria-labelledby="weekly-application-title">
-                  <div class="weekly-check-heading">
-                    <div>
-                      <p class="section-kicker">오늘의 최우선 결과</p>
-                      <h3 id="weekly-application-title">지원 3–4개</h3>
-                    </div>
-                    <span id="selected-day-application-count">0 / 4</span>
-                  </div>
-                  <div class="weekly-application-checks">
-                    <label><input type="checkbox" data-weekly-application="0"> 지원 1</label>
-                    <label><input type="checkbox" data-weekly-application="1"> 지원 2</label>
-                    <label><input type="checkbox" data-weekly-application="2"> 지원 3</label>
-                    <label><input type="checkbox" data-weekly-application="3"> 지원 4</label>
-                  </div>
-                </section>
-
-                <section class="weekly-check-group" aria-labelledby="weekly-core-title">
-                  <div class="weekly-check-heading">
-                    <div>
-                      <p class="section-kicker">반드시 지킬 흐름</p>
-                      <h3 id="weekly-core-title">핵심 실행</h3>
-                    </div>
-                  </div>
-                  <div class="weekly-core-checks">
-                    <label><input type="checkbox" data-weekly-task="activity"> <span id="weekly-activity-label">아침 운동 완료</span></label>
-                    <label><input type="checkbox" data-weekly-task="review"> 이력서·포트폴리오 숙지 30분</label>
-                    <label><input type="checkbox" data-weekly-task="interview"> 면접 연습</label>
-                    <label><input type="checkbox" data-weekly-task="mealRest"> 식후 20분 휴식</label>
-                  </div>
-                </section>
-
-                <section class="weekly-check-group weekly-check-group--learning" aria-labelledby="weekly-learning-title">
-                  <div class="weekly-check-heading">
-                    <div>
-                      <p class="section-kicker">복수 선택</p>
-                      <h3 id="weekly-learning-title">학습 조합</h3>
-                    </div>
-                  </div>
-                  <div class="learning-options weekly-learning-options">
-                    <label><input type="checkbox" data-weekly-learning value="Spring"> Spring</label>
-                    <label><input type="checkbox" data-weekly-learning value="Redis"> Redis</label>
-                    <label><input type="checkbox" data-weekly-learning value="Java"> Java</label>
-                    <label><input type="checkbox" data-weekly-learning value="프로젝트 적용"> 프로젝트 적용</label>
-                    <label><input type="checkbox" data-weekly-learning value="CS"> CS</label>
-                    <label><input type="checkbox" data-weekly-learning value="코딩테스트"> 코딩테스트</label>
-                  </div>
-                </section>
+          <section class="weekly-planner" aria-labelledby="weekly-planner-title">
+            <header class="weekly-planner-header">
+              <div>
+                <p class="section-kicker">선택하고 순서를 정하는 이번 주 계획</p>
+                <h3 id="weekly-planner-title">월요일 일정</h3>
               </div>
-
-              <section class="weekly-check-group weekly-maintenance-checks" id="maintenance-checklist" aria-labelledby="weekly-maintenance-title" hidden>
-                <div class="weekly-check-heading">
-                  <div>
-                    <p class="section-kicker">최소 흐름만 이어가기</p>
-                    <h3 id="weekly-maintenance-title">핵심 유지일 체크</h3>
-                  </div>
-                </div>
-                <div class="weekly-core-checks">
-                  <label><input type="checkbox" data-maintenance-task="deadline"> 마감 임박 공고 확인</label>
-                  <label><input type="checkbox" data-maintenance-task="application"> 필요 시 1개 지원</label>
-                  <label><input type="checkbox" data-maintenance-task="review"> 이력서·포트폴리오 숙지 30분</label>
-                  <label><input type="checkbox" data-maintenance-task="interview"> 면접 답변 3개 복기</label>
-                  <label><input type="checkbox" data-maintenance-task="learningReview"> 핵심 학습 복습</label>
-                  <label><input type="checkbox" data-maintenance-task="nextWeek"> 다음 주 준비</label>
-                  <label><input type="checkbox" data-maintenance-task="rest"> 충분한 휴식</label>
-                </div>
-              </section>
-            </div>
-
-            <aside class="weekly-schedule-column" id="weekly-day-schedule" aria-labelledby="weekly-schedule-title">
-              <div class="weekly-schedule-heading">
-                <div>
-                  <p class="section-kicker">체크리스트를 받치는 시간 흐름</p>
-                  <h3 id="weekly-schedule-title">운동일 고정 시간표</h3>
-                </div>
-                <span id="weekly-schedule-mode">운동일</span>
+              <div class="weekly-planner-actions screen-only">
+                <button type="button" id="weekly-add-plan" aria-expanded="false" aria-controls="weekly-add-panel">일정 추가</button>
+                <button type="button" id="weekly-time-edit" aria-pressed="false">시간 편집</button>
               </div>
-              <div id="weekly-schedule-list"></div>
-            </aside>
-          </div>
+            </header>
+            <section id="weekly-add-panel" class="weekly-add-panel screen-only" hidden></section>
+            <p id="weekly-plan-status" class="visually-hidden" aria-live="polite"></p>
+            <ol id="weekly-plan-list" class="weekly-plan-list"></ol>
+            <section id="weekly-unscheduled" class="weekly-unscheduled" hidden>
+              <h4>미배치 일정 <span id="weekly-unscheduled-count">0</span></h4>
+              <p>시간이 부족해 배치되지 않은 일정이 있습니다.</p>
+              <ol id="weekly-unscheduled-list"></ol>
+            </section>
+          </section>
         </section>
       </main>
     </div>

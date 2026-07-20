@@ -1,216 +1,72 @@
-import { LEARNING_TOPICS, getSchedule } from './routine-data.js';
+import { LEARNING_TOPICS } from './routine-data.js';
 import {
-  clearState,
   loadState,
   logicalDateString,
   saveState,
   scheduleLogicalDayRollover,
 } from './routine-core.js';
+import {
+  TASK_LIBRARY,
+  addCustomPlanItem,
+  addLibraryPlanItem,
+  changeDayMode,
+  createDefaultWeeklyState,
+  formatMinuteRange,
+  getDayTimeline,
+  movePlanItem,
+  normalizeWeeklyState,
+  removePlanItem,
+  resetWeeklyPlans,
+  updatePlanItemTime,
+  weekMondayKey,
+} from './weekly-plan-core.js';
 
-const WEEKLY_PAGE_NAME = 'weekly';
-const EXECUTION_MODES = ['workout', 'normal', 'running'];
-const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
-const MAINTENANCE_TASKS = [
-  'deadline',
-  'application',
-  'review',
-  'interview',
-  'learningReview',
-  'nextWeek',
-  'rest',
-];
-
-export const WEEKDAYS = [
-  { id: 'mon', short: '월', label: '월요일' },
-  { id: 'tue', short: '화', label: '화요일' },
-  { id: 'wed', short: '수', label: '수요일' },
-  { id: 'thu', short: '목', label: '목요일' },
-  { id: 'fri', short: '금', label: '금요일' },
-  { id: 'sat', short: '토', label: '토요일' },
-  { id: 'sun', short: '일', label: '일요일' },
-];
-
-const DEFAULT_MODES = {
-  mon: 'workout',
-  tue: 'normal',
-  wed: 'running',
-  thu: 'workout',
-  fri: 'normal',
-  sat: 'workout',
-  sun: 'normal',
+export {
+  createDefaultWeeklyState,
+  formatMinuteRange,
+  normalizeWeeklyState,
+  weekMondayKey,
 };
 
+const WEEKLY_PAGE_NAME = 'weekly';
+const WEEKDAYS = [
+  { id: 'mon', label: '월요일' }, { id: 'tue', label: '화요일' },
+  { id: 'wed', label: '수요일' }, { id: 'thu', label: '목요일' },
+  { id: 'fri', label: '금요일' }, { id: 'sat', label: '토요일' },
+  { id: 'sun', label: '일요일' },
+];
 const MODE_LABELS = {
   workout: '운동일',
   normal: '비운동일',
   running: '러닝일',
   maintenance: '핵심 유지일',
 };
-
-const MODE_BADGES = {
-  workout: '운동',
-  normal: '실행',
-  running: '러닝',
-  maintenance: '유지',
-};
-
-const ACTIVITY_LABELS = {
-  workout: '아침 운동 완료',
-  normal: '가벼운 산책·회복 완료',
-  running: '저녁 러닝 완료',
-};
-
-const LEARNING_TARGETS = {
-  Spring: '4–6회',
-  Redis: '2–4회',
-  Java: '2–3회',
-  '프로젝트 적용': '3개 이상',
-};
-
+const MODE_BADGES = { workout: '운동', normal: '실행', running: '러닝', maintenance: '유지' };
 const validDays = new Set(WEEKDAYS.map(({ id }) => id));
-
-function sourceObject(candidate) {
-  return candidate && typeof candidate === 'object' && !Array.isArray(candidate) ? candidate : {};
-}
-
-function localDateString(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+const LIBRARY_GROUPS = [
+  ['취업·면접', ['scan', 'job-analysis', 'applications', 'portfolio-review', 'interview-practice']],
+  ['운동·회복', ['workout', 'run', 'shower', 'wrap']],
+];
 
 function localDateFrom(value) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12);
   }
-
   if (typeof value === 'string') {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (match) {
       const [, year, month, day] = match.map(Number);
-      const parsed = new Date(year, month - 1, day, 12);
-      if (
-        parsed.getFullYear() === year &&
-        parsed.getMonth() === month - 1 &&
-        parsed.getDate() === day
-      ) {
-        return parsed;
-      }
+      const result = new Date(year, month - 1, day, 12);
+      if (result.getFullYear() === year && result.getMonth() === month - 1 && result.getDate() === day) return result;
     }
   }
-
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
 }
 
-export function weekMondayKey(value = new Date()) {
-  const date = localDateFrom(value);
-  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  return localDateString(date);
-}
-
-function emptyTasks(keys) {
-  return Object.fromEntries(keys.map((key) => [key, false]));
-}
-
-function createDefaultDay(dayId) {
-  return {
-    mode: DEFAULT_MODES[dayId] ?? 'normal',
-    runStart: '21',
-    applications: Array(4).fill(false),
-    tasks: emptyTasks(EXECUTION_TASKS),
-    learningTopics: [],
-    maintenance: emptyTasks(MAINTENANCE_TASKS),
-  };
-}
-
-export function createDefaultWeeklyState() {
-  return {
-    selectedDay: 'mon',
-    maintenanceDay: 'sun',
-    days: Object.fromEntries(WEEKDAYS.map(({ id }) => [id, createDefaultDay(id)])),
-  };
-}
-
-export function updateExecutionMode(day, mode) {
-  if (!sourceObject(day).tasks || !EXECUTION_MODES.includes(mode) || day.mode === mode) return false;
-  day.mode = mode;
-  day.tasks.activity = false;
-  return true;
-}
-
-function normalizeDayState(candidate, dayId) {
-  const source = sourceObject(candidate);
-  const defaultMode = DEFAULT_MODES[dayId] ?? 'normal';
-  const mode =
-    source.mode === undefined
-      ? defaultMode
-      : EXECUTION_MODES.includes(source.mode)
-        ? source.mode
-        : 'normal';
-  const applications = Array.isArray(source.applications) ? source.applications : [];
-  const taskSource = sourceObject(source.tasks);
-  const maintenanceSource = sourceObject(source.maintenance);
-  const topicSource = Array.isArray(source.learningTopics) ? source.learningTopics : [];
-
-  return {
-    mode,
-    runStart: source.runStart === '22' ? '22' : '21',
-    applications: Array.from({ length: 4 }, (_, index) => Boolean(applications[index])),
-    tasks: Object.fromEntries(EXECUTION_TASKS.map((key) => [key, Boolean(taskSource[key])])),
-    learningTopics: LEARNING_TOPICS.filter((topic) => topicSource.includes(topic)),
-    maintenance: Object.fromEntries(
-      MAINTENANCE_TASKS.map((key) => [key, Boolean(maintenanceSource[key])]),
-    ),
-  };
-}
-
-export function normalizeWeeklyState(candidate = {}) {
-  const source = sourceObject(candidate);
-  const days = sourceObject(source.days);
-
-  return {
-    selectedDay: validDays.has(source.selectedDay) ? source.selectedDay : 'mon',
-    maintenanceDay: validDays.has(source.maintenanceDay) ? source.maintenanceDay : 'sun',
-    days: Object.fromEntries(WEEKDAYS.map(({ id }) => [id, normalizeDayState(days[id], id)])),
-  };
-}
-
-export function calculateWeeklyProgress(candidate = {}) {
-  const state = normalizeWeeklyState(candidate);
-  const progress = {
-    applications: 0,
-    reviews: 0,
-    interviews: 0,
-    workouts: 0,
-    runs: 0,
-    learning: Object.fromEntries(LEARNING_TOPICS.map((topic) => [topic, 0])),
-  };
-
-  for (const { id } of WEEKDAYS) {
-    const day = state.days[id];
-    if (id === state.maintenanceDay) {
-      if (day.maintenance.application) progress.applications += 1;
-      if (day.maintenance.interview) progress.interviews += 1;
-      continue;
-    }
-
-    progress.applications += day.applications.filter(Boolean).length;
-    if (day.tasks.review) progress.reviews += 1;
-    if (day.tasks.interview) progress.interviews += 1;
-    if (day.tasks.activity && day.mode === 'workout') progress.workouts += 1;
-    if (day.tasks.activity && day.mode === 'running') progress.runs += 1;
-    for (const topic of day.learningTopics) progress.learning[topic] += 1;
-  }
-
-  return progress;
-}
-
 function dateAtWeekday(weekKey, dayId) {
   const date = localDateFrom(weekKey);
-  const index = WEEKDAYS.findIndex(({ id }) => id === dayId);
-  date.setDate(date.getDate() + Math.max(index, 0));
+  date.setDate(date.getDate() + Math.max(WEEKDAYS.findIndex(({ id }) => id === dayId), 0));
   return date;
 }
 
@@ -237,59 +93,145 @@ function setText(root, selector, value) {
   if (element) element.textContent = value;
 }
 
-function renderWeeklySchedule(container, schedule) {
-  if (!container?.ownerDocument) return;
-  const pageDocument = container.ownerDocument;
-  const list = pageDocument.createElement('ol');
-  list.className = 'weekly-schedule-list';
-
-  for (const item of schedule) {
-    const row = pageDocument.createElement('li');
-    row.dataset.weeklyScheduleId = item.id;
-    row.dataset.category = item.category;
-
-    const time = pageDocument.createElement('span');
-    time.className = 'weekly-schedule-time';
-    time.textContent = item.time;
-
-    const label = pageDocument.createElement('span');
-    label.className = 'weekly-schedule-label';
-    label.textContent = item.label;
-
-    row.append(time, label);
-    list.append(row);
-  }
-
-  container.replaceChildren(list);
+export function minuteFromInput(value) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours === 24 && minutes === 0) return 1440;
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
 }
 
-function setProgressTrack(root, metric, value, maximum) {
-  const card = root.querySelector(`[data-weekly-progress="${metric}"]`);
-  const track = card?.querySelector('[role="progressbar"]');
-  const fill = card?.querySelector('.weekly-goal-fill');
-  if (track) {
-    track.setAttribute('aria-valuemax', String(maximum));
-    track.setAttribute('aria-valuenow', String(value));
-  }
-  if (fill) fill.style.width = `${Math.min((value / maximum) * 100, 100)}%`;
+function minuteInputValue(value) {
+  if (value === 1440) return '24:00';
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
 }
 
-function updateWeeklyProgress(root, state) {
-  const progress = calculateWeeklyProgress(state);
-  setText(root, '#weekly-applications-value', `${progress.applications} / 18–24`);
-  setText(root, '#weekly-reviews-value', `${progress.reviews} / 실행일 6회`);
-  setText(root, '#weekly-interviews-value', `${progress.interviews}회`);
-  setText(root, '#weekly-workouts-value', `${progress.workouts} / 3–5회`);
-  setText(root, '#weekly-runs-value', `${progress.runs} / 1–2회`);
-  setProgressTrack(root, 'applications', progress.applications, 25);
+export function planMoveTargetIndex(day, itemId, direction) {
+  const currentIndex = day?.timelineOrder?.indexOf(itemId) ?? -1;
+  if (currentIndex < 0 || !['up', 'down'].includes(direction)) return null;
+  const offset = direction === 'up' ? -1 : 1;
+  return Math.max(0, Math.min(currentIndex + offset, day.timelineOrder.length - 1));
+}
 
-  for (const [topic, target] of Object.entries(LEARNING_TARGETS)) {
-    setText(
-      root,
-      `[data-progress-topic="${topic}"] .weekly-metric-value`,
-      `${progress.learning[topic]} / ${target}`,
-    );
+function createButton(document, label, attributes = {}) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  for (const [name, value] of Object.entries(attributes)) button.setAttribute(name, value);
+  return button;
+}
+
+function createAddPanel(document) {
+  const fragment = document.createDocumentFragment();
+  const heading = document.createElement('h4');
+  heading.textContent = '기본 일정에서 추가';
+  fragment.append(heading);
+
+  const groups = document.createElement('div');
+  groups.className = 'weekly-library-groups';
+  for (const [groupLabel, ids] of LIBRARY_GROUPS) {
+    const group = document.createElement('section');
+    const title = document.createElement('h5');
+    title.textContent = groupLabel;
+    const choices = document.createElement('div');
+    choices.className = 'weekly-library-choices';
+    for (const id of ids) {
+      const item = TASK_LIBRARY.find((candidate) => candidate.id === id);
+      if (!item) continue;
+      choices.append(createButton(document, `${item.label} · ${item.durationMinutes}분`, { 'data-add-library': item.id }));
+    }
+    group.append(title, choices);
+    groups.append(group);
   }
+
+  const learning = document.createElement('section');
+  learning.className = 'weekly-learning-builder';
+  learning.innerHTML = '<h5>개발 학습 조합</h5><div class="weekly-learning-choices"></div>';
+  const learningChoices = learning.querySelector('.weekly-learning-choices');
+  for (const topic of LEARNING_TOPICS) {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = topic;
+    input.dataset.addLearningTopic = topic;
+    label.append(input, ` ${topic}`);
+    learningChoices.append(label);
+  }
+  learning.append(createButton(document, '선택한 주제로 학습 블록 추가', { 'data-add-learning': '' }));
+  groups.append(learning);
+
+  const custom = document.createElement('form');
+  custom.id = 'weekly-custom-form';
+  custom.className = 'weekly-custom-form';
+  custom.innerHTML = `
+    <h4>직접 일정 추가</h4>
+    <label>일정 이름 <input id="weekly-custom-label" name="label" required maxlength="80"></label>
+    <label>분류
+      <select id="weekly-custom-category" name="category">
+        <option value="career">취업·면접</option>
+        <option value="learning">개발 학습</option>
+        <option value="exercise">운동·회복</option>
+      </select>
+    </label>
+    <label>소요시간(분) <input id="weekly-custom-duration" name="duration" type="number" min="10" max="480" step="10" value="30" required></label>
+    <button type="submit">직접 일정 추가</button>
+  `;
+  fragment.append(groups, custom);
+  return fragment;
+}
+
+export function createCompactTimeEditor(document, item, errorMessage = '') {
+  const editor = document.createElement('form');
+  const errorId = `weekly-time-error-${item.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  editor.className = 'plan-time-editor';
+  editor.dataset.timeEditor = item.id;
+  editor.innerHTML = `
+    <label>시작 <input type="time" step="300" value="${minuteInputValue(item.startMinute)}" data-time-start aria-describedby="${errorId}"></label>
+    <label>종료 <input type="time" step="300" value="${minuteInputValue(item.endMinute)}" data-time-end aria-describedby="${errorId}"></label>
+    <button type="submit" data-time-save>저장</button>
+    <button type="button" data-time-cancel>취소</button>
+    <p id="${errorId}" class="plan-time-error" role="alert">${errorMessage}</p>
+  `;
+  return editor;
+}
+
+export function renderPlanRow(document, item, { editingTime = false, errorMessage = '' } = {}) {
+  const row = document.createElement('li');
+  row.dataset.planItemId = item.id;
+  row.dataset.category = item.category;
+  row.className = `weekly-plan-row${item.fixed ? ' is-fixed' : ''}`;
+  row.innerHTML = `
+    ${item.fixed ? '' : '<button type="button" class="plan-drag" data-plan-drag aria-label="일정 이동">≡</button>'}
+    <span class="weekly-plan-time">${formatMinuteRange(item.startMinute, item.endMinute)}</span>
+    <span class="weekly-plan-label"></span>
+    <span class="weekly-plan-state">${item.fixed ? '고정' : '예정'}</span>
+    ${item.fixed ? '' : '<span class="plan-move-actions"><button type="button" data-move="up" aria-label="위로 이동">↑</button><button type="button" data-move="down" aria-label="아래로 이동">↓</button><button type="button" class="plan-remove" data-remove-plan aria-label="일정 삭제">삭제</button></span>'}
+  `;
+  row.querySelector('.weekly-plan-label').textContent = item.label;
+  if (editingTime && !item.fixed) row.append(createCompactTimeEditor(document, item, errorMessage));
+  return row;
+}
+
+function renderUnscheduledRow(document, item) {
+  const row = document.createElement('li');
+  row.dataset.planItemId = item.id;
+  row.className = 'weekly-plan-row is-unscheduled';
+  row.innerHTML = `
+    <button type="button" class="plan-drag" data-plan-drag aria-label="일정 이동">≡</button>
+    <span class="weekly-plan-time">미배치</span>
+    <span class="weekly-plan-label"></span>
+    <span class="weekly-plan-state">시간 부족</span>
+    <span class="plan-move-actions"><button type="button" data-move="up" aria-label="위로 이동">↑</button><button type="button" data-move="down" aria-label="아래로 이동">↓</button><button type="button" class="plan-remove" data-remove-plan aria-label="일정 삭제">삭제</button></span>
+  `;
+  row.querySelector('.weekly-plan-label').textContent = item.label;
+  return row;
+}
+
+function mutationStatus(label, day) {
+  const overflow = day.unscheduled.length;
+  return `${label}${overflow ? ` 미배치 일정 ${overflow}개가 있습니다.` : ' 시간이 다시 계산되었습니다.'}`;
 }
 
 export function initWeeklyPage(pageDocument, storage, date = logicalDateString()) {
@@ -297,18 +239,28 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
   if (!root) return null;
 
   const weekKey = weekMondayKey(date);
-  let state = normalizeWeeklyState(
-    loadState(storage, WEEKLY_PAGE_NAME, weekKey, createDefaultWeeklyState()),
-  );
+  let state = normalizeWeeklyState(loadState(storage, WEEKLY_PAGE_NAME, weekKey, createDefaultWeeklyState()));
+  let editingTime = false;
+  let draggedItemId = null;
+  const timeErrors = new Map();
+  let customSequence = 0;
 
   const weekElement = root.querySelector('#weekly-current-week');
-  if (weekElement) {
-    weekElement.dateTime = weekKey;
-    weekElement.textContent = formatWeekRange(weekKey);
-  }
+  weekElement.dateTime = weekKey;
+  weekElement.textContent = formatWeekRange(weekKey);
+  root.querySelector('#weekly-add-panel').append(createAddPanel(pageDocument));
 
   function selectedDayState() {
     return state.days[state.selectedDay];
+  }
+
+  function persist() {
+    state = normalizeWeeklyState(state);
+    saveState(storage, WEEKLY_PAGE_NAME, weekKey, state);
+  }
+
+  function announce(message) {
+    setText(root, '#weekly-plan-status', message);
   }
 
   function paintTabs() {
@@ -321,202 +273,260 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
       button.setAttribute('aria-selected', String(isSelected));
       button.dataset.dayRole = isMaintenance ? 'maintenance' : 'execution';
       button.querySelector('[data-day-badge]').textContent = MODE_BADGES[mode];
-      button.setAttribute('aria-label', `${weekday?.label ?? ''}, ${MODE_LABELS[mode]}`);
+      button.setAttribute('aria-label', `${weekday.label}, ${MODE_LABELS[mode]}`);
     }
   }
 
-  function applyExecutionControls(day) {
-    for (const button of root.querySelectorAll('[data-weekly-mode]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.weeklyMode === day.mode));
-    }
-    for (const input of root.querySelectorAll('input[name="weekly-run-start"]')) {
-      input.checked = input.value === day.runStart;
-    }
-    root.querySelector('#weekly-run-start-controls').hidden = day.mode !== 'running';
+  function paintPlanner() {
+    const day = selectedDayState();
+    const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
+    const list = root.querySelector('#weekly-plan-list');
+    list.replaceChildren(...timeline.map((item) => renderPlanRow(pageDocument, item, {
+      editingTime,
+      errorMessage: timeErrors.get(item.id) ?? '',
+    })));
 
-    for (const input of root.querySelectorAll('[data-weekly-application]')) {
-      input.checked = day.applications[Number(input.dataset.weeklyApplication)] ?? false;
-    }
-    for (const input of root.querySelectorAll('[data-weekly-task]')) {
-      input.checked = day.tasks[input.dataset.weeklyTask] ?? false;
-    }
-    for (const input of root.querySelectorAll('[data-weekly-learning]')) {
-      input.checked = day.learningTopics.includes(input.value);
-    }
-
-    setText(root, '#weekly-activity-label', ACTIVITY_LABELS[day.mode]);
-    setText(
-      root,
-      '#selected-day-application-count',
-      `${day.applications.filter(Boolean).length} / 4`,
+    const unscheduled = root.querySelector('#weekly-unscheduled');
+    unscheduled.hidden = day.unscheduled.length === 0;
+    setText(root, '#weekly-unscheduled-count', String(day.unscheduled.length));
+    root.querySelector('#weekly-unscheduled-list').replaceChildren(
+      ...day.unscheduled.map((item) => renderUnscheduledRow(pageDocument, item)),
     );
-  }
-
-  function applyMaintenanceControls(day) {
-    for (const input of root.querySelectorAll('[data-maintenance-task]')) {
-      input.checked = day.maintenance[input.dataset.maintenanceTask] ?? false;
-    }
+    root.querySelector('#weekly-time-edit').setAttribute('aria-pressed', String(editingTime));
+    root.querySelector('#weekly-time-edit').textContent = editingTime ? '시간 편집 닫기' : '시간 편집';
   }
 
   function paintDetail() {
     const day = selectedDayState();
     const weekday = WEEKDAYS.find(({ id }) => id === state.selectedDay);
     const isMaintenance = state.selectedDay === state.maintenanceDay;
-    const scheduleMode = isMaintenance ? 'maintenance' : day.mode;
-
     root.querySelector('#day-detail').setAttribute('aria-labelledby', `weekday-tab-${state.selectedDay}`);
     setText(root, '#selected-day-role', isMaintenance ? '핵심 유지일' : MODE_LABELS[day.mode]);
-    setText(
-      root,
-      '#selected-day-title',
-      `${weekday.label} ${isMaintenance ? '핵심 유지' : '실행'}`,
-    );
+    setText(root, '#selected-day-title', `${weekday.label} ${isMaintenance ? '핵심 유지' : '실행'}`);
     setText(root, '#selected-day-date', formatSelectedDate(weekKey, state.selectedDay));
+    setText(root, '#weekly-planner-title', `${weekday.label} 일정`);
 
     const maintenanceButton = root.querySelector('#set-maintenance-day');
     maintenanceButton.disabled = isMaintenance;
-    maintenanceButton.textContent = isMaintenance
-      ? '핵심 유지일로 설정됨'
-      : '이 요일을 핵심 유지일로';
-
-    applyExecutionControls(day);
-    applyMaintenanceControls(day);
+    maintenanceButton.textContent = isMaintenance ? '핵심 유지일로 설정됨' : '이 요일을 핵심 유지일로';
     root.querySelector('#execution-day-controls').hidden = isMaintenance;
-    root.querySelector('#execution-checklist').hidden = isMaintenance;
-    root.querySelector('#maintenance-checklist').hidden = !isMaintenance;
-
-    setText(root, '#weekly-schedule-title', `${MODE_LABELS[scheduleMode]} 고정 시간표`);
-    setText(root, '#weekly-schedule-mode', MODE_LABELS[scheduleMode]);
-    renderWeeklySchedule(
-      root.querySelector('#weekly-schedule-list'),
-      getSchedule(scheduleMode, day.runStart),
-    );
+    for (const button of root.querySelectorAll('[data-weekly-mode]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.weeklyMode === day.mode));
+    }
+    for (const input of root.querySelectorAll('input[name="weekly-run-start"]')) input.checked = input.value === day.runStart;
+    root.querySelector('#weekly-run-start-controls').hidden = day.mode !== 'running' || isMaintenance;
+    paintPlanner();
   }
 
   function paintAll() {
     paintTabs();
     paintDetail();
-    updateWeeklyProgress(root, state);
   }
 
-  function persist() {
-    state = normalizeWeeklyState(state);
-    saveState(storage, WEEKLY_PAGE_NAME, weekKey, state);
-    updateWeeklyProgress(root, state);
+  function applyDayMutation(nextDay, message) {
+    state.days[state.selectedDay] = nextDay;
+    timeErrors.clear();
+    persist();
+    paintPlanner();
+    announce(mutationStatus(message, selectedDayState()));
   }
 
   function selectDay(dayId) {
     if (!validDays.has(dayId) || dayId === state.selectedDay) return;
     state.selectedDay = dayId;
+    editingTime = false;
+    timeErrors.clear();
     persist();
-    paintTabs();
-    paintDetail();
+    paintAll();
   }
 
   function setMaintenanceDay() {
     if (state.selectedDay === state.maintenanceDay) return;
+    const previousId = state.maintenanceDay;
+    state.days[previousId] = changeDayMode(state.days[previousId], 'normal', state.days[previousId].runStart);
     state.maintenanceDay = state.selectedDay;
+    state.days[state.selectedDay] = changeDayMode(selectedDayState(), 'maintenance', '21');
     persist();
+    paintAll();
+    announce('핵심 유지일과 일정 시간이 변경되었습니다.');
+  }
+
+  function changeMode(mode, runStart = selectedDayState().runStart) {
+    if (state.selectedDay === state.maintenanceDay || !['workout', 'normal', 'running'].includes(mode)) return;
+    applyDayMutation(changeDayMode(selectedDayState(), mode, runStart), `${MODE_LABELS[mode]}로 변경했습니다.`);
     paintTabs();
     paintDetail();
   }
 
-  function changeMode(mode) {
-    if (
-      state.selectedDay === state.maintenanceDay ||
-      !updateExecutionMode(selectedDayState(), mode)
-    ) {
+  function toggleAddPanel() {
+    const panel = root.querySelector('#weekly-add-panel');
+    panel.hidden = !panel.hidden;
+    root.querySelector('#weekly-add-plan').setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) panel.querySelector('button, input')?.focus();
+  }
+
+  function toggleTimeEdit() {
+    editingTime = !editingTime;
+    timeErrors.clear();
+    paintPlanner();
+    announce(editingTime ? '일반 일정의 시작과 종료 시간을 편집할 수 있습니다.' : '시간 편집을 닫았습니다.');
+  }
+
+  function addLibrary(taskId) {
+    try {
+      applyDayMutation(addLibraryPlanItem(selectedDayState(), taskId), '기본 일정을 추가했습니다.');
+    } catch (error) {
+      announce(error.message);
+    }
+  }
+
+  function addLearning() {
+    const topics = Array.from(root.querySelectorAll('[data-add-learning-topic]:checked'), (input) => input.value);
+    if (topics.length === 0) {
+      announce('학습 주제를 하나 이상 선택하세요.');
       return;
     }
-    persist();
-    paintTabs();
-    paintDetail();
+    if ([...selectedDayState().items, ...selectedDayState().unscheduled].some(({ id }) => id.startsWith('learning:'))) {
+      announce('이미 추가된 일정입니다.');
+      return;
+    }
+    try {
+      applyDayMutation(addLibraryPlanItem(selectedDayState(), 'learning', { topics }), '학습 조합을 추가했습니다.');
+      for (const input of root.querySelectorAll('[data-add-learning-topic]')) input.checked = false;
+    } catch (error) {
+      announce(error.message);
+    }
+  }
+
+  function addCustom(form) {
+    const formData = new FormData(form);
+    try {
+      const next = addCustomPlanItem(selectedDayState(), {
+        label: formData.get('label'),
+        category: formData.get('category'),
+        durationMinutes: Number(formData.get('duration')),
+      }, () => {
+        customSequence += 1;
+        const randomPart = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${customSequence}`;
+        return `custom-${randomPart}`;
+      });
+      applyDayMutation(next, '직접 일정을 추가했습니다.');
+      form.reset();
+      form.querySelector('[name="duration"]').value = '30';
+    } catch (error) {
+      announce(error.message);
+      form.querySelector('[name="label"]')?.focus();
+    }
+  }
+
+  function moveItem(itemId, targetIndex) {
+    if (targetIndex === null) return;
+    applyDayMutation(movePlanItem(selectedDayState(), itemId, targetIndex), '일정을 이동했습니다.');
+  }
+
+  function removeItem(itemId) {
+    applyDayMutation(removePlanItem(selectedDayState(), itemId), '일정을 삭제했습니다.');
+  }
+
+  function saveTime(editor) {
+    const itemId = editor.dataset.timeEditor;
+    const startInput = editor.querySelector('[data-time-start]');
+    const endInput = editor.querySelector('[data-time-end]');
+    const startMinute = minuteFromInput(startInput.value);
+    const endMinute = minuteFromInput(endInput.value);
+    try {
+      const next = updatePlanItemTime(selectedDayState(), itemId, startMinute, endMinute);
+      editingTime = false;
+      applyDayMutation(next, '일정 시간을 저장했습니다.');
+    } catch (error) {
+      timeErrors.set(itemId, error.message);
+      announce(error.message);
+      paintPlanner();
+      root.querySelector(`[data-plan-item-id="${CSS.escape(itemId)}"] [data-time-start]`)?.focus();
+    }
   }
 
   function resetCurrentWeek() {
-    clearState(storage, WEEKLY_PAGE_NAME, weekKey);
-    state = createDefaultWeeklyState();
+    state = resetWeeklyPlans(state);
+    editingTime = false;
+    timeErrors.clear();
+    persist();
     paintAll();
+    announce('현재 주의 계획을 기본 일정으로 되돌렸습니다.');
   }
 
   function openPdfPreview() {
-    if (typeof window !== 'undefined' && window.document === pageDocument) {
-      window.print();
-      return;
-    }
-    pageDocument.defaultView?.print?.();
+    if (typeof window !== 'undefined' && window.document === pageDocument) window.print();
+    else pageDocument.defaultView?.print?.();
   }
 
   function handleClick(event) {
     const tab = event.target.closest?.('#weekday-tabs [data-day]');
-    if (tab && root.contains(tab)) {
-      selectDay(tab.dataset.day);
-      return;
-    }
+    if (tab && root.contains(tab)) return selectDay(tab.dataset.day);
+    const mode = event.target.closest?.('[data-weekly-mode]');
+    if (mode && root.contains(mode)) return changeMode(mode.dataset.weeklyMode);
+    if (event.target.closest?.('#set-maintenance-day')) return setMaintenanceDay();
+    if (event.target.closest?.('#weekly-reset-current')) return resetCurrentWeek();
+    if (event.target.closest?.('#weekly-pdf-preview')) return openPdfPreview();
+    if (event.target.closest?.('#weekly-add-plan')) return toggleAddPanel();
+    if (event.target.closest?.('#weekly-time-edit')) return toggleTimeEdit();
 
-    const modeButton = event.target.closest?.('[data-weekly-mode]');
-    if (modeButton && root.contains(modeButton)) {
-      changeMode(modeButton.dataset.weeklyMode);
-      return;
-    }
+    const library = event.target.closest?.('[data-add-library]');
+    if (library) return addLibrary(library.dataset.addLibrary);
+    if (event.target.closest?.('[data-add-learning]')) return addLearning();
 
-    if (event.target.closest?.('#set-maintenance-day')) {
-      setMaintenanceDay();
-      return;
+    const row = event.target.closest?.('[data-plan-item-id]');
+    if (!row || !root.contains(row)) return;
+    if (event.target.closest?.('[data-remove-plan]')) return removeItem(row.dataset.planItemId);
+    const move = event.target.closest?.('[data-move]');
+    if (move) return moveItem(row.dataset.planItemId, planMoveTargetIndex(selectedDayState(), row.dataset.planItemId, move.dataset.move));
+    if (event.target.closest?.('[data-time-cancel]')) {
+      timeErrors.delete(row.dataset.planItemId);
+      paintPlanner();
+      announce('시간 변경을 취소했습니다.');
     }
-    if (event.target.closest?.('#weekly-reset-current')) {
-      resetCurrentWeek();
-      return;
-    }
-    if (event.target.closest?.('#weekly-pdf-preview')) openPdfPreview();
   }
 
   function handleChange(event) {
-    const day = selectedDayState();
+    if (event.target.matches('input[name="weekly-run-start"]')) changeMode('running', event.target.value);
+  }
 
-    if (event.target.matches('input[name="weekly-run-start"]')) {
-      day.runStart = event.target.value === '22' ? '22' : '21';
-      persist();
-      paintDetail();
+  function handleSubmit(event) {
+    if (event.target.matches('#weekly-custom-form')) {
+      event.preventDefault();
+      addCustom(event.target);
       return;
     }
-
-    if (event.target.matches('[data-weekly-application]')) {
-      day.applications[Number(event.target.dataset.weeklyApplication)] = event.target.checked;
-      persist();
-      setText(
-        root,
-        '#selected-day-application-count',
-        `${day.applications.filter(Boolean).length} / 4`,
-      );
-      return;
+    if (event.target.matches('[data-time-editor]')) {
+      event.preventDefault();
+      saveTime(event.target);
     }
+  }
 
-    if (event.target.matches('[data-weekly-task]')) {
-      const task = event.target.dataset.weeklyTask;
-      if (EXECUTION_TASKS.includes(task)) day.tasks[task] = event.target.checked;
-      persist();
-      return;
-    }
+  function handlePointerDown(event) {
+    const handle = event.target.closest?.('[data-plan-drag]');
+    if (!handle || !root.contains(handle)) return;
+    draggedItemId = handle.closest('[data-plan-item-id]')?.dataset.planItemId ?? null;
+    handle.closest('[data-plan-item-id]')?.classList.add('is-dragging');
+  }
 
-    if (event.target.matches('[data-weekly-learning]')) {
-      day.learningTopics = Array.from(
-        root.querySelectorAll('[data-weekly-learning]:checked'),
-        (input) => input.value,
-      );
-      persist();
-      return;
-    }
-
-    if (event.target.matches('[data-maintenance-task]')) {
-      const task = event.target.dataset.maintenanceTask;
-      if (MAINTENANCE_TASKS.includes(task)) day.maintenance[task] = event.target.checked;
-      persist();
-    }
+  function handlePointerUp(event) {
+    if (!draggedItemId) return;
+    const target = event.target.closest?.('[data-plan-item-id]');
+    const dragged = draggedItemId;
+    draggedItemId = null;
+    root.querySelector('.is-dragging')?.classList.remove('is-dragging');
+    if (!target || target.dataset.planItemId === dragged) return;
+    const targetIndex = selectedDayState().timelineOrder.indexOf(target.dataset.planItemId);
+    moveItem(dragged, targetIndex);
   }
 
   root.addEventListener('click', handleClick);
   root.addEventListener('change', handleChange);
+  root.addEventListener('submit', handleSubmit);
+  root.addEventListener('pointerdown', handlePointerDown);
+  root.addEventListener('pointerup', handlePointerUp);
+  persist();
   paintAll();
   pageDocument.documentElement.dataset.weeklyReady = 'true';
 
@@ -527,6 +537,9 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     destroy() {
       root.removeEventListener('click', handleClick);
       root.removeEventListener('change', handleChange);
+      root.removeEventListener('submit', handleSubmit);
+      root.removeEventListener('pointerdown', handlePointerDown);
+      root.removeEventListener('pointerup', handlePointerUp);
       delete pageDocument.documentElement.dataset.weeklyReady;
     },
   };
@@ -538,9 +551,6 @@ if (typeof document !== 'undefined') {
     initWeeklyPage(document, window.localStorage, today);
     scheduleLogicalDayRollover(window, today);
   };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
 }
