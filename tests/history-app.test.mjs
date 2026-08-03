@@ -15,5 +15,5 @@ test('운영 모드와 주간 체크 식별자를 읽기 쉬운 문구로 바꾼
   assert.equal(historyModeLabel('workout'), '운동일');
   assert.equal(historyModeLabel('maintenance'), '핵심 유지일');
   assert.equal(weeklyCheckLabel('application-3'), '지원 3');
-  assert.equal(weeklyCheckLabel('learningReview'), '핵심 학습 복습');
+  assert.equal(weeklyCheckLabel('interview'), '면접 연습·복기');
 });

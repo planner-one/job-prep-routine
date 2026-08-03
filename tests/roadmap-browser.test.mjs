@@ -461,7 +461,6 @@ test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 �
       mode: 'running',
       runStart: '21',
       checkedIds: ['run'],
-      learningTopics: ['Java'],
     });
     await evaluate(cdp, sessionId, `localStorage.setItem('job-prep-routine:roadmap:2026-07-12', ${JSON.stringify(legacyRaw)})`);
     await navigate(cdp, sessionId, staticSite.url);
@@ -477,16 +476,18 @@ test('로드맵은 다섯 일정 변형을 읽기 전용으로 렌더링하고 �
         printIntroCount: document.querySelectorAll('.roadmap-print-intro').length,
         printPrincipleCardCounts: [...document.querySelectorAll('[data-roadmap-variant]')]
           .map((node) => node.querySelectorAll('.roadmap-print-principles .focus-anchor').length),
+        hasLearning: Boolean(document.querySelector('.roadmap-category--learning, .focus-anchor--learning')),
         storedRaw: localStorage.getItem(legacyKey),
         roadmapKeys: Object.keys(localStorage).filter((key) => key.startsWith('job-prep-routine:roadmap:')).sort(),
       };
     })()`);
     assert.deepEqual(result.variantIds, ['workout', 'normal', 'running-21', 'running-22', 'maintenance']);
-    assert.deepEqual(result.counts, [16, 15, 15, 15, 11]);
-    assert.equal(result.totalRows, 72);
+    assert.deepEqual(result.counts, [15, 14, 14, 14, 9]);
+    assert.equal(result.totalRows, 66);
     assert.equal(result.inputs, 0);
     assert.equal(result.printIntroCount, 5);
-    assert.deepEqual(result.printPrincipleCardCounts, [3, 3, 3, 3, 3]);
+    assert.deepEqual(result.printPrincipleCardCounts, [2, 2, 2, 2, 2]);
+    assert.equal(result.hasLearning, false);
     assert.equal(result.storedRaw, legacyRaw);
     assert.deepEqual(result.roadmapKeys, ['job-prep-routine:roadmap:2026-07-12']);
   } finally {

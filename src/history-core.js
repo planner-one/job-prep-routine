@@ -1,9 +1,9 @@
-import { LEARNING_TOPICS, MODES, TASK_LIBRARY, getSchedule } from './routine-data.js';
+import { MODES, TASK_LIBRARY, getSchedule } from './routine-data.js';
 import { calculateDailyProgress, countPipelineProgress, localDateString, storageKey } from './routine-core.js';
 
 const WEEKDAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
-const SCHEDULE_CATEGORIES = new Set(['career', 'learning', 'exercise', 'meal']);
+const SCHEDULE_CATEGORIES = new Set(['career', 'exercise', 'meal']);
 const DEFAULT_EXERCISE_IDS = new Set(
   [
     'sleep',
@@ -17,13 +17,32 @@ const MAINTENANCE_TASKS = [
   'application',
   'review',
   'interview',
-  'learningReview',
   'nextWeek',
   'rest',
 ];
+const LEGACY_LEARNING_IDS = new Set([
+  'learning',
+  'maintenance-learning',
+  'maintenance-planning',
+  'Spring',
+  'Redis',
+  'Java',
+  '프로젝트 적용',
+  'CS',
+  '코딩테스트',
+]);
 
 function objectValue(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function isLegacyLearningId(value) {
+  return typeof value === 'string' && (value.startsWith('learning:') || LEGACY_LEARNING_IDS.has(value));
+}
+
+function isLegacyLearningItem(value) {
+  const item = objectValue(value);
+  return item.category === 'learning' || isLegacyLearningId(item.id);
 }
 
 function parseDateKey(value) {
@@ -96,6 +115,7 @@ function periodForMinute(value) {
 function snapshotScheduleItem(candidate) {
   const item = objectValue(candidate);
   if (typeof item.id !== 'string' || !item.id.trim()) return null;
+  if (isLegacyLearningItem(item)) return null;
   if (typeof item.label !== 'string' || !item.label.trim()) return null;
   if (!SCHEDULE_CATEGORIES.has(item.category)) return null;
   if (!validMinute(item.startMinute) || !validMinute(item.endMinute) || item.endMinute < item.startMinute) {
@@ -127,6 +147,7 @@ function archivedSchedule(source) {
     .map((candidate) => {
       const item = objectValue(candidate);
       if (typeof item.id !== 'string' || !item.id.trim()) return null;
+      if (isLegacyLearningItem(item)) return null;
       const normalized = snapshotScheduleItem(item);
       if (normalized) return normalized;
       return {
@@ -138,17 +159,6 @@ function archivedSchedule(source) {
       };
     })
     .filter((item) => item && !seen.has(item.id) && seen.add(item.id));
-}
-
-function normalizeTopics(...sources) {
-  const selected = new Set();
-  for (const source of sources) {
-    if (!Array.isArray(source)) continue;
-    for (const topic of source) {
-      if (LEARNING_TOPICS.includes(topic)) selected.add(topic);
-    }
-  }
-  return LEARNING_TOPICS.filter((topic) => selected.has(topic));
 }
 
 function normalizedCompanies(value) {
@@ -231,7 +241,6 @@ function buildWeeklySummary(weekly, date) {
       applications: 0,
       completed: [],
       total: 0,
-      topics: [],
       hasLegacyActivity: false,
     };
   }
@@ -247,7 +256,6 @@ function buildWeeklySummary(weekly, date) {
       applications: maintenance.application ? 1 : 0,
       completed,
       total: MAINTENANCE_TASKS.length,
-      topics: maintenance.learningReview ? ['학습 복습'] : [],
       hasLegacyActivity: completed.length > 0,
     };
   }
@@ -260,7 +268,6 @@ function buildWeeklySummary(weekly, date) {
   const completedApplications = applications
     .map((checked, index) => (checked ? `application-${index + 1}` : null))
     .filter(Boolean);
-  const topics = Array.isArray(completion.learningTopics) ? completion.learningTopics : [];
   const completed = [...completedTasks, ...completedApplications];
   return {
     isMaintenance: false,
@@ -268,8 +275,7 @@ function buildWeeklySummary(weekly, date) {
     applications: applications.filter(Boolean).length,
     completed,
     total: EXECUTION_TASKS.length + applications.length,
-    topics,
-    hasLegacyActivity: completed.length > 0 || topics.length > 0,
+    hasLegacyActivity: completed.length > 0,
   };
 }
 
@@ -287,15 +293,6 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
   const companies = allCompanies.filter(hasCompanyData);
   const pipeline = countPipelineProgress(allCompanies);
   const memos = normalizedMemos(dailyState?.memos);
-  const learningTopics = normalizeTopics(
-    dailyState?.learningTopics,
-    roadmapState?.learningTopics,
-    weeklySummary.topics,
-  );
-  const weeklyLearningCompletion =
-    !weeklySummary.isMaintenance && weeklySummary.topics.some((topic) => LEARNING_TOPICS.includes(topic))
-      ? 1
-      : 0;
   let completionSource = null;
   let completed = 0;
   let total = 0;
@@ -313,8 +310,8 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     total = roadmapSchedule.total;
   } else if (weeklySummary.hasLegacyActivity) {
     completionSource = 'weekly';
-    completed = weeklySummary.completed.length + weeklyLearningCompletion;
-    total = weeklySummary.total + (weeklySummary.isMaintenance ? 0 : 1);
+    completed = weeklySummary.completed.length;
+    total = weeklySummary.total;
   }
   const authoritativeState = completionSource === 'daily'
     ? dailyState
@@ -330,13 +327,7 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     ? weeklySummary.mode
     : authoritativeState?.mode;
   const mode = normalizeMode(authoritativeMode, 'normal');
-  const sourceLearningTopics = completionSource === 'weekly'
-    ? normalizeTopics(weeklySummary.topics)
-    : normalizeTopics(authoritativeState?.learningTopics);
   const completedIds = new Set(authoritativeSchedule.completedIds);
-  const completedCategories = new Set(
-    authoritativeSchedule.completed.map(({ category }) => category),
-  );
   const hasCustomExercise = authoritativeSchedule.completed.some(
     ({ id, category }) => category === 'exercise' && !DEFAULT_EXERCISE_IDS.has(id),
   );
@@ -348,13 +339,6 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
   const interview =
     (completionSource === 'weekly' && weeklySummary.completed.includes('interview')) ||
     ['interview-practice', 'maintenance-interview'].some((id) => completedIds.has(id))
-      ? 1
-      : 0;
-  const learning =
-    sourceLearningTopics.length > 0 ||
-    completedCategories.has('learning') ||
-    ['learning', 'maintenance-learning'].some((id) => completedIds.has(id)) ||
-    (completionSource === 'weekly' && weeklySummary.completed.includes('learningReview'))
       ? 1
       : 0;
   const exercise =
@@ -370,7 +354,6 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     roadmapSchedule.completed.length > 0 ||
     weeklySummary.completed.length > 0 ||
     companies.length > 0 ||
-    learningTopics.length > 0 ||
     hasMemo(memos);
 
   return {
@@ -386,7 +369,6 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     metrics: {
       applications,
       interview,
-      learning,
       exercise,
     },
     completedSchedule: (dailyState ? dailySchedule.completed : roadmapSchedule.completed).map((item) => ({
@@ -400,7 +382,6 @@ export function buildHistoryRecord({ date, daily = null, roadmap = null, weekly 
     },
     companies,
     pipeline,
-    learningTopics,
     memos,
     hasActivity,
   };
@@ -461,7 +442,6 @@ export function summarizeHistory(records) {
       0,
     ),
     interviewDays: safeRecords.filter((record) => record?.metrics?.interview).length,
-    learningDays: safeRecords.filter((record) => record?.metrics?.learning).length,
     exerciseDays: safeRecords.filter((record) => record?.metrics?.exercise).length,
   };
 }

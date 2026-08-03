@@ -12,10 +12,6 @@ const REQUIRED_PRINCIPLES = [
     title: '면접 언어를 매일 다듬기',
     description: '이력서와 포트폴리오를 내 말로 설명하는 시간을 지킨다.',
   },
-  {
-    title: '학습은 결과물로 남기기',
-    description: '선택한 주제를 작은 구현이나 프로젝트 적용으로 연결한다.',
-  },
 ];
 
 test('페이지별 validator는 일정 유형 설명이 빠진 텍스트를 거부한다', () => {
@@ -71,7 +67,7 @@ test('페이지별 validator는 원칙 설명이 빠진 텍스트를 거부한�
   );
 });
 
-test('canonical 운영 로드맵 PDF는 A4 5페이지와 72개 일정 계약을 만족한다', async () => {
+test('canonical 운영 로드맵 PDF는 A4 5페이지와 66개 일정 계약을 만족한다', async () => {
   assert.equal(typeof validator.validateRoadmapPdf, 'function');
   const result = await validator.validateRoadmapPdf(
     new URL('../output/pdf/취업준비-운영-로드맵.pdf', import.meta.url),
@@ -80,6 +76,6 @@ test('canonical 운영 로드맵 PDF는 A4 5페이지와 72개 일정 계약을 
     pageCount: 5,
     a4PageCount: 5,
     variantCount: 5,
-    scheduleItemCount: 72,
+    scheduleItemCount: 66,
   });
 });

@@ -35,7 +35,7 @@ test('데일리형은 시간표와 지원 파이프라인의 두 열을 가진�
 test('주간 계획을 데일리 체크 일정으로 연결하고 계획 편집은 주간 화면으로 보낸다', () => {
   assert.match(html, /id="daily-plan-source"/);
   assert.match(html, /id="daily-plan-mode"/);
-  assert.match(html, /id="daily-plan-topics"/);
+  assert.doesNotMatch(html, /id="daily-plan-topics"/);
   assert.match(html, /href="\.\/weekly\.html"[^>]*>주간 계획 수정</);
   assert.match(html, /id="daily-plan-update"[^>]*hidden/);
   assert.match(html, /id="apply-daily-plan-update"/);
@@ -47,23 +47,24 @@ test('계획 변경과 반영 결과를 보조기기에 알리고 반영 후 포
   assert.match(html, /id="schedule-title"[^>]*tabindex="-1"/);
 });
 
-test('운영 유형·러닝 시간·학습 조합은 데일리에서 편집할 수 없다', () => {
+test('운영 유형·러닝 시간은 데일리에서 편집할 수 없고 학습 UI를 제공하지 않는다', () => {
   assert.doesNotMatch(html, /data-mode=/);
   assert.doesNotMatch(html, /name="run-start"/);
-  assert.doesNotMatch(html, /data-learning-topic/);
+  assert.doesNotMatch(html, /학습|learning/i);
 });
 
-test('데일리는 시간표 카테고리 필터와 빈 결과 안내를 제공한다', () => {
+test('데일리는 학습을 제외한 시간표 카테고리 필터와 빈 결과 안내를 제공한다', () => {
   assert.match(html, /id="daily-category-filters"/);
   for (const [value, label] of [
     ['all', '전체'],
     ['exercise', '운동·회복'],
     ['career', '취업·면접'],
-    ['learning', '개발 학습'],
     ['meal', '식사·휴식'],
   ]) {
     assert.match(html, new RegExp(`data-category-filter="${value}"[^>]*>${label}<`));
   }
+  assert.equal((html.match(/data-category-filter=/g) ?? []).length, 4);
+  assert.doesNotMatch(html, /data-category-filter="learning"/);
   assert.match(html, /data-category-filter="all" aria-pressed="true"/);
   assert.match(html, /id="daily-schedule-empty"[^>]*hidden/);
 });

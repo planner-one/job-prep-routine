@@ -7,7 +7,8 @@ test('로드맵은 운동·비운동·러닝 두 시각·유지일 전체 일정
   assert.deepEqual(variants.map(({ id }) => id), [
     'workout', 'normal', 'running-21', 'running-22', 'maintenance',
   ]);
-  assert.deepEqual(variants.map(({ schedule }) => schedule.length), [16, 15, 15, 15, 11]);
+  assert.equal(variants.reduce((total, { schedule }) => total + schedule.length, 0), 66);
+  assert.equal(variants.every(({ schedule }) => schedule.every(({ category }) => category !== 'learning')), true);
   assert.equal(variants[2].schedule.find(({ id }) => id === 'run').time, '21:00-22:00');
   assert.equal(variants[3].schedule.find(({ id }) => id === 'run').time, '22:00-23:00');
 });

@@ -57,17 +57,26 @@ test('로드맵 인쇄는 일정 변형마다 새 페이지에서 시작하고 �
   assert.match(roadmapHtml, /class="[^"]*roadmap-principles[^"]*screen-only/);
   assert.match(declarationsFor(printCss, '.print-only'), /display:\s*block\s*!important/);
   assert.match(
-    declarationsFor(printCss, '#roadmap-page [data-roadmap-variant][hidden]'),
+    declarationsFor(printCss, '#roadmap-page [data-roadmap-variant]'),
     /display:\s*block\s*!important/,
   );
   assert.match(declarationsFor(printCss, '.roadmap-mode-heading'), /display:\s*none\s*!important/);
-  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading > div:last-child'), /display:\s*grid/);
-  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading > div:last-child'), /gap:\s*[\d.]+mm/);
-  assert.match(declarationsFor(printCss, '.roadmap-print-principles'), /display:\s*grid\s*!important/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading'), /position:\s*relative/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading'), /display:\s*block/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading > div:last-child'), /position:\s*absolute/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-page-heading > div:last-child'), /right:\s*0/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-principles'), /display:\s*block\s*!important/);
   assert.match(declarationsFor(printCss, '.roadmap-print-principles .focus-anchor'), /position:\s*relative/);
-  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-before:\s*page/);
-  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-inside:\s*auto/);
-  assert.match(declarationsFor(printCss, '.roadmap-mode-section:first-child'), /break-before:\s*auto/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-principles .focus-anchor'), /display:\s*inline-block/);
+  assert.match(declarationsFor(printCss, '.roadmap-print-principles .focus-anchor \+ .focus-anchor'), /margin-left:\s*3mm/);
+  assert.match(declarationsFor(printCss, '.roadmap-reference-list'), /display:\s*block/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /overflow:\s*visible/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-after:\s*page/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /break-inside:\s*avoid/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /page-break-after:\s*always/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section'), /page-break-inside:\s*avoid/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section:last-child'), /break-after:\s*auto/);
+  assert.match(declarationsFor(printCss, '.roadmap-mode-section:last-child'), /page-break-after:\s*auto/);
   assert.match(declarationsFor(printCss, '.roadmap-reference-period'), /break-inside:\s*avoid/);
   assert.match(declarationsFor(printCss, '.roadmap-reference-row'), /break-inside:\s*avoid/);
 });
@@ -108,18 +117,6 @@ test('주간 인쇄는 편집 조작을 숨기고 세로 계획과 읽기 전용
   assert.doesNotMatch(weeklyHtml, /id="weekly-plan-list"[^>]*screen-only/);
 });
 
-test('면접 상세 인쇄는 편집 조작을 숨기고 읽기 전용 값만 표시한다', () => {
-  const printCss = blockAfter(css, '@media print');
-  for (const selector of [
-    '.interview-detail-controls',
-    '.interview-save-status',
-    '.interview-reset',
-  ]) {
-    assert.match(declarationsFor(printCss, selector), /display:\s*none/);
-  }
-  assert.match(declarationsFor(printCss, '#detail-print-values'), /display:\s*block/);
-});
-
 test('PDF 내보내기는 Chrome 재정의와 안정적인 한국어 파일명을 지원한다', () => {
   assert.match(exportScript, /CHROME_BIN/);
   assert.match(exportScript, /Google Chrome\.app\/Contents\/MacOS\/Google Chrome/);
@@ -149,23 +146,15 @@ test('로드맵 PDF npm 명령은 기존 8787 origin을 사용한다', () => {
   );
 });
 
-test('한국어 홈은 다섯 보드로 이동하는 상대 링크를 제공한다', () => {
+test('한국어 선택 홈은 고정 포트의 두 보드로 이동한다', () => {
   assert.match(home, /<html\s+lang="ko">/);
-  assert.match(home, /취업 준비 루틴 보드/);
+  assert.equal((home.match(/class="home-board-card/g) ?? []).length, 2);
 
   for (const [href, label] of [
-    ['./roadmap.html', '운영 로드맵'],
-    ['./weekly.html', '주간 실행 보드'],
-    ['./daily.html', '데일리 포커스 보드'],
-    ['./history.html', '기록·분석'],
-    ['./contents.html', '매일메일 백엔드 읽기'],
+    ['http://127.0.0.1:8787/roadmap.html', '루틴 보드'],
+    ['http://127.0.0.1:8788/contents.html', '학습 보드'],
   ]) {
-    assert.match(home, new RegExp(`href="${href.replace('.', '\\.')}`));
+    assert.match(home, new RegExp(`href="${href.replaceAll('.', '\\.').replaceAll('/', '\\/')}`));
     assert.match(home, new RegExp(label));
   }
-});
-
-test('홈은 로드맵을 기준표로, 데일리를 유일한 오늘 실행 화면으로 설명한다', () => {
-  assert.match(home, /읽기 전용 일정 기준표·PDF/);
-  assert.match(home, /오늘의 유일한 실행 기록/);
 });

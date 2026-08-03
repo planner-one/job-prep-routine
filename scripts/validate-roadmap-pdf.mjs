@@ -100,7 +100,7 @@ export async function validateRoadmapPdf(pdfPath) {
       readingOrderPages[pageIndex],
     );
   });
-  if (scheduleItemCount !== 72) throw new Error(`로드맵 일정 수가 72가 아닙니다: ${scheduleItemCount}`);
+  if (scheduleItemCount !== 66) throw new Error(`로드맵 일정 수가 66이 아닙니다: ${scheduleItemCount}`);
 
   return { pageCount, a4PageCount, variantCount: variants.length, scheduleItemCount };
 }

@@ -1,4 +1,4 @@
-import { LEARNING_TOPICS, MODES, PLATFORMS } from './routine-data.js';
+import { MODES, PLATFORMS } from './routine-data.js';
 import {
   applyUpdatedPlan,
   hasExecutionInput,
@@ -27,11 +27,22 @@ import {
 const DAILY_PAGE_NAME = 'daily';
 const PERIODS = [
   { id: 'morning', label: '오전', description: '몸과 취업 핵심' },
-  { id: 'afternoon', label: '오후', description: '지원과 개발 학습' },
+  { id: 'afternoon', label: '오후', description: '지원과 실전 준비' },
   { id: 'evening', label: '저녁', description: '복기와 마감' },
   { id: 'night', label: '밤', description: '정리와 회복' },
 ];
-const SCHEDULE_CATEGORIES = new Set(['all', 'exercise', 'career', 'learning', 'meal']);
+const SCHEDULE_CATEGORIES = new Set(['all', 'exercise', 'career', 'meal']);
+const LEGACY_LEARNING_IDS = new Set([
+  'learning',
+  'maintenance-learning',
+  'maintenance-planning',
+  'Spring',
+  'Redis',
+  'Java',
+  '프로젝트 적용',
+  'CS',
+  '코딩테스트',
+]);
 const MODE_LABELS = {
   workout: '운동일',
   normal: '비운동일',
@@ -53,7 +64,6 @@ const createDefaultState = () => ({
   runStart: '21',
   checkedIds: [],
   companies: Array.from({ length: 4 }, emptyCompany),
-  learningTopics: [],
   memos: {
     implemented: '',
     blocked: '',
@@ -64,6 +74,18 @@ const createDefaultState = () => ({
 });
 
 const stringValue = (value) => (typeof value === 'string' ? value : '');
+
+function isLegacyLearningId(id) {
+  return typeof id === 'string' && (LEGACY_LEARNING_IDS.has(id) || id.startsWith('learning:'));
+}
+
+function isLegacyLearningItem(item) {
+  return item?.category === 'learning' || isLegacyLearningId(item?.id);
+}
+
+function routineScheduleItems(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => !isLegacyLearningItem(item));
+}
 
 function normalizeCompany(company = {}) {
   const source = company && typeof company === 'object' && !Array.isArray(company) ? company : {};
@@ -81,7 +103,15 @@ function normalizeCompany(company = {}) {
 function normalizeArchivedCompletedItems(candidate) {
   const seen = new Set();
   return (Array.isArray(candidate) ? candidate : []).flatMap((entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || typeof entry.id !== 'string' || !entry.id.trim() || seen.has(entry.id)) return [];
+    if (
+      !entry
+      || typeof entry !== 'object'
+      || Array.isArray(entry)
+      || typeof entry.id !== 'string'
+      || !entry.id.trim()
+      || seen.has(entry.id)
+      || isLegacyLearningItem(entry)
+    ) return [];
     seen.add(entry.id);
     const item = { id: entry.id };
     if (typeof entry.label === 'string') item.label = entry.label;
@@ -100,12 +130,20 @@ export function normalizeDailyState(candidate = {}) {
   const mode = MODES.includes(source.mode) ? source.mode : defaults.mode;
   const runStart = source.runStart === '22' ? '22' : '21';
   const sourceCompanies = Array.isArray(source.companies) ? source.companies : [];
-  const sourceTopics = Array.isArray(source.learningTopics) ? source.learningTopics : [];
   const companies = Array.from({ length: 4 }, (_, index) => normalizeCompany(sourceCompanies[index]));
-  const checkedIds = Array.from(
-    new Set((Array.isArray(source.checkedIds) ? source.checkedIds : []).filter((id) => typeof id === 'string')),
+  const learningItemIds = new Set(
+    [
+      ...(Array.isArray(source.planSnapshot?.items) ? source.planSnapshot.items : []),
+      ...(Array.isArray(source.archivedCompletedItems) ? source.archivedCompletedItems : []),
+    ]
+      .filter(isLegacyLearningItem)
+      .map((item) => item.id),
   );
-  const learningTopics = LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic));
+  const checkedIds = Array.from(
+    new Set((Array.isArray(source.checkedIds) ? source.checkedIds : []).filter(
+      (id) => typeof id === 'string' && !isLegacyLearningId(id) && !learningItemIds.has(id),
+    )),
+  );
   const memos = source.memos && typeof source.memos === 'object' && !Array.isArray(source.memos) ? source.memos : {};
 
   return {
@@ -113,7 +151,6 @@ export function normalizeDailyState(candidate = {}) {
     runStart,
     checkedIds,
     companies,
-    learningTopics,
     memos: {
       implemented: stringValue(memos.implemented),
       blocked: stringValue(memos.blocked),
@@ -136,6 +173,7 @@ export function renderSchedule(container, schedule, checkedIds = []) {
 
   const pageDocument = container.ownerDocument;
   const completed = checkedSetFrom(checkedIds);
+  const routineSchedule = routineScheduleItems(schedule);
   container.replaceChildren();
 
   for (const period of PERIODS) {
@@ -158,7 +196,7 @@ export function renderSchedule(container, schedule, checkedIds = []) {
     list.className = 'schedule-list';
     list.setAttribute('role', 'list');
 
-    for (const item of schedule.filter((entry) => schedulePeriod(entry) === period.id)) {
+    for (const item of routineSchedule.filter((entry) => schedulePeriod(entry) === period.id)) {
       const row = pageDocument.createElement('label');
       row.className = 'schedule-item';
       row.setAttribute('role', 'listitem');
@@ -210,15 +248,6 @@ function scheduleTime(item) {
   return '';
 }
 
-function learningTopicsFromPlan(items) {
-  const learningItems = Array.isArray(items) ? items.filter(({ category }) => category === 'learning') : [];
-  return LEARNING_TOPICS.filter((topic) => learningItems.some((item) => {
-    if (item.id === topic) return true;
-    if (item.id?.startsWith('learning:') && item.id.slice('learning:'.length).split('|').includes(topic)) return true;
-    return item.label?.split(' · ').includes(topic);
-  }));
-}
-
 function storedCompatibilityFields(rawState) {
   try {
     const source = JSON.parse(rawState);
@@ -226,7 +255,6 @@ function storedCompatibilityFields(rawState) {
     return {
       mode: Object.hasOwn(source, 'mode'),
       runStart: Object.hasOwn(source, 'runStart'),
-      learningTopics: Object.hasOwn(source, 'learningTopics'),
     };
   } catch {
     return {};
@@ -348,7 +376,9 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   const root = pageDocument.getElementById('daily-page');
   if (!root) return null;
 
-  let compatibilityFields = storedCompatibilityFields(storage.getItem(storageKey(DAILY_PAGE_NAME, date)));
+  const dailyStorageKey = storageKey(DAILY_PAGE_NAME, date);
+  const storedDailyState = storage.getItem(dailyStorageKey);
+  let compatibilityFields = storedCompatibilityFields(storedDailyState);
   let state = normalizeDailyState(loadState(storage, DAILY_PAGE_NAME, date, createDefaultState()));
   const weeklyKey = weekMondayKey(date);
   const weekly = normalizeWeeklyState(loadState(storage, 'weekly', weeklyKey, createDefaultWeeklyState()));
@@ -356,8 +386,9 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   const usesLegacyPlan = () => Object.values(compatibilityFields).some(Boolean);
   if (!state.planSnapshot && hasExecutionInput(state) && usesLegacyPlan()) {
     state = normalizeDailyState(migrateLegacyDailyState(date, state, resolvedPlan.revision));
-    saveState(storage, DAILY_PAGE_NAME, date, state);
   }
+  state = normalizeDailyState(state);
+  if (storedDailyState !== null) saveState(storage, DAILY_PAGE_NAME, date, state);
   let prepared = prepareDailyPlan(state, resolvedPlan);
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
@@ -375,16 +406,13 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   }
 
   function renderCurrentSchedule() {
-    const schedule = prepared.renderPlan.items;
+    const schedule = routineScheduleItems(prepared.renderPlan.items);
     renderedIds = new Set(schedule.map((item) => item.id));
     renderSchedule(root.querySelector('#daily-schedule'), schedule, checkedIds);
     activeCategory = applyDailyCategoryFilter(root, activeCategory);
     const mode = state.planSnapshot ? state.mode : resolvedPlan.mode;
-    const topics = schedule.filter(({ category }) => category === 'learning').map(({ label }) => label);
     const modeElement = root.querySelector('#daily-plan-mode');
     if (modeElement) modeElement.textContent = MODE_LABELS[mode] ?? MODE_LABELS.normal;
-    const topicsElement = root.querySelector('#daily-plan-topics');
-    if (topicsElement) topicsElement.textContent = topics.length ? [...new Set(topics)].join(' · ') : '학습 일정 없음';
     const update = root.querySelector('#daily-plan-update');
     if (update) update.hidden = !prepared.needsPlanUpdate;
   }
@@ -394,7 +422,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
     renderCurrentSchedule();
     applyCompanyState(root, state.companies);
     applyMemoState(root, state.memos);
-    updateProgress(root, prepared.renderPlan.items, state);
+    updateProgress(root, routineScheduleItems(prepared.renderPlan.items), state);
   }
 
   function captureState(overrides = {}) {
@@ -405,9 +433,6 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
       ...overrides,
       mode: state.planSnapshot || compatibilityFields.mode ? state.mode : resolvedPlan.mode,
       runStart: state.planSnapshot || compatibilityFields.runStart ? state.runStart : resolvedPlan.runStart,
-      learningTopics: state.planSnapshot || compatibilityFields.learningTopics
-        ? state.learningTopics
-        : learningTopicsFromPlan(prepared.renderPlan.items),
       checkedIds: Array.from(checkedIds),
     });
     checkedIds = new Set(state.checkedIds);
@@ -424,7 +449,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
     prepared = prepareDailyPlan(state, resolvedPlan);
     saveState(storage, DAILY_PAGE_NAME, date, state);
     renderCurrentSchedule();
-    updateProgress(root, prepared.renderPlan.items, state);
+    updateProgress(root, routineScheduleItems(prepared.renderPlan.items), state);
   }
 
   function resetToday() {
@@ -457,13 +482,12 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
         ...applyUpdatedPlan(state, resolvedPlan),
         mode: resolvedPlan.mode,
         runStart: resolvedPlan.runStart,
-        learningTopics: learningTopicsFromPlan(resolvedPlan.items),
       });
       checkedIds = new Set(state.checkedIds);
       prepared = prepareDailyPlan(state, resolvedPlan);
       renderCurrentSchedule();
       saveState(storage, DAILY_PAGE_NAME, date, state);
-      updateProgress(root, prepared.renderPlan.items, state);
+      updateProgress(root, routineScheduleItems(prepared.renderPlan.items), state);
       root.querySelector('#schedule-title')?.focus();
       return;
     }

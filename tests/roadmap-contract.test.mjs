@@ -22,6 +22,14 @@ test('로드맵은 조작 없이 다섯 일정 변형을 제공하는 읽기 전
   assert.doesNotMatch(html, /roadmap-current-date|roadmap-reset-today|roadmap-mode-switch/);
 });
 
+test('로드맵 운영 원칙은 지원과 면접 두 가지이며 학습 원칙을 노출하지 않는다', () => {
+  const principles = html.match(/<section class="focus-anchors roadmap-principles[\s\S]*?<\/section>/)?.[0] ?? '';
+  assert.equal((principles.match(/<article /g) ?? []).length, 2);
+  assert.match(principles, /지원은 하루 3~4개/);
+  assert.match(principles, /면접 언어를 매일 다듬기/);
+  assert.doesNotMatch(principles, /학습|learning/i);
+});
+
 test('로드맵은 네 카테고리와 러닝 시작 시각 선택을 제공한다', () => {
   assert.match(html, /class="roadmap-category-tabs"[^>]*role="tablist"/);
   for (const category of ['workout', 'normal', 'running', 'maintenance']) {

@@ -43,7 +43,7 @@ test('직접 일정은 안정적인 ID와 소요시간을 저장한다', () => {
   const day = createDefaultWeeklyState().days.tue;
   const next = addCustomPlanItem(
     day,
-    { label: '개인 프로젝트 README 정리', category: 'learning', durationMinutes: 40 },
+    { label: '개인 프로젝트 README 정리', category: 'career', durationMinutes: 40 },
     () => 'custom-fixed-id',
   );
   assert.equal(next.items.some(({ id, durationMinutes }) => id === 'custom-fixed-id' && durationMinutes === 40), true);
@@ -74,13 +74,12 @@ test('주간 키와 요일 ID 및 분 단위 표시를 계산한다', () => {
   assert.equal(formatMinuteRange(1440, 1440), '24:00');
 });
 
-test('라이브러리 항목은 중복을 막고 선택한 학습 주제를 원래 순서로 합친다', () => {
+test('라이브러리 항목은 중복을 막고 예전 학습 블록은 제공하지 않는다', () => {
   const blank = { mode: 'normal', runStart: '21', items: [], unscheduled: [], timelineOrder: ['breakfast', 'lunch', 'dinner', 'sleep'], revision: 0 };
-  const withTopics = addLibraryPlanItem(blank, 'learning', { topics: ['Redis', 'Spring', '알 수 없음'] });
-  const item = withTopics.items[0];
-  assert.equal(item.label, 'Spring · Redis');
-  assert.equal(item.durationMinutes, 120);
-  assert.throws(() => addLibraryPlanItem(withTopics, 'learning', { topics: ['Spring', 'Redis'] }), /이미 추가된 일정/);
+  const withScan = addLibraryPlanItem(blank, 'scan');
+  assert.equal(withScan.items[0].label, '일정·공고 확인');
+  assert.throws(() => addLibraryPlanItem(withScan, 'scan'), /이미 추가된 일정/);
+  assert.throws(() => addLibraryPlanItem(blank, 'learning'), /알 수 없는 기본 일정/);
 });
 
 test('타임라인은 앵커와 미배치 항목을 함께 시간순으로 제공한다', () => {
@@ -124,7 +123,7 @@ test('기본 계획은 식사와 취침을 앵커로 분리하고 나머지 원�
   );
   assert.equal(day.items.find(({ id }) => id === 'workout-wake').durationMinutes, 20);
   assert.equal(day.items.find(({ id }) => id === 'afternoon-break').durationMinutes, 20);
-  assert.equal(day.items.find(({ id }) => id === 'learning').durationMinutes, 120);
+  assert.equal(day.items.some(({ id, category }) => id === 'learning' || category === 'learning'), false);
   assert.equal(day.items.find(({ id }) => id === 'workout-evening').durationMinutes, 70);
   assert.equal(day.items.find(({ id }) => id === 'workout-extension').durationMinutes, 60);
 });
@@ -148,6 +147,55 @@ test('v2의 빈 계획과 revision은 기본 계획으로 되살리지 않고 �
   assert.deepEqual(normalized.days.mon.unscheduled, []);
   assert.deepEqual(normalized.days.mon.timelineOrder, ['breakfast', 'lunch', 'dinner', 'sleep']);
   assert.equal(normalized.days.mon.revision, 7);
+});
+
+test('v2 저장값의 학습 일정과 필드만 버리고 비학습 계획·완료를 보존한다', () => {
+  const normalized = normalizeWeeklyState({
+    schemaVersion: 2,
+    selectedDay: 'mon',
+    maintenanceDay: 'sun',
+    days: {
+      mon: {
+        mode: 'normal',
+        runStart: '22',
+        items: [
+          { id: 'career-kept', label: '면접 복기', category: 'career', durationMinutes: 30, startMinute: 600, endMinute: 630 },
+          { id: 'custom-learning', label: '기술 문서', category: 'learning', durationMinutes: 30, startMinute: 630, endMinute: 660 },
+          { id: 'learning:CS', label: 'CS', category: 'career', durationMinutes: 30, startMinute: 660, endMinute: 690 },
+          { id: 'CS', label: '예전 주제', category: 'career', durationMinutes: 30, startMinute: 690, endMinute: 720 },
+        ],
+        unscheduled: [{ id: 'exercise-kept', label: '스트레칭', category: 'exercise', durationMinutes: 20 }],
+        timelineOrder: ['breakfast', 'career-kept', 'custom-learning', 'learning:CS', 'CS', 'exercise-kept', 'lunch', 'dinner', 'sleep'],
+        revision: 8,
+        legacyCompletion: {
+          applications: [true, false],
+          tasks: { interview: true, learning: true },
+          learningTopics: ['CS'],
+          maintenance: { review: true, learningReview: true },
+        },
+      },
+    },
+  });
+  const day = normalized.days.mon;
+
+  assert.equal(normalized.schemaVersion, 2);
+  assert.equal(day.revision, 8);
+  assert.deepEqual(day.items.map(({ id }) => id), ['career-kept']);
+  assert.deepEqual(day.unscheduled.map(({ id }) => id), ['exercise-kept']);
+  assert.deepEqual(day.timelineOrder, ['breakfast', 'career-kept', 'exercise-kept', 'lunch', 'dinner', 'sleep']);
+  assert.deepEqual(day.legacyCompletion, {
+    applications: [true, false],
+    tasks: { interview: true },
+    maintenance: { review: true },
+  });
+});
+
+test('직접 일정에 학습 분류를 다시 추가할 수 없다', () => {
+  const day = createDefaultWeeklyState().days.mon;
+  assert.throws(
+    () => addCustomPlanItem(day, { label: '기술 문서', category: 'learning', durationMinutes: 30 }, () => 'custom-learning'),
+    /허용되지 않은 일정 분류/,
+  );
 });
 
 test('Date 입력은 오전 2시 전이면 전날 논리 날짜로 주와 요일을 계산한다', () => {

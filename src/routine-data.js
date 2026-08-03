@@ -1,19 +1,11 @@
 export const MODES = ['workout', 'normal', 'running', 'maintenance'];
 
-export const LEARNING_TOPICS = ['Spring', 'Redis', 'Java', '프로젝트 적용', 'CS', '코딩테스트'];
-
 export const TASK_LIBRARY = [
   { id: 'scan', label: '일정·공고 확인', category: 'career', durationMinutes: 30 },
   { id: 'job-analysis', label: '공고 분석', category: 'career', durationMinutes: 60 },
   { id: 'applications', label: '자소서 조정·지원', category: 'career', durationMinutes: 150 },
   { id: 'portfolio-review', label: '이력서·포트폴리오 숙지', category: 'career', durationMinutes: 30 },
   { id: 'interview-practice', label: '면접 연습·복기', category: 'career', durationMinutes: 120 },
-  { id: 'Spring', label: 'Spring', category: 'learning', durationMinutes: 60 },
-  { id: 'Redis', label: 'Redis', category: 'learning', durationMinutes: 60 },
-  { id: 'Java', label: 'Java', category: 'learning', durationMinutes: 60 },
-  { id: 'CS', label: 'CS', category: 'learning', durationMinutes: 60 },
-  { id: '코딩테스트', label: '코딩테스트', category: 'learning', durationMinutes: 60 },
-  { id: '프로젝트 적용', label: '프로젝트 적용', category: 'learning', durationMinutes: 60 },
   { id: 'workout', label: '아침 운동', category: 'exercise', durationMinutes: 90 },
   { id: 'run', label: '이동 포함 저녁 러닝', category: 'exercise', durationMinutes: 60 },
   { id: 'shower', label: '샤워·정리', category: 'exercise', durationMinutes: 30 },
@@ -31,7 +23,6 @@ const COMMON_DAYTIME = [
   scheduleItem('lunch', '13:00–14:00', '점심·식후 20분', 'meal', 'afternoon'),
   scheduleItem('applications', '14:00–16:30', '공고 분석·자소서 조정·지원 3~4개', 'career', 'afternoon'),
   scheduleItem('afternoon-break', '16:30–16:50', '휴식·산책', 'exercise', 'afternoon'),
-  scheduleItem('learning', '16:50–18:50', '선택 조합 학습·프로젝트 적용', 'learning', 'afternoon'),
   scheduleItem('dinner', '18:50–19:50', '저녁·식후 20분', 'meal', 'evening'),
 ];
 
@@ -87,10 +78,8 @@ const MAINTENANCE_SCHEDULE = [
   scheduleItem('maintenance-portfolio', '10:00–10:30', '이력서·포트폴리오 숙지', 'career', 'morning'),
   scheduleItem('maintenance-application', '10:30–11:30', '마감 임박 공고 확인 및 필요 시 1개 지원', 'career', 'morning'),
   scheduleItem('maintenance-lunch', '13:00–14:00', '점심·식후 20분', 'meal', 'afternoon'),
-  scheduleItem('maintenance-learning', '14:00–15:00', '이번 주 핵심 학습 복습', 'learning', 'afternoon'),
   scheduleItem('maintenance-interview', '17:00–17:30', '면접 답변 3개 복기', 'career', 'afternoon'),
   scheduleItem('maintenance-dinner', '18:00–19:00', '저녁·식후 20분', 'meal', 'evening'),
-  scheduleItem('maintenance-planning', '20:00–20:30', '다음 주 일정·학습 주제 선정', 'learning', 'evening'),
   scheduleItem('maintenance-rest', '20:30 이후', '완전 휴식', 'exercise', 'evening'),
   scheduleItem('maintenance-sleep', '23:00', '취침', 'exercise', 'night'),
 ];

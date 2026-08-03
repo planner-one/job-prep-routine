@@ -16,7 +16,6 @@ export const dailyProgressFixture = {
     applied: true,
     link: '',
   })),
-  learningTopics: ['Spring', 'Redis', 'Spring', '없는 주제'],
   memos: {
     implemented: '',
     blocked: '',
@@ -25,7 +24,7 @@ export const dailyProgressFixture = {
 };
 
 export const dailyProgressExpected = {
-  completed: 30,
-  total: 34,
-  percent: 88,
+  completed: 27,
+  total: 27,
+  percent: 100,
 };

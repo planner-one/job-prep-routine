@@ -1,4 +1,3 @@
-import { LEARNING_TOPICS } from './routine-data.js';
 import {
   calculateWeeklyExecutionProgress,
   hasExecutionInput,
@@ -60,15 +59,6 @@ const ROW_STATE_KEYS = {
   '기록 없음': 'missing',
   '계획 변경 대기': 'plan-update',
 };
-const LEARNING_GOALS = {
-  Spring: '4–6회',
-  Redis: '2–4회',
-  Java: '2–3회',
-  '프로젝트 적용': '3개 이상',
-  CS: '1회 이상',
-  코딩테스트: '1회 이상',
-};
-
 function localDateFrom(value) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12);
@@ -185,22 +175,6 @@ function createAddPanel(document) {
     groups.append(group);
   }
 
-  const learning = document.createElement('section');
-  learning.className = 'weekly-learning-builder';
-  learning.innerHTML = '<h5>개발 학습 조합</h5><div class="weekly-learning-choices"></div>';
-  const learningChoices = learning.querySelector('.weekly-learning-choices');
-  for (const topic of LEARNING_TOPICS) {
-    const label = document.createElement('label');
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = topic;
-    input.dataset.addLearningTopic = topic;
-    label.append(input, ` ${topic}`);
-    learningChoices.append(label);
-  }
-  learning.append(createButton(document, '선택한 주제로 학습 블록 추가', { 'data-add-learning': '' }));
-  groups.append(learning);
-
   const custom = document.createElement('form');
   custom.id = 'weekly-custom-form';
   custom.className = 'weekly-custom-form';
@@ -210,7 +184,6 @@ function createAddPanel(document) {
     <label>분류
       <select id="weekly-custom-category" name="category">
         <option value="career">취업·면접</option>
-        <option value="learning">개발 학습</option>
         <option value="exercise">운동·회복</option>
       </select>
     </label>
@@ -347,17 +320,13 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
       if (fill) fill.style.width = `${Math.min((progress.applications / maximum) * 100, 100)}%`;
     }
 
-    for (const topic of LEARNING_TOPICS) {
-      const value = root.querySelector(`[data-progress-topic="${CSS.escape(topic)}"] .weekly-metric-value`);
-      if (value) value.textContent = `${progress.learning[topic]} / ${LEARNING_GOALS[topic]}`;
-    }
   }
 
   function paintPlanner() {
     const day = selectedDayState();
     const daily = selectedDailyState();
     const dayDate = selectedDateKey();
-    const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
+    const timeline = getDayTimeline(day).filter((item) => !item.unscheduled && item.category !== 'learning');
     const currentPlan = {
       weekKey,
       dayId: state.selectedDay,
@@ -371,11 +340,12 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
       stateLabel: resolveWeeklyRowState(item.id, daily, day.revision, dayDate, todayKey, currentPlan),
     })));
 
+    const unscheduledItems = day.unscheduled.filter((item) => item.category !== 'learning');
     const unscheduled = root.querySelector('#weekly-unscheduled');
-    unscheduled.hidden = day.unscheduled.length === 0;
-    setText(root, '#weekly-unscheduled-count', String(day.unscheduled.length));
+    unscheduled.hidden = unscheduledItems.length === 0;
+    setText(root, '#weekly-unscheduled-count', String(unscheduledItems.length));
     root.querySelector('#weekly-unscheduled-list').replaceChildren(
-      ...day.unscheduled.map((item) => renderUnscheduledRow(pageDocument, item)),
+      ...unscheduledItems.map((item) => renderUnscheduledRow(pageDocument, item)),
     );
     root.querySelector('#weekly-time-edit').setAttribute('aria-pressed', String(editingTime));
     root.querySelector('#weekly-time-edit').textContent = editingTime ? '시간 편집 닫기' : '시간 편집';
@@ -385,7 +355,7 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     const day = selectedDayState();
     const daily = selectedDailyState();
     const dayDate = selectedDateKey();
-    const timeline = getDayTimeline(day).filter((item) => !item.unscheduled);
+    const timeline = getDayTimeline(day).filter((item) => !item.unscheduled && item.category !== 'learning');
     const currentPlan = {
       weekKey,
       dayId: state.selectedDay,
@@ -495,24 +465,6 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
     }
   }
 
-  function addLearning() {
-    const topics = Array.from(root.querySelectorAll('[data-add-learning-topic]:checked'), (input) => input.value);
-    if (topics.length === 0) {
-      announce('학습 주제를 하나 이상 선택하세요.');
-      return;
-    }
-    if ([...selectedDayState().items, ...selectedDayState().unscheduled].some(({ id }) => id.startsWith('learning:'))) {
-      announce('이미 추가된 일정입니다.');
-      return;
-    }
-    try {
-      applyDayMutation(addLibraryPlanItem(selectedDayState(), 'learning', { topics }), '학습 조합을 추가했습니다.');
-      for (const input of root.querySelectorAll('[data-add-learning-topic]')) input.checked = false;
-    } catch (error) {
-      announce(error.message);
-    }
-  }
-
   function addCustom(form) {
     const formData = new FormData(form);
     try {
@@ -588,7 +540,6 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
 
     const library = event.target.closest?.('[data-add-library]');
     if (library) return addLibrary(library.dataset.addLibrary);
-    if (event.target.closest?.('[data-add-learning]')) return addLearning();
 
     const row = event.target.closest?.('[data-plan-item-id]');
     if (!row || !root.contains(row)) return;

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>데일리 포커스 보드</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
-    <link rel="stylesheet" href="./assets/routine.css?v=3">
+    <link rel="stylesheet" href="./assets/routine.css?v=9">
   </head>
   <body>
     <header class="app-topbar screen-only">
@@ -18,7 +18,6 @@
         <a href="./weekly.html">주간</a>
         <a href="./daily.html" aria-current="page">데일리</a>
         <a href="./history.html">기록</a>
-        <a href="./contents.html">학습</a>
       </nav>
     </header>
     <div class="app-shell">
@@ -32,7 +31,7 @@
 
           <div class="header-actions">
             <div class="daily-plan-source" id="daily-plan-source">
-              <div><span>주간 계획</span><strong id="daily-plan-mode">운영 유형</strong><span id="daily-plan-topics">학습 일정 없음</span></div>
+              <div><span>주간 계획</span><strong id="daily-plan-mode">운영 유형</strong></div>
               <a href="./weekly.html">주간 계획 수정</a>
             </div>
             <div class="mode-bar screen-only">
@@ -67,7 +66,7 @@
           <p class="progress-count" id="progress-count" aria-live="polite">0 / 0 완료</p>
         </section>
 
-        <section class="focus-anchors" aria-label="오늘의 핵심 세 가지">
+        <section class="focus-anchors" aria-label="오늘의 핵심 두 가지">
           <article class="focus-anchor focus-anchor--application">
             <h2>지원 3~4개</h2>
             <p>분석 → 자소서 조정 → 제출</p>
@@ -75,10 +74,6 @@
           <article class="focus-anchor focus-anchor--review">
             <h2>내용 숙지 30분</h2>
             <p>이력서·포트폴리오를 내 말로</p>
-          </article>
-          <article class="focus-anchor focus-anchor--learning">
-            <h2>오늘의 학습 결과</h2>
-            <p>선택한 조합을 작은 구현으로 남기기</p>
           </article>
         </section>
 
@@ -97,7 +92,6 @@
                 <button type="button" data-category-filter="all" aria-pressed="true">전체</button>
                 <button type="button" data-category-filter="exercise" aria-pressed="false">운동·회복</button>
                 <button type="button" data-category-filter="career" aria-pressed="false">취업·면접</button>
-                <button type="button" data-category-filter="learning" aria-pressed="false">개발 학습</button>
                 <button type="button" data-category-filter="meal" aria-pressed="false">식사·휴식</button>
               </div>
             </div>

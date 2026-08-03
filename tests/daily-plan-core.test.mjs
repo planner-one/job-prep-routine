@@ -78,6 +78,43 @@ test('변경 계획 적용 시 같은 체크와 삭제된 완료 항목을 보�
   assert.equal(merged.archivedCompletedItems.some(({ id }) => id === removed.id), true);
 });
 
+test('v2 데일리의 학습 필드·일정·완료만 버리고 지원·메모·비학습 완료를 보존한다', () => {
+  const state = {
+    mode: 'normal',
+    learningTopics: ['CS'],
+    checkedIds: ['career-kept', 'custom-learning', 'learning:CS', 'CS'],
+    companies: [{ name: '보존 회사', applied: true }],
+    memos: { implemented: '보존 메모', blocked: '', firstAction: '' },
+    planSnapshot: {
+      revision: 2,
+      items: [
+        { id: 'career-kept', label: '면접 복기', category: 'career', startMinute: 600, endMinute: 630 },
+        { id: 'custom-learning', label: '기술 문서', category: 'learning', startMinute: 630, endMinute: 660 },
+        { id: 'learning:CS', label: 'CS', category: 'career', startMinute: 660, endMinute: 690 },
+      ],
+    },
+    archivedCompletedItems: [
+      { id: 'archive-kept', label: '이전 면접', category: 'career' },
+      { id: 'archive-learning', label: '예전 학습', category: 'learning' },
+    ],
+  };
+  const nextPlan = {
+    revision: 3,
+    items: [{ id: 'career-kept', label: '면접 복기', category: 'career', startMinute: 600, endMinute: 630 }],
+  };
+  const prepared = prepareDailyPlan(state, nextPlan);
+  const applied = applyUpdatedPlan(state, nextPlan);
+
+  for (const normalized of [prepared.state, applied]) {
+    assert.equal(Object.hasOwn(normalized, 'learningTopics'), false);
+    assert.deepEqual(normalized.checkedIds, ['career-kept']);
+    assert.deepEqual(normalized.planSnapshot.items.map(({ id }) => id), ['career-kept']);
+    assert.deepEqual(normalized.archivedCompletedItems.map(({ id }) => id), ['archive-kept']);
+    assert.deepEqual(normalized.companies, state.companies);
+    assert.deepEqual(normalized.memos, state.memos);
+  }
+});
+
 test('스냅샷은 허용된 계획 메타데이터만 정규화한다', () => {
   const snapshot = normalizePlanSnapshot({
     revision: 3,
@@ -93,6 +130,9 @@ test('스냅샷은 허용된 계획 메타데이터만 정규화한다', () => {
         completed: true,
       },
       { id: '', label: '무시', category: 'career', startMinute: 0, endMinute: 10 },
+      { id: 'custom-learning', label: '기술 문서', category: 'learning', startMinute: 630, endMinute: 660 },
+      { id: 'learning:CS', label: 'CS', category: 'career', startMinute: 660, endMinute: 690 },
+      { id: 'CS', label: '예전 주제', category: 'career', startMinute: 690, endMinute: 720 },
     ],
   });
 
@@ -125,7 +165,6 @@ test('회사 파이프라인과 완료한 스냅샷 항목만 실행 요약에 �
     interviews: 1,
     workouts: 1,
     runs: 1,
-    learning: { Spring: 1 },
   });
 });
 
@@ -134,9 +173,17 @@ test('실행 입력은 체크, 회사 정보, 비어 있지 않은 메모만 인
   assert.equal(hasExecutionInput({ companies: [{ name: '회사' }] }), true);
   assert.equal(hasExecutionInput({ memos: { blocked: '  막힘  ' } }), true);
   assert.equal(hasExecutionInput({ memos: { blocked: '   ' } }), false);
+  assert.equal(hasExecutionInput({ checkedIds: ['learning', 'learning:CS', 'CS'], learningTopics: ['CS'] }), false);
+  assert.equal(hasExecutionInput({
+    checkedIds: ['custom-learning'],
+    planSnapshot: {
+      revision: 1,
+      items: [{ id: 'custom-learning', label: '기술 문서', category: 'learning', startMinute: 600, endMinute: 630 }],
+    },
+  }), false);
 });
 
-test('legacy 완료 ID를 새 snapshot ID로 매핑하고 합쳐진 완료는 archive로 보존한다', () => {
+test('legacy 완료 ID 중 학습만 버리고 앵커·운동·알 수 없는 완료를 보존한다', () => {
   assert.equal(typeof dailyPlanCore.migrateLegacyDailyState, 'function');
 
   const running = dailyPlanCore.migrateLegacyDailyState('2026-07-20', {
@@ -145,9 +192,10 @@ test('legacy 완료 ID를 새 snapshot ID로 매핑하고 합쳐진 완료는 ar
     learningTopics: ['CS'],
     checkedIds: ['learning', 'running-breakfast', 'running-sleep', 'run', 'unknown'],
   }, 5);
-  assert.deepEqual(running.checkedIds, ['learning:CS', 'breakfast', 'sleep', 'run', 'unknown']);
+  assert.deepEqual(running.checkedIds, ['breakfast', 'sleep', 'run', 'unknown']);
   assert.deepEqual(running.archivedCompletedItems, []);
-  assert.equal(running.planSnapshot.items.some(({ id }) => id === 'learning:CS'), true);
+  assert.equal(running.planSnapshot.items.some(({ id, category }) => id.startsWith('learning:') || category === 'learning'), false);
+  assert.equal(Object.hasOwn(running, 'learningTopics'), false);
 
   const maintenance = dailyPlanCore.migrateLegacyDailyState('2026-07-20', {
     mode: 'maintenance',
@@ -155,15 +203,12 @@ test('legacy 완료 ID를 새 snapshot ID로 매핑하고 합쳐진 완료는 ar
     learningTopics: ['CS'],
     checkedIds: ['maintenance-learning', 'maintenance-planning', 'maintenance-breakfast', 'maintenance-sleep'],
   }, 3);
-  assert.deepEqual(maintenance.checkedIds, ['learning:CS', 'breakfast', 'sleep']);
-  assert.deepEqual(maintenance.archivedCompletedItems, [{
-    id: 'maintenance-planning',
-    label: '다음 주 일정·학습 주제 선정',
-    category: 'learning',
-  }]);
+  assert.deepEqual(maintenance.checkedIds, ['breakfast', 'sleep']);
+  assert.deepEqual(maintenance.archivedCompletedItems, []);
+  assert.equal(Object.hasOwn(maintenance, 'learningTopics'), false);
 });
 
-test('legacy learningTopics 단독 완료를 실행으로 감지해 새 snapshot과 주간 집계에 보존한다', () => {
+test('legacy learningTopics 단독 저장값은 실행이나 주간 진척으로 보지 않는다', () => {
   const legacy = {
     mode: 'normal',
     runStart: '21',
@@ -171,19 +216,26 @@ test('legacy learningTopics 단독 완료를 실행으로 감지해 새 snapshot
     checkedIds: [],
   };
 
-  assert.equal(hasExecutionInput(legacy), true);
+  assert.equal(hasExecutionInput(legacy), false);
   const migrated = dailyPlanCore.migrateLegacyDailyState('2026-07-20', legacy, 4);
-  assert.equal(migrated.planSnapshot.items.some(({ id }) => id === 'learning:CS'), true);
-  assert.deepEqual(migrated.checkedIds, ['learning:CS']);
+  assert.equal(migrated.planSnapshot.items.some(({ id, category }) => id.startsWith('learning:') || category === 'learning'), false);
+  assert.deepEqual(migrated.checkedIds, []);
+  assert.equal(Object.hasOwn(migrated, 'learningTopics'), false);
 
   const entries = {
     'job-prep-routine:daily:2026-07-20': JSON.stringify(migrated),
   };
   const storage = { getItem: (key) => entries[key] ?? null };
-  assert.equal(calculateWeeklyExecutionProgress(storage, '2026-07-20').learning.CS, 1);
+  assert.deepEqual(calculateWeeklyExecutionProgress(storage, '2026-07-20'), {
+    applications: 0,
+    reviews: 0,
+    interviews: 0,
+    workouts: 0,
+    runs: 0,
+  });
 });
 
-test('페이지 migration 전 raw legacy 학습 완료도 주간 집계에 반영한다', () => {
+test('페이지 migration 전 raw legacy 학습 완료도 주간 집계에서 버린다', () => {
   const entries = {
     'job-prep-routine:daily:2026-07-20': JSON.stringify({
       learningTopics: ['CS'],
@@ -202,7 +254,13 @@ test('페이지 migration 전 raw legacy 학습 완료도 주간 집계에 반�
   };
   const storage = { getItem: (key) => entries[key] ?? null };
 
-  assert.equal(calculateWeeklyExecutionProgress(storage, '2026-07-20').learning.CS, 1);
+  assert.deepEqual(calculateWeeklyExecutionProgress(storage, '2026-07-20'), {
+    applications: 0,
+    reviews: 0,
+    interviews: 0,
+    workouts: 0,
+    runs: 0,
+  });
 });
 
 test('주간 계획만 저장한 날은 진척이 증가하지 않는다', () => {
@@ -217,7 +275,6 @@ test('주간 계획만 저장한 날은 진척이 증가하지 않는다', () =>
     interviews: 0,
     workouts: 0,
     runs: 0,
-    learning: { Spring: 0, Redis: 0, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 0 },
   });
 });
 
@@ -268,7 +325,6 @@ test('연말을 걸친 7일 데일리 실행을 합치고 손상된 JSON은 건�
     interviews: 1,
     workouts: 1,
     runs: 0,
-    learning: { Spring: 1, Redis: 0, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 1 },
   });
 });
 
@@ -294,6 +350,5 @@ test('계획 반영 뒤 archive로 옮겨진 완료 실행도 주간 진척에 �
     interviews: 1,
     workouts: 1,
     runs: 1,
-    learning: { Spring: 1, Redis: 1, Java: 0, '프로젝트 적용': 0, CS: 0, 코딩테스트: 0 },
   });
 });

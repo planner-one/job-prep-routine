@@ -288,20 +288,15 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
       `(() => {
         document.querySelector('#weekly-add-plan').click();
         document.querySelector('[data-add-library="job-analysis"]').click();
-        for (const topic of ['Spring', 'Redis']) {
-          document.querySelector('[data-add-learning-topic="' + topic + '"]').click();
-        }
-        document.querySelector('[data-add-learning]').click();
         document.querySelector('#weekly-custom-label').value = '포트폴리오 문장 다듬기';
         document.querySelector('#weekly-custom-category').value = 'career';
         document.querySelector('#weekly-custom-duration').value = '40';
         document.querySelector('#weekly-custom-form').requestSubmit();
-        document.querySelector('[data-add-learning-topic="Java"]').click();
-        document.querySelector('[data-add-learning]').click();
+        document.querySelector('[data-add-library="job-analysis"]').click();
         return {
           library: Boolean(document.querySelector('[data-plan-item-id="job-analysis"]')),
-          learning: [...document.querySelectorAll('.weekly-plan-label')].some((node) => node.textContent === 'Spring · Redis'),
-          learningBlocks: [...document.querySelectorAll('[data-plan-item-id]')].filter((row) => row.dataset.planItemId.startsWith('learning:')).length,
+          hasLearningUi: Boolean(document.querySelector('[data-add-learning], [data-add-learning-topic], [data-weekly-progress="learning"], [data-progress-topic]')),
+          customCategories: [...document.querySelectorAll('#weekly-custom-category option')].map((option) => option.value),
           customId: [...document.querySelectorAll('[data-plan-item-id]')].find((row) => row.querySelector('.weekly-plan-label')?.textContent === '포트폴리오 문장 다듬기')?.dataset.planItemId,
           panelExpanded: document.querySelector('#weekly-add-plan').getAttribute('aria-expanded'),
           duplicateStatus: document.querySelector('#weekly-plan-status').textContent,
@@ -309,8 +304,8 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
       })()`,
     );
     assert.equal(added.library, true);
-    assert.equal(added.learning, true);
-    assert.equal(added.learningBlocks, 1);
+    assert.equal(added.hasLearningUi, false);
+    assert.deepEqual(added.customCategories, ['career', 'exercise']);
     assert.match(added.customId, /^custom-/);
     assert.equal(added.panelExpanded, 'true');
     assert.match(added.duplicateStatus, /이미 추가된 일정/);
@@ -395,7 +390,7 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
       sessionId,
       `(() => {
         document.querySelector('#weekly-custom-label').value = '장시간 집중 작업';
-        document.querySelector('#weekly-custom-category').value = 'learning';
+        document.querySelector('#weekly-custom-category').value = 'career';
         document.querySelector('#weekly-custom-duration').value = '480';
         document.querySelector('#weekly-custom-form').requestSubmit();
         return {
@@ -420,7 +415,7 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
         return {
           schemaVersion: state.schemaVersion,
           library: Boolean(document.querySelector('[data-plan-item-id="job-analysis"]')),
-          learning: [...document.querySelectorAll('.weekly-plan-label')].some((node) => node.textContent === 'Spring · Redis'),
+          hasLearning: [...document.querySelectorAll('[data-plan-item-id]')].some((row) => row.dataset.planItemId.startsWith('learning:')),
           custom: [...document.querySelectorAll('.weekly-plan-label')].some((node) => node.textContent === '포트폴리오 문장 다듬기'),
           editedTime: document.querySelector('[data-plan-item-id="' + ${JSON.stringify('workout-wake')} + '"] .weekly-plan-time')?.textContent,
           overflow: [...document.querySelectorAll('#weekly-unscheduled-list .weekly-plan-label')].some((node) => node.textContent === '장시간 집중 작업'),
@@ -430,7 +425,7 @@ test('주간 플래너에서 추가·재배치·시간 편집·미배치를 저�
     assert.deepEqual(restored, {
       schemaVersion: 2,
       library: true,
-      learning: true,
+      hasLearning: false,
       custom: true,
       editedTime: '05:45–05:50',
       overflow: true,

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>주간 실행 보드</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
-    <link rel="stylesheet" href="./assets/routine.css?v=3">
+    <link rel="stylesheet" href="./assets/routine.css?v=9">
   </head>
   <body>
     <header class="app-topbar screen-only">
@@ -18,7 +18,6 @@
         <a href="./weekly.html" aria-current="page">주간</a>
         <a href="./daily.html">데일리</a>
         <a href="./history.html">기록</a>
-        <a href="./contents.html">학습</a>
       </nav>
     </header>
     <div class="app-shell weekly-shell">
@@ -80,20 +79,6 @@
             </dl>
           </article>
 
-          <article class="weekly-progress-card weekly-progress-card--learning" data-weekly-progress="learning">
-            <div class="weekly-progress-heading">
-              <div>
-                <p class="section-kicker">결과물로 남기기</p>
-                <h3>핵심 학습</h3>
-              </div>
-            </div>
-            <dl class="weekly-learning-metrics">
-              <div data-progress-topic="Spring"><dt>Spring</dt><dd class="weekly-metric-value">0 / 4–6회</dd></div>
-              <div data-progress-topic="Redis"><dt>Redis</dt><dd class="weekly-metric-value">0 / 2–4회</dd></div>
-              <div data-progress-topic="Java"><dt>Java</dt><dd class="weekly-metric-value">0 / 2–3회</dd></div>
-              <div data-progress-topic="프로젝트 적용"><dt>프로젝트 적용</dt><dd class="weekly-metric-value">0 / 3개 이상</dd></div>
-            </dl>
-          </article>
         </section>
 
         <nav class="weekday-tabs screen-only" id="weekday-tabs" role="tablist" aria-label="요일 선택">

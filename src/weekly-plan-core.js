@@ -1,4 +1,4 @@
-import { LEARNING_TOPICS, TASK_LIBRARY, getSchedule } from './routine-data.js';
+import { TASK_LIBRARY, getSchedule } from './routine-data.js';
 
 export { TASK_LIBRARY } from './routine-data.js';
 
@@ -21,8 +21,19 @@ const ANCHORS = {
 };
 const ANCHOR_IDS = ['breakfast', 'lunch', 'dinner', 'sleep'];
 const ALLOWED_MODES = new Set(Object.keys(DAY_START));
-const ALLOWED_CATEGORIES = new Set(['career', 'learning', 'exercise']);
+const ALLOWED_CATEGORIES = new Set(['career', 'exercise']);
 const LIBRARY_BY_ID = new Map(TASK_LIBRARY.map((item) => [item.id, item]));
+const LEGACY_LEARNING_IDS = new Set([
+  'learning',
+  'maintenance-learning',
+  'maintenance-planning',
+  'Spring',
+  'Redis',
+  'Java',
+  '프로젝트 적용',
+  'CS',
+  '코딩테스트',
+]);
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -46,8 +57,36 @@ function validMinute(value) {
   return Number.isInteger(value) && value >= 0 && value <= 1440;
 }
 
+function isLegacyLearningId(value) {
+  return typeof value === 'string' && (value.startsWith('learning:') || LEGACY_LEARNING_IDS.has(value));
+}
+
+function isLegacyLearningItem(value) {
+  return isObject(value) && (
+    value.category === 'learning'
+    || value.sourceTaskId === 'learning'
+    || isLegacyLearningId(value.id)
+  );
+}
+
+function withoutLegacyLearningKeys(value) {
+  const source = isObject(value) ? value : {};
+  return Object.fromEntries(Object.entries(source).filter(
+    ([key]) => !['learningTopics', 'learningReview'].includes(key) && !isLegacyLearningId(key),
+  ));
+}
+
 function emptyLegacyCompletion() {
-  return { applications: [], tasks: {}, learningTopics: [], maintenance: {} };
+  return { applications: [], tasks: {}, maintenance: {} };
+}
+
+function normalizeLegacyCompletion(candidate) {
+  const source = isObject(candidate) ? candidate : {};
+  return {
+    applications: copy(Array.isArray(source.applications) ? source.applications : []),
+    tasks: copy(withoutLegacyLearningKeys(source.tasks)),
+    maintenance: copy(withoutLegacyLearningKeys(source.maintenance)),
+  };
 }
 
 function cloneItem(item) {
@@ -60,7 +99,7 @@ function cloneDay(day) {
     items: Array.isArray(day?.items) ? day.items.map(cloneItem) : [],
     unscheduled: Array.isArray(day?.unscheduled) ? day.unscheduled.map(cloneItem) : [],
     timelineOrder: Array.isArray(day?.timelineOrder) ? [...day.timelineOrder] : [],
-    legacyCompletion: copy(day?.legacyCompletion ?? emptyLegacyCompletion()),
+    legacyCompletion: normalizeLegacyCompletion(day?.legacyCompletion),
   };
 }
 
@@ -206,6 +245,7 @@ export function createDefaultWeeklyState() {
 
 function normalizeItem(candidate) {
   if (!isObject(candidate) || typeof candidate.id !== 'string' || !candidate.id.trim()) return null;
+  if (isLegacyLearningItem(candidate)) return null;
   if (typeof candidate.label !== 'string' || !candidate.label.trim()) return null;
   if (!ALLOWED_CATEGORIES.has(candidate.category)) return null;
   if (!Number.isInteger(candidate.durationMinutes) || candidate.durationMinutes <= 0 || candidate.durationMinutes > 1440) return null;
@@ -237,7 +277,7 @@ function normalizeV2Day(candidate, dayId) {
     .filter(Boolean);
   const byId = new Map(sourceItems.map((item) => [item.id, item]));
   const hasPlanFields = ['items', 'unscheduled', 'timelineOrder', 'revision'].some((key) => Object.hasOwn(source, key));
-  if (!hasPlanFields) return { ...createDefaultDay(dayId, mode, runStart), legacyCompletion: copy(source.legacyCompletion ?? emptyLegacyCompletion()) };
+  if (!hasPlanFields) return { ...createDefaultDay(dayId, mode, runStart), legacyCompletion: normalizeLegacyCompletion(source.legacyCompletion) };
   const anchors = new Set(ANCHOR_IDS);
   const requestedOrder = Array.isArray(source.timelineOrder) ? source.timelineOrder : [];
   const timelineOrder = requestedOrder.filter((id, index) => typeof id === 'string' && (anchors.has(id) || byId.has(id)) && requestedOrder.indexOf(id) === index);
@@ -251,17 +291,12 @@ function normalizeV2Day(candidate, dayId) {
     unscheduled: [...byId.values()].filter(({ id }) => unscheduledIds.has(id)).map((item) => ({ ...item, reason: 'insufficient-time' })),
     timelineOrder,
     revision: Number.isInteger(source.revision) && source.revision >= 0 ? source.revision : 0,
-    legacyCompletion: copy(source.legacyCompletion ?? emptyLegacyCompletion()),
+    legacyCompletion: normalizeLegacyCompletion(source.legacyCompletion),
   };
 }
 
 function legacyForDay(source) {
-  return {
-    applications: copy(Array.isArray(source.applications) ? source.applications : []),
-    tasks: copy(isObject(source.tasks) ? source.tasks : {}),
-    learningTopics: copy(Array.isArray(source.learningTopics) ? source.learningTopics : []),
-    maintenance: copy(isObject(source.maintenance) ? source.maintenance : {}),
-  };
+  return normalizeLegacyCompletion(source);
 }
 
 export function normalizeWeeklyState(candidate = {}) {
@@ -379,14 +414,8 @@ function addItem(day, item) {
   ));
 }
 
-export function addLibraryPlanItem(day, taskId, options = {}) {
+export function addLibraryPlanItem(day, taskId) {
   const next = cloneDay(day);
-  const topics = Array.isArray(options.topics) ? LEARNING_TOPICS.filter((topic) => options.topics.includes(topic)) : [];
-  if (topics.length > 0) {
-    const id = `learning:${topics.join('|')}`;
-    if ([...next.items, ...next.unscheduled].some((item) => item.sourceTaskId === 'learning' || item.id === id)) throw new Error('이미 추가된 일정입니다.');
-    return addItem(next, { id, label: topics.join(' · '), category: 'learning', durationMinutes: topics.length * 60, source: 'library', sourceTaskId: 'learning' });
-  }
   const libraryItem = LIBRARY_BY_ID.get(taskId);
   if (!libraryItem) throw new Error('알 수 없는 기본 일정입니다.');
   if (hasItemId(next, taskId)) throw new Error('이미 추가된 일정입니다.');

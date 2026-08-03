@@ -22,7 +22,6 @@ const WEEKLY_CHECK_LABELS = {
   mealRest: '식후 20분 휴식',
   deadline: '마감 임박 공고 확인',
   application: '지원 완료',
-  learningReview: '핵심 학습 복습',
   nextWeek: '다음 주 준비',
   rest: '충분한 휴식',
 };
@@ -89,7 +88,6 @@ function renderKpis(root, summary, period) {
   setText(root, '#history-kpi-active', `${summary.activeDays} / ${period}일`);
   setText(root, '#history-kpi-applications', `${summary.applications}개`);
   setText(root, '#history-kpi-interview', `${summary.interviewDays}일`);
-  setText(root, '#history-kpi-learning', `${summary.learningDays}일`);
   setText(root, '#history-kpi-exercise', `${summary.exerciseDays}일`);
 }
 
@@ -133,9 +131,6 @@ function renderChart(root, records, period) {
     }
     if (record.metrics.interview) {
       markers.append(activityMarker(pageDocument, 'is-interview', '면접 실행', '면'));
-    }
-    if (record.metrics.learning) {
-      markers.append(activityMarker(pageDocument, 'is-learning', '학습 실행', '학'));
     }
     if (record.metrics.exercise) {
       markers.append(activityMarker(pageDocument, 'is-exercise', '운동·러닝 실행', '운'));
@@ -195,16 +190,6 @@ function appendCompanies(pageDocument, parent, companies) {
   }
 
   section.append(list);
-  parent.append(section);
-}
-
-function appendTopics(pageDocument, parent, topics) {
-  if (topics.length === 0) return;
-  const section = element(pageDocument, 'section', 'history-detail-section');
-  section.append(element(pageDocument, 'h4', '', '학습 조합'));
-  const tags = element(pageDocument, 'div', 'history-topic-list');
-  for (const topic of topics) tags.append(element(pageDocument, 'span', '', topic));
-  section.append(tags);
   parent.append(section);
 }
 
@@ -272,7 +257,6 @@ function recordCard(pageDocument, record, index) {
     weeklyCheckLabel,
   );
   appendCompanies(pageDocument, body, record.companies);
-  appendTopics(pageDocument, body, record.learningTopics);
   appendMemos(pageDocument, body, record.memos);
 
   details.append(summary, body);

@@ -4,13 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "sync:interview-data": "node scripts/sync-interview-data.mjs",
-    "sync:maeil-content": "node scripts/sync-maeil-content.mjs",
-    "validate:maeil-content": "node scripts/validate-content-snapshot.mjs",
-    "generate:quiz-data": "node scripts/generate-quiz-data.mjs --strategy=target --questions-per-category=12 --batch-size=1 --review-batch-size=1 --model=qwen3:4b --validator-model=qwen3:14b",
-    "build:curated-quiz-bank": "node scripts/build-curated-quiz-bank.mjs",
-    "validate:quiz-data": "node scripts/validate-quiz-data.mjs",
     "export:roadmap-pdf": "sh scripts/export-pdfs.sh http://127.0.0.1:8787 output/pdf roadmap",
-    "check": "node --check src/routine-data.js && node --check src/weekly-plan-core.js && node --check src/daily-plan-core.js && node --check src/routine-core.js && node --check src/history-core.js && node --check src/page-app.js && node --check src/roadmap-app.js && node --check src/weekly-app.js && node --check src/history-app.js && node --check src/study-history-app.js && node --check src/study-history-calendar-core.js && node --check src/interview-data.js && node --check src/interview-core.js && node --check src/interview-storage.js && node --check src/interview-hint-core.js && node --check src/templates-app.js && node --check src/template-detail-app.js && node --check src/ai-provider.js && node --check src/ollama-provider.js && node --check src/interview-evaluation-core.js && node --check src/interview-evaluation-storage.js && node --check src/reading-core.js && node --check src/reading-storage.js && node --check src/study-history-core.js && node --check src/study-history-storage.js && node --check src/maeil-content.js && node --check src/github-markdown.js && node --check src/contents-app.js && node --check src/content-app.js && node --check src/quiz-core.js && node --check src/quiz-storage.js && node --check src/quiz-flow-core.js && node --check src/quiz-flow-storage.js && node --check src/quiz-study-history.js && node --check src/quiz-data.js && node --check src/quiz-questions.generated.js && node --check src/quiz-app.js && node --check src/quizzes-app.js && node --check scripts/sync-interview-data.mjs && node --check scripts/sync-maeil-content.mjs && node --check scripts/validate-content-snapshot.mjs && node --check scripts/generate-quiz-data.mjs && node --check scripts/build-curated-quiz-bank.mjs && node --check scripts/validate-quiz-data.mjs && node --check scripts/validate-roadmap-pdf.mjs"
+    "check": "node --check src/routine-data.js && node --check src/weekly-plan-core.js && node --check src/daily-plan-core.js && node --check src/routine-core.js && node --check src/history-core.js && node --check src/page-app.js && node --check src/roadmap-app.js && node --check src/weekly-app.js && node --check src/history-app.js && node --check scripts/validate-roadmap-pdf.mjs"
   }
 }

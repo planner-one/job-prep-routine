@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MODES, LEARNING_TOPICS, PLATFORMS, getSchedule } from '../src/routine-data.js';
+import * as routineData from '../src/routine-data.js';
 import * as routineCore from '../src/routine-core.js';
-import { dailyProgressExpected, dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
+import { dailyProgressFixture } from './fixtures/daily-progress-fixture.mjs';
+
+const { MODES, PLATFORMS, TASK_LIBRARY, getSchedule } = routineData;
 
 const {
   storageKey,
@@ -39,7 +41,6 @@ test('운동일 전체 일정을 제공한다', () => {
     '13:00–14:00 점심·식후 20분',
     '14:00–16:30 공고 분석·자소서 조정·지원 3~4개',
     '16:30–16:50 휴식·산책',
-    '16:50–18:50 선택 조합 학습·프로젝트 적용',
     '18:50–19:50 저녁·식후 20분',
     '19:50–21:00 면접 복기 또는 프로젝트 실습',
     '21:00–22:00 작업 연장 선택 또는 귀가',
@@ -59,7 +60,6 @@ test('비운동일 전체 일정을 제공한다', () => {
     '13:00–14:00 점심·식후 20분',
     '14:00–16:30 공고 분석·자소서 조정·지원 3~4개',
     '16:30–16:50 휴식·산책',
-    '16:50–18:50 선택 조합 학습·프로젝트 적용',
     '18:50–19:50 저녁·식후 20분',
     '19:50–21:30 면접 복기 또는 프로젝트 실습',
     '21:30–22:00 귀가',
@@ -79,7 +79,6 @@ test('21시 러닝일 전체 일정을 제공한다', () => {
     '13:00–14:00 점심·식후 20분',
     '14:00–16:30 공고 분석·자소서 조정·지원 3~4개',
     '16:30–16:50 휴식·산책',
-    '16:50–18:50 선택 조합 학습·프로젝트 적용',
     '18:50–19:50 저녁·식후 20분',
     '19:50–20:50 가벼운 면접 복기·마감',
     '21:00–22:00 이동 포함 저녁 러닝',
@@ -99,7 +98,6 @@ test('22시 러닝일 전체 일정을 제공한다', () => {
     '13:00–14:00 점심·식후 20분',
     '14:00–16:30 공고 분석·자소서 조정·지원 3~4개',
     '16:30–16:50 휴식·산책',
-    '16:50–18:50 선택 조합 학습·프로젝트 적용',
     '18:50–19:50 저녁·식후 20분',
     '19:50–21:30 면접 복기 또는 프로젝트 실습',
     '22:00–23:00 이동 포함 저녁 러닝',
@@ -116,17 +114,15 @@ test('핵심 유지일 전체 일정을 제공한다', () => {
     '10:00–10:30 이력서·포트폴리오 숙지',
     '10:30–11:30 마감 임박 공고 확인 및 필요 시 1개 지원',
     '13:00–14:00 점심·식후 20분',
-    '14:00–15:00 이번 주 핵심 학습 복습',
     '17:00–17:30 면접 답변 3개 복기',
     '18:00–19:00 저녁·식후 20분',
-    '20:00–20:30 다음 주 일정·학습 주제 선정',
     '20:30 이후 완전 휴식',
     '23:00 취침',
   ]);
 });
 
 test('일정 항목은 필터와 시간대 메타데이터를 가지며 매번 새 배열로 반환된다', () => {
-  const categories = new Set(['exercise', 'career', 'learning', 'meal']);
+  const categories = new Set(['exercise', 'career', 'meal']);
   const periods = new Set(['morning', 'afternoon', 'evening', 'night']);
   const first = getSchedule('workout', '21');
   const second = getSchedule('workout', '21');
@@ -141,8 +137,9 @@ test('일정 항목은 필터와 시간대 메타데이터를 가지며 매번 �
   }
 });
 
-test('모든 학습 조합과 플랫폼을 제공한다', () => {
-  assert.deepEqual(LEARNING_TOPICS, ['Spring', 'Redis', 'Java', '프로젝트 적용', 'CS', '코딩테스트']);
+test('학습 export와 라이브러리 항목을 제거하고 플랫폼을 제공한다', () => {
+  assert.equal(Object.hasOwn(routineData, 'LEARNING_TOPICS'), false);
+  assert.equal(TASK_LIBRARY.some(({ category }) => category === 'learning'), false);
   assert.deepEqual(PLATFORMS, ['사람인', '점핏', '원티드', '잡코리아', '기타']);
 });
 
@@ -168,15 +165,19 @@ test('지원 완료 수와 단계 수를 계산한다', () => {
   assert.deepEqual(result, { applied: 1, completedSteps: 4, totalSteps: 12 });
 });
 
-test('저장 모델에서 현재 모드 일정·지원 12단계·유효 학습 주제의 완료율을 계산한다', () => {
+test('저장 모델에서 현재 모드 일정과 지원 12단계의 완료율을 계산한다', () => {
   assert.equal(typeof routineCore.calculateDailyProgress, 'function');
-  assert.deepEqual(routineCore.calculateDailyProgress(dailyProgressFixture), dailyProgressExpected);
+  assert.deepEqual(routineCore.calculateDailyProgress(dailyProgressFixture), {
+    completed: 27,
+    total: 27,
+    percent: 100,
+  });
 });
 
 test('전달된 계획 스냅샷 일정을 우선해 완료율을 계산한다', () => {
   const schedule = [
     { id: 'same', label: '유지 일정', category: 'career', startMinute: 600, endMinute: 630 },
-    { id: 'new', label: '새 일정', category: 'learning', startMinute: 630, endMinute: 690 },
+    { id: 'learning:Spring', label: '예전 학습 일정', category: 'learning', startMinute: 630, endMinute: 690 },
   ];
   const state = {
     mode: 'workout',
@@ -187,8 +188,8 @@ test('전달된 계획 스냅샷 일정을 우선해 완료율을 계산한다',
 
   assert.deepEqual(routineCore.calculateDailyProgress(state, schedule), {
     completed: 1,
-    total: 14,
-    percent: 7,
+    total: 13,
+    percent: 8,
   });
 });
 

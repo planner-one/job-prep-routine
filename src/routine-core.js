@@ -1,4 +1,21 @@
-import { LEARNING_TOPICS, MODES, getSchedule } from './routine-data.js';
+import { MODES, getSchedule } from './routine-data.js';
+
+const LEGACY_LEARNING_IDS = new Set([
+  'learning',
+  'maintenance-learning',
+  'maintenance-planning',
+  'Spring',
+  'Redis',
+  'Java',
+  '프로젝트 적용',
+  'CS',
+  '코딩테스트',
+]);
+
+function isLegacyLearningItem(item) {
+  return item?.category === 'learning'
+    || (typeof item?.id === 'string' && (item.id.startsWith('learning:') || LEGACY_LEARNING_IDS.has(item.id)));
+}
 
 export const storageKey = (page, date) => `job-prep-routine:${page}:${date}`;
 
@@ -96,7 +113,8 @@ export function calculateDailyProgress(candidate = {}, scheduleItems = null) {
   const mode = MODES.includes(state.mode) ? state.mode : MODES[0];
   const runStart = state.runStart === '22' ? '22' : '21';
   const usesPlanSchedule = Array.isArray(scheduleItems);
-  const schedule = usesPlanSchedule ? scheduleItems : getSchedule(mode, runStart);
+  const schedule = (usesPlanSchedule ? scheduleItems : getSchedule(mode, runStart))
+    .filter((item) => !isLegacyLearningItem(item));
   const checkedIds = new Set(Array.isArray(state.checkedIds) ? state.checkedIds : []);
   const scheduleCompleted = schedule.filter(({ id }) => checkedIds.has(id)).length;
   const sourceCompanies = Array.isArray(state.companies) ? state.companies : [];
@@ -105,10 +123,8 @@ export function calculateDailyProgress(candidate = {}, scheduleItems = null) {
     return company && typeof company === 'object' && !Array.isArray(company) ? company : {};
   });
   const pipeline = countPipelineProgress(companies);
-  const sourceTopics = Array.isArray(state.learningTopics) ? state.learningTopics : [];
-  const learningCompleted = usesPlanSchedule ? 0 : LEARNING_TOPICS.filter((topic) => sourceTopics.includes(topic)).length;
-  const completed = scheduleCompleted + pipeline.completedSteps + learningCompleted;
-  const total = schedule.length + pipeline.totalSteps + (usesPlanSchedule ? 0 : LEARNING_TOPICS.length);
+  const completed = scheduleCompleted + pipeline.completedSteps;
+  const total = schedule.length + pipeline.totalSteps;
 
   return {
     completed,

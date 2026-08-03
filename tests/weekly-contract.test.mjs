@@ -20,10 +20,12 @@ function blockAfter(source, marker) {
 
 test('주간 목표와 일곱 요일 및 운영 유형 선택을 유지한다', () => {
   assert.match(html, /id="weekly-progress"/);
+  assert.equal((html.match(/data-weekly-progress=/g) ?? []).length, 3);
   assert.equal((html.match(/data-day=/g) ?? []).length, 7);
   assert.match(html, /id="weekly-mode-controls"/);
   assert.match(html, /id="weekly-run-start-controls"/);
   assert.match(html, /id="set-maintenance-day"/);
+  assert.doesNotMatch(html, /학습|learning/i);
 });
 
 test('선택 요일은 중복 체크리스트 없이 하나의 세로 플래너를 제공한다', () => {
@@ -82,4 +84,5 @@ test('제거된 체크리스트와 보조 시간표 전용 스타일을 남기�
   ]) {
     assert.doesNotMatch(css, new RegExp(`\\.${legacySelector}(?![a-z0-9-])`));
   }
+  assert.doesNotMatch(css, /\.weekly-(?:progress-card--learning|learning-[a-z-]+)/);
 });

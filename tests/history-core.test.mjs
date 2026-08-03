@@ -90,16 +90,16 @@ test('하루의 데일리와 주간 체크를 한 기록으로 합친다', () =>
   assert.equal(record.isMaintenance, false);
   assert.equal(record.metrics.applications, 1);
   assert.equal(record.metrics.interview, 1);
-  assert.equal(record.metrics.learning, 1);
   assert.equal(record.metrics.exercise, 1);
-  assert.deepEqual(record.learningTopics, ['Spring', 'Redis', 'CS']);
+  assert.equal(Object.hasOwn(record.metrics, 'learning'), false);
+  assert.equal(Object.hasOwn(record, 'learningTopics'), false);
   assert.deepEqual(record.memos, dailyState.memos);
   assert.equal(record.companies.length, 2);
   assert.equal(record.completedSchedule.some((item) => item.id === 'workout'), true);
   assert.equal(record.completion.source, 'daily');
-  assert.equal(record.completion.completed, 10);
-  assert.equal(record.completion.total, 34);
-  assert.equal(record.completion.percent, 29);
+  assert.equal(record.completion.completed, 7);
+  assert.equal(record.completion.total, 27);
+  assert.equal(record.completion.percent, 26);
   assert.equal(record.hasActivity, true);
 });
 
@@ -121,12 +121,11 @@ test('세 보드 상세는 모두 보존하지만 완료율은 우선순위가 �
     'workout',
     'interview-practice',
     'applications',
-    'learning',
   ]);
   assert.deepEqual(record.roadmapCompletedSchedule.map(({ id }) => id), ['run']);
   assert.equal(record.weeklyChecks.completed.length, 6);
-  assert.equal(record.completion.completed, 10);
-  assert.deepEqual(record.learningTopics, ['Spring', 'Redis', 'Java', 'CS']);
+  assert.equal(record.completion.completed, 7);
+  assert.equal(Object.hasOwn(record, 'learningTopics'), false);
 });
 
 test('데일리가 있으면 하위 로드맵과 주간 완료가 지표와 운영 유형을 오염시키지 않는다', () => {
@@ -154,22 +153,19 @@ test('데일리가 있으면 하위 로드맵과 주간 완료가 지표와 운�
   assert.deepEqual(record.metrics, {
     applications: 0,
     interview: 0,
-    learning: 0,
     exercise: 0,
   });
   assert.deepEqual(record.roadmapCompletedSchedule.map(({ id }) => id), [
     'interview-practice',
-    'learning',
     'run',
   ]);
   assert.deepEqual(record.weeklyChecks.completed, [
     'deadline',
     'review',
     'interview',
-    'learningReview',
     'rest',
   ]);
-  assert.deepEqual(record.learningTopics, ['Java']);
+  assert.equal(Object.hasOwn(record, 'learningTopics'), false);
 });
 
 test('데일리 완료율은 공통 저장 모델 계약과 같은 분자·분모·백분율을 사용한다', () => {
@@ -187,7 +183,7 @@ test('데일리 스냅샷의 사용자 일정 이름과 분 단위 시간을 기
         items: [{
           id: 'custom-1',
           label: 'README 정리',
-          category: 'learning',
+          category: 'career',
           startMinute: 1000,
           endMinute: 1040,
         }],
@@ -225,11 +221,11 @@ test('현재 스냅샷과 이전 계획 완료 항목을 ID 기준 중복 없이
     },
   });
 
-  assert.deepEqual(record.dailyCompletedSchedule.map(({ id }) => id), ['custom-1', 'old-1']);
+  assert.deepEqual(record.dailyCompletedSchedule.map(({ id }) => id), ['custom-1']);
   assert.equal(record.dailyCompletedSchedule.filter(({ id }) => id === 'custom-1').length, 1);
 });
 
-test('완료한 snapshot과 archive 사용자 일정의 분류를 학습일과 운동일 지표에 반영한다', () => {
+test('완료한 학습 snapshot은 버리고 exercise archive만 운동일 지표에 반영한다', () => {
   const record = buildHistoryRecord({
     date: '2026-07-20',
     daily: {
@@ -256,9 +252,10 @@ test('완료한 snapshot과 archive 사용자 일정의 분류를 학습일과 �
     },
   });
 
-  assert.equal(record.metrics.learning, 1);
+  assert.deepEqual(record.dailyCompletedSchedule.map(({ id }) => id), ['custom-exercise']);
+  assert.equal(Object.hasOwn(record.metrics, 'learning'), false);
   assert.equal(record.metrics.exercise, 1);
-  assert.equal(summarizeHistory([record]).learningDays, 1);
+  assert.equal(Object.hasOwn(summarizeHistory([record]), 'learningDays'), false);
   assert.equal(summarizeHistory([record]).exerciseDays, 1);
 });
 
@@ -437,17 +434,60 @@ test('새 주간 계획만 있는 날짜는 활동 기록이 아니다', () => {
   assert.deepEqual(record.weeklyChecks.completed, []);
 });
 
-test('데일리가 없으면 주간 실행 체크와 학습 실행을 하루 완료율로 사용한다', () => {
+test('기존 학습 전용 데일리·주간 저장값은 활동이나 진척 기록으로 분류하지 않는다', () => {
+  const daily = {
+    checkedIds: ['learning', 'learning:CS', 'custom-learning'],
+    learningTopics: ['CS'],
+    planSnapshot: {
+      revision: 2,
+      items: [
+        { id: 'learning:CS', label: 'CS', category: 'career', startMinute: 600, endMinute: 660 },
+        { id: 'custom-learning', label: '기술 문서', category: 'learning', startMinute: 660, endMinute: 720 },
+      ],
+    },
+    archivedCompletedItems: [{ id: 'Spring', label: 'Spring', category: 'learning' }],
+    companies: [],
+    memos: {},
+  };
+  const weekly = {
+    selectedDay: 'mon',
+    maintenanceDay: 'sun',
+    days: {
+      mon: { learningTopics: ['CS'], tasks: {}, applications: [] },
+      sun: { maintenance: { learningReview: true } },
+    },
+  };
+  const dailyRecord = buildHistoryRecord({ date: '2026-07-20', daily });
+  const weeklyRecord = buildHistoryRecord({ date: '2026-07-20', weekly });
+  const maintenanceRecord = buildHistoryRecord({ date: '2026-07-26', weekly });
+
+  assert.equal(dailyRecord.hasActivity, false);
+  assert.equal(dailyRecord.completion.completed, 0);
+  assert.deepEqual(dailyRecord.completedSchedule, []);
+  assert.deepEqual(dailyRecord.metrics, { applications: 0, interview: 0, exercise: 0 });
+  assert.equal(weeklyRecord.hasActivity, false);
+  assert.equal(weeklyRecord.completion.source, null);
+  assert.equal(maintenanceRecord.hasActivity, false);
+  assert.deepEqual(maintenanceRecord.weeklyChecks.completed, []);
+
+  const storage = memoryStorage({
+    'job-prep-routine:daily:2026-07-20': JSON.stringify(daily),
+    'job-prep-routine:weekly:2026-07-20': JSON.stringify(weekly),
+  });
+  assert.deepEqual(collectHistoryRecords(storage), []);
+});
+
+test('데일리가 없으면 주간 비학습 실행 체크만 하루 완료율로 사용한다', () => {
   const record = buildHistoryRecord({ date: '2026-07-13', weekly: weeklyState });
 
   assert.equal(record.completion.source, 'weekly');
-  assert.equal(record.completion.completed, 7);
-  assert.equal(record.completion.total, 9);
-  assert.equal(record.completion.percent, 78);
+  assert.equal(record.completion.completed, 6);
+  assert.equal(record.completion.total, 8);
+  assert.equal(record.completion.percent, 75);
   assert.equal(record.metrics.applications, 3);
 });
 
-test('핵심 유지일은 유지 체크 일곱 개만 완료율에 반영한다', () => {
+test('핵심 유지일은 learningReview를 제외한 유지 체크만 완료율에 반영한다', () => {
   const record = buildHistoryRecord({
     date: '2026-07-19',
     weekly: weeklyState,
@@ -455,16 +495,16 @@ test('핵심 유지일은 유지 체크 일곱 개만 완료율에 반영한다'
 
   assert.equal(record.isMaintenance, true);
   assert.equal(record.mode, 'maintenance');
-  assert.deepEqual(record.weeklyChecks.completed, ['deadline', 'review', 'interview', 'learningReview', 'rest']);
-  assert.equal(record.completion.completed, 5);
-  assert.equal(record.completion.total, 7);
-  assert.equal(record.completion.percent, 71);
+  assert.deepEqual(record.weeklyChecks.completed, ['deadline', 'review', 'interview', 'rest']);
+  assert.equal(record.completion.completed, 4);
+  assert.equal(record.completion.total, 6);
+  assert.equal(record.completion.percent, 67);
   assert.equal(record.metrics.applications, 0);
   assert.equal(record.metrics.interview, 1);
-  assert.equal(record.metrics.learning, 1);
+  assert.equal(Object.hasOwn(record.metrics, 'learning'), false);
 });
 
-test('데일리 핵심 유지 시간표의 면접과 학습 체크도 활동 지표에 반영한다', () => {
+test('데일리 핵심 유지 시간표에서 예전 학습 체크는 버리고 면접만 반영한다', () => {
   const record = buildHistoryRecord({
     date: '2026-07-19',
     daily: {
@@ -478,7 +518,8 @@ test('데일리 핵심 유지 시간표의 면접과 학습 체크도 활동 지
   });
 
   assert.equal(record.metrics.interview, 1);
-  assert.equal(record.metrics.learning, 1);
+  assert.equal(Object.hasOwn(record.metrics, 'learning'), false);
+  assert.deepEqual(record.completedSchedule.map(({ id }) => id), ['maintenance-interview']);
 });
 
 test('선택 기간은 기록이 없는 날짜도 0으로 채운다', () => {
@@ -537,11 +578,10 @@ test('기간 생산성 요약은 완료율과 활동 일수를 계산한다', ()
   ];
 
   assert.deepEqual(summarizeHistory(records), {
-    averageCompletion: 33,
+    averageCompletion: 31,
     activeDays: 2,
     applications: 1,
     interviewDays: 2,
-    learningDays: 2,
     exerciseDays: 1,
   });
 });

@@ -8,15 +8,9 @@ const pageNames = [
   'weekly.html',
   'daily.html',
   'history.html',
-  'study-history.html',
-  'templates.html',
-  'template.html',
-  'contents.html',
-  'content.html',
-  'quizzes.html',
 ];
 
-test('모든 화면은 맞춤 SVG 파비콘을 사용한다', async () => {
+test('루틴 화면은 맞춤 SVG 파비콘을 사용한다', async () => {
   for (const pageName of pageNames) {
     const html = await readFile(new URL(`../${pageName}`, import.meta.url), 'utf8');
     assert.match(
