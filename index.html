@@ -5,9 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="운영 로드맵, 주간 실행, 데일리 포커스, 활동 기록을 한곳에서 여는 로컬 홈">
     <title>취업 준비 루틴 보드</title>
-    <link rel="stylesheet" href="./assets/routine.css">
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=3">
   </head>
   <body>
+    <header class="app-topbar screen-only">
+      <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈" aria-current="page">
+        <img src="./assets/favicon.svg" alt="" width="28" height="28">
+        <span>취업 준비 루틴 보드</span>
+      </a>
+      <nav aria-label="주요 이동">
+        <a href="./roadmap.html">로드맵</a>
+        <a href="./weekly.html">주간</a>
+        <a href="./daily.html">데일리</a>
+        <a href="./history.html">기록</a>
+        <a href="./contents.html">학습</a>
+      </nav>
+    </header>
     <div class="app-shell home-shell">
       <main class="daily-paper home-paper">
         <header class="home-header">
@@ -45,11 +59,11 @@
             <em>기록 열기 →</em>
           </a>
 
-          <a class="home-board-card home-board-card--interview" href="./templates.html">
+          <a class="home-board-card home-board-card--interview" href="./contents.html">
             <span class="home-board-step">05</span>
-            <strong>백엔드 면접 학습</strong>
-            <span>백엔드 152문항을 카테고리로 찾고, 개인 답변과 오늘의 면접 큐를 관리합니다.</span>
-            <em>면접 학습 열기 →</em>
+            <strong>매일메일 백엔드 읽기</strong>
+            <span>GitHub 아카이브의 실제 원문을 읽고, 오늘 볼 글을 제한 없이 이어서 담습니다.</span>
+            <em>오늘의 글 읽기 →</em>
           </a>
         </nav>
 

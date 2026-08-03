@@ -158,7 +158,7 @@ test('한국어 홈은 다섯 보드로 이동하는 상대 링크를 제공한�
     ['./weekly.html', '주간 실행 보드'],
     ['./daily.html', '데일리 포커스 보드'],
     ['./history.html', '기록·분석'],
-    ['./templates.html', '백엔드 면접 학습'],
+    ['./contents.html', '매일메일 백엔드 읽기'],
   ]) {
     assert.match(home, new RegExp(`href="${href.replace('.', '\\.')}`));
     assert.match(home, new RegExp(label));

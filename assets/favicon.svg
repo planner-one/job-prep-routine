@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <title>취업 준비 루틴 보드</title>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#17375e"/>
+  <rect x="15" y="11" width="34" height="42" rx="8" fill="#ffffff"/>
+  <rect x="20" y="19" width="7" height="7" rx="2" fill="#397ad4"/>
+  <path d="M32 22h11" fill="none" stroke="#397ad4" stroke-linecap="round" stroke-width="4"/>
+  <rect x="20" y="31" width="7" height="7" rx="2" fill="#397ad4"/>
+  <path d="M32 34h11" fill="none" stroke="#397ad4" stroke-linecap="round" stroke-width="4"/>
+  <path d="m20 43 7 7 17-19" fill="none" stroke="#d88318" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"/>
+</svg>

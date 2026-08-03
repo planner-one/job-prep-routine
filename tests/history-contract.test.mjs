@@ -21,11 +21,25 @@ test('기록·분석 페이지는 기간 선택, 요약, 그래프, 날짜별 �
   assert.match(historyHtml, /src="\.\/src\/history-app\.js"/);
 });
 
+test('기록·분석 상단은 학습 기록 버튼을 제외한 공통 이동 패널을 제공한다', () => {
+  const topbar = historyHtml.match(/<header class="app-topbar[\s\S]*?<\/header>/)?.[0] ?? '';
+  assert.match(topbar, /class="app-topbar-brand" href="\.\/index\.html"/);
+  assert.match(topbar, /aria-label="주요 이동"/);
+  assert.match(topbar, /<a href="\.\/roadmap\.html">로드맵<\/a>/);
+  assert.match(topbar, /<a href="\.\/weekly\.html">주간<\/a>/);
+  assert.match(topbar, /<a href="\.\/daily\.html">데일리<\/a>/);
+  assert.match(topbar, /<a href="\.\/history\.html" aria-current="page">기록<\/a>/);
+  assert.match(topbar, /<a href="\.\/contents\.html">학습<\/a>/);
+  assert.doesNotMatch(topbar, /href="\.\/study-history\.html"/);
+  assert.match(topbar, />취업 준비 루틴 보드<\/span>/);
+});
+
 test('홈은 네 번째 기록·분석 보드를 제공한다', () => {
   assert.equal((indexHtml.match(/class="home-board-card/g) ?? []).length, 5);
   assert.match(indexHtml, /href="\.\/history\.html"/);
   assert.match(indexHtml, />기록·분석</);
   assert.match(indexHtml, /<span class="home-board-step">04<\/span>\s*<strong>기록·분석<\/strong>/);
+  assert.doesNotMatch(indexHtml, /class="home-board-card[^"]*" href="\.\/study-history\.html"/);
   assert.match(indexHtml, /오전 2시/);
 });
 
@@ -43,6 +57,7 @@ test('기록 페이지는 오전 2시 기준과 7일·30일 집계를 사용한�
 });
 
 test('기록 화면은 반응형 그래프와 인쇄 가능한 날짜 카드 스타일을 가진다', () => {
+  assert.match(css, /\.app-topbar/);
   assert.match(css, /\.history-chart/);
   assert.match(css, /\.history-record-card/);
   assert.match(css, /\.history-kpi-grid/);

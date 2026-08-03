@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { INTERVIEW_QUESTIONS } from '../src/interview-data.js';
 import { INTERVIEW_STATE_KEY } from '../src/interview-core.js';
+import { MAEIL_CONTENT_COMMIT } from '../src/maeil-content.js';
 import { resolveChromeBin } from './helpers/chrome-bin.mjs';
 
 const CHROME_PATH = resolveChromeBin();
@@ -204,6 +205,15 @@ async function waitForPageReady(cdp, sessionId, readyAttribute) {
   throw new Error(`${readyAttribute} 초기화를 기다리다 시간 초과했습니다.`);
 }
 
+async function waitForCondition(cdp, sessionId, expression, message, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await evaluate(cdp, sessionId, expression)) return;
+    await delay(40);
+  }
+  throw new Error(message);
+}
+
 async function navigate(cdp, sessionId, url, readyAttribute) {
   const loaded = cdp.waitForEvent('Page.loadEventFired', sessionId);
   await cdp.send('Page.navigate', { url }, sessionId);
@@ -294,8 +304,8 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
         resultsAtomic: document.querySelector('#interview-results-count').getAttribute('aria-atomic'),
       }))()`,
     );
-    assert.equal(initial.questionIds.length, 152);
-    assert.deepEqual(initial.questionIds, INTERVIEW_QUESTIONS.map(({ id }) => id));
+    assert.equal(initial.questionIds.length, 14);
+    assert.deepEqual(initial.questionIds, INTERVIEW_QUESTIONS.slice(0, 14).map(({ id }) => id));
     assert.equal(initial.categoryCount, 9);
     assert.equal(initial.queueIds.length, 5);
     assert.equal(initial.queueProgress, '오늘 0 / 5 완료');
@@ -412,6 +422,7 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
     assert.equal(edited.question.answer, answer);
     assert.equal(edited.question.keywords, keywords);
     assert.equal(edited.question.memo, memo);
+    assert.equal(edited.question.sourceCommit, MAEIL_CONTENT_COMMIT);
     assert.match(edited.question.lastStudiedAt, /^\d{4}-\d{2}-\d{2}T/u);
     assert.equal(edited.queue.ids.includes(targetQuestion.id), true);
     assert.equal(edited.queue.completedIds.includes(targetQuestion.id), true);
@@ -452,7 +463,7 @@ test('면접 목록과 상세가 같은 상태·오늘의 큐를 저장하고 �
     await clickAndWaitForNavigation(
       cdp,
       sessionId,
-      `document.querySelector('.interview-back-nav a')`,
+      `document.querySelector('.interview-mode-switch a[href="./templates.html"]')`,
       'data-templates-ready',
     );
     const listMirror = await evaluate(
@@ -603,7 +614,7 @@ test('상세 직접 진입에서 만든 5문항 큐는 고정·완료 뒤 목록
     await clickAndWaitForNavigation(
       cdp,
       sessionId,
-      `document.querySelector('.interview-back-nav a')`,
+      `document.querySelector('.interview-mode-switch a[href="./templates.html"]')`,
       'data-templates-ready',
     );
     const listQueue = await evaluate(
@@ -723,7 +734,7 @@ test('목록 큐 조작 성공 뒤 의미상 대응 버튼이 실제 activeEleme
         target.click();
         const cancel = focused('toggle-complete', firstId);
 
-        const addId = ${JSON.stringify('be-66')};
+        const addId = ${JSON.stringify('be-7')};
         target = button('add-queue', addId);
         target.focus();
         target.click();
@@ -766,4 +777,447 @@ test('목록 큐 조작 성공 뒤 의미상 대응 버튼이 실제 activeEleme
     assert.equal(focusResults.addAriaDisabled, 'true');
     assert.notEqual(focusResults.replacementId, focusResults.replacedId);
   }, 'job-prep-interview-queue-focus-chrome-');
+});
+
+test('목록→원문→5+5 퀴즈→면접 자가·AI 평가를 한 글의 출처를 유지해 완주한다', { timeout: 60_000 }, async () => {
+  await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    const groundedQuote = 'OSIV의 핵심은 뷰에서도 지연 로딩이 가능하도록 하는 것입니다.';
+    const mockEvaluation = {
+      scores: { accuracy: 82, coverage: 78, clarity: 86, interviewReadiness: 80 },
+      strengths: [{ feedback: '핵심 목적을 설명했습니다.', evidenceQuote: groundedQuote }],
+      gaps: [{ feedback: '원문의 지연 로딩 목적을 더 분명히 연결해 보세요.', evidenceQuote: groundedQuote }],
+      unsupportedClaims: [],
+      improvedAnswer: `OSIV는 ${groundedQuote}`,
+      followUps: ['OSIV를 비활성화하면 어떤 설계가 필요한가요?', '커넥션 점유 문제는 언제 커질까요?'],
+      evidence: [{ feedback: '원문에 명시된 OSIV 핵심', evidenceQuote: groundedQuote }],
+    };
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `(() => {
+        const nativeFetch = window.fetch.bind(window);
+        window.fetch = async (input, init) => {
+          const url = typeof input === 'string' ? input : input.url;
+          if (url === 'http://127.0.0.1:11434/api/tags') {
+            return new Response(JSON.stringify({ models: [{ name: 'qwen3:14b' }] }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            });
+          }
+          if (url === 'http://127.0.0.1:11434/api/chat') {
+            return new Response(JSON.stringify({
+              model: 'qwen3:14b',
+              message: { content: JSON.stringify(${JSON.stringify(mockEvaluation)}) },
+            }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            });
+          }
+          return nativeFetch(input, init);
+        };
+      })();`,
+    }, sessionId);
+
+    await navigate(cdp, sessionId, `${baseUrl}/contents.html`, 'data-contents-ready');
+    const listState = await evaluate(cdp, sessionId, `(() => ({
+      total: document.querySelector('[data-reader-page="list"]').dataset.readingTotal,
+      rows: document.querySelectorAll('#reading-list > [data-content-id]').length,
+      target: Boolean(document.querySelector('#reading-list [data-content-id="be-1"] .reader-file-link')),
+    }))()`);
+    assert.equal(listState.total, '152');
+    assert.equal(listState.rows > 0, true);
+    assert.equal(listState.target, true);
+
+    await clickAndWaitForNavigation(
+      cdp,
+      sessionId,
+      `document.querySelector('#reading-list [data-content-id="be-1"] .reader-file-link')`,
+      'data-content-ready',
+    );
+    await waitForCondition(
+      cdp,
+      sessionId,
+      `document.documentElement.dataset.contentLoaded === 'true'`,
+      '로컬 고정 원문을 불러오지 못했습니다.',
+    );
+    const readingState = await evaluate(cdp, sessionId, `(() => ({
+      id: new URL(location.href).searchParams.get('id'),
+      bodyLength: document.querySelector('#content-body').textContent.length,
+      readMode: new URL(document.querySelector('#content-read-mode').href).searchParams.get('id'),
+      quizMode: new URL(document.querySelector('#content-quiz-mode').href).searchParams.get('source'),
+      interviewMode: new URL(document.querySelector('#content-interview-mode').href).searchParams.get('id'),
+    }))()`);
+    assert.equal(readingState.id, 'be-1');
+    assert.equal(readingState.bodyLength > 100, true);
+    assert.deepEqual(
+      { read: readingState.readMode, quiz: readingState.quizMode, interview: readingState.interviewMode },
+      { read: 'be-1', quiz: 'be-1', interview: 'be-1' },
+    );
+
+    await clickAndWaitForNavigation(
+      cdp,
+      sessionId,
+      `document.querySelector('#content-quiz-link')`,
+      'data-quiz-ready',
+    );
+    const firstRound = await evaluate(cdp, sessionId, `(() => {
+      let safety = 0;
+      while (document.querySelector('#quiz-round-summary').hidden && safety < 40) {
+        const input = document.querySelector('#quiz-cluster input[type="radio"]');
+        if (input) {
+          input.click();
+          document.querySelector('#quiz-confirm-answer').click();
+        } else {
+          document.querySelector('#quiz-next-main')?.click();
+        }
+        safety += 1;
+      }
+      const attempts = JSON.parse(localStorage.getItem('job-prep-routine:quiz:v2:attempts'));
+      const studyAttempts = JSON.parse(localStorage.getItem('job-prep-routine:study-history:v1')).attempts;
+      return {
+        source: new URL(location.href).searchParams.get('source'),
+        summaryVisible: !document.querySelector('#quiz-round-summary').hidden,
+        scoreCards: document.querySelectorAll('#quiz-round-score-grid .quiz-score-card').length,
+        mainAnswered: attempts[0].score.main.answered,
+        tailAnswered: attempts[0].score.followUp.answered,
+        sessionVersion: attempts[0].session.version,
+        studyMain: studyAttempts.filter(({ kind }) => kind === 'quiz-main').length,
+        studyFollowUp: studyAttempts.filter(({ kind }) => kind === 'quiz-follow-up').length,
+      };
+    })()`);
+    assert.equal(firstRound.source, 'be-1');
+    assert.equal(firstRound.summaryVisible, true);
+    assert.equal(firstRound.scoreCards, 4);
+    assert.equal(firstRound.mainAnswered, 5);
+    assert.equal(firstRound.tailAnswered >= 10, true);
+    assert.equal(firstRound.sessionVersion, 2);
+    assert.equal(firstRound.studyMain, 1);
+    assert.equal(firstRound.studyFollowUp, 5);
+
+    const secondRound = await evaluate(cdp, sessionId, `(() => {
+      document.querySelector('#quiz-start-second-round').click();
+      let safety = 0;
+      while (document.querySelector('#quiz-final-summary').hidden && safety < 40) {
+        const input = document.querySelector('#quiz-cluster input[type="radio"]');
+        if (input) {
+          input.click();
+          document.querySelector('#quiz-confirm-answer').click();
+        } else {
+          document.querySelector('#quiz-next-main')?.click();
+        }
+        safety += 1;
+      }
+      const attempts = JSON.parse(localStorage.getItem('job-prep-routine:quiz:v2:attempts'));
+      const studyAttempts = JSON.parse(localStorage.getItem('job-prep-routine:study-history:v1')).attempts;
+      return {
+        stage: document.querySelector('#quiz-round-kicker').textContent,
+        summaryVisible: !document.querySelector('#quiz-final-summary').hidden,
+        scoreCards: document.querySelectorAll('#quiz-final-score-grid .quiz-score-card').length,
+        attempts: attempts.length,
+        mainAnswered: attempts[0].score.main.answered,
+        tailAnswered: attempts[0].score.followUp.answered,
+        interviewMode: new URL(document.querySelector('#quiz-interview-link').href).searchParams.get('id'),
+        studyMain: studyAttempts.filter(({ kind }) => kind === 'quiz-main').length,
+        studyFollowUp: studyAttempts.filter(({ kind }) => kind === 'quiz-follow-up').length,
+      };
+    })()`);
+    assert.equal(secondRound.stage, 'ROUND 2');
+    assert.equal(secondRound.summaryVisible, true);
+    assert.equal(secondRound.scoreCards, 4);
+    assert.equal(secondRound.attempts, 1);
+    assert.equal(secondRound.mainAnswered, 10);
+    assert.equal(secondRound.tailAnswered >= 20, true);
+    assert.equal(secondRound.interviewMode, 'be-1');
+    assert.equal(secondRound.studyMain, 2);
+    assert.equal(secondRound.studyFollowUp, 10);
+
+    await clickAndWaitForNavigation(
+      cdp,
+      sessionId,
+      `document.querySelector('#quiz-interview-link')`,
+      'data-template-detail-ready',
+    );
+    const answer = 'OSIV는 영속성 컨텍스트를 뷰까지 유지해 지연 로딩을 돕습니다.';
+    await evaluate(cdp, sessionId, `(() => {
+      const input = (selector, value) => {
+        const element = document.querySelector(selector);
+        element.value = value;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      input('#detail-answer', ${JSON.stringify(answer)});
+      input('#detail-keywords', 'OSIV, 영속성 컨텍스트, 지연 로딩');
+      input('#detail-memo', '커넥션 점유 복습');
+      const confidence = document.querySelector('#detail-confidence');
+      confidence.value = '4';
+      confidence.dispatchEvent(new Event('change', { bubbles: true }));
+      document.querySelector('#detail-reveal-reference').click();
+      return true;
+    })()`);
+    await waitForCondition(
+      cdp,
+      sessionId,
+      `document.querySelector('#detail-reference-body').textContent.includes(${JSON.stringify(groundedQuote)})`,
+      '면접 비교용 원문을 불러오지 못했습니다.',
+    );
+    await evaluate(cdp, sessionId, `(() => { document.querySelector('#detail-ai-evaluate').click(); return true; })()`);
+    await waitForCondition(
+      cdp,
+      sessionId,
+      `document.querySelector('#detail-ai-result').hidden === false && document.querySelector('#detail-ai-evaluate').getAttribute('aria-busy') === null`,
+      '모의 AI 평가가 완료되지 않았습니다.',
+    );
+    const interviewState = await evaluate(cdp, sessionId, `(() => {
+      const state = JSON.parse(localStorage.getItem(${JSON.stringify(INTERVIEW_STATE_KEY)}));
+      const evaluations = JSON.parse(localStorage.getItem('job-prep-routine:interview:evaluations'));
+      return {
+        id: new URL(location.href).searchParams.get('id'),
+        answer: document.querySelector('#detail-answer').value,
+        referenceVisible: !document.querySelector('#detail-reference').hidden,
+        resultText: document.querySelector('#detail-ai-result').textContent,
+        setupHidden: document.querySelector('#detail-ai-setup').hidden,
+        sourceCommit: state.questions['be-1'].sourceCommit,
+        evaluationCount: evaluations.evaluations['be-1'].length,
+      };
+    })()`);
+    assert.equal(interviewState.id, 'be-1');
+    assert.equal(interviewState.answer, answer);
+    assert.equal(interviewState.referenceVisible, true);
+    assert.match(interviewState.resultText, /82점/u);
+    assert.match(interviewState.resultText, /개선된 1분 답변/u);
+    assert.equal(interviewState.setupHidden, true);
+    assert.equal(interviewState.sourceCommit, MAEIL_CONTENT_COMMIT);
+    assert.equal(interviewState.evaluationCount, 1);
+
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    }, sessionId);
+    const mobileInterview = await evaluate(
+      cdp,
+      sessionId,
+      `({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth })`,
+    );
+    assert.deepEqual(mobileInterview, { width: 390, scrollWidth: 390 });
+
+    for (const [path, ready] of [
+      ['/content.html?id=be-1', 'data-content-ready'],
+      ['/quiz.html?source=be-1', 'data-quiz-ready'],
+      ['/contents.html', 'data-contents-ready'],
+    ]) {
+      await navigate(cdp, sessionId, `${baseUrl}${path}`, ready);
+      // Chrome headless는 문서 전환 때 device metrics의 visual viewport를 재계산할 수 있어
+      // 각 페이지에 동일한 실기기 크기를 다시 고정한 뒤 overflow를 검증한다.
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: 390,
+        height: 844,
+        screenWidth: 390,
+        screenHeight: 844,
+        deviceScaleFactor: 1,
+        mobile: true,
+      }, sessionId);
+      const metrics = await evaluate(
+        cdp,
+        sessionId,
+        `({ screenWidth: screen.width, width: innerWidth, scrollWidth: document.documentElement.scrollWidth })`,
+      );
+      assert.equal(metrics.screenWidth, 390, path);
+      assert.equal(metrics.scrollWidth, metrics.width, path);
+    }
+  }, 'job-prep-learning-flow-chrome-');
+});
+
+test('읽기 목록 재렌더는 의미상 대응 버튼에 포커스를 복원하고 저장 실패를 성공으로 알리지 않는다', { timeout: 45_000 }, async () => {
+  await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    await navigate(cdp, sessionId, `${baseUrl}/contents.html`, 'data-contents-ready');
+
+    const focusResults = await evaluate(cdp, sessionId, `(() => {
+      const category = (id) => document.querySelector('[data-reading-category="' + id + '"]');
+      const pageButton = (number) => [...document.querySelectorAll('[data-reading-page]')]
+        .find((button) => button.textContent === String(number));
+      const todayItem = (id) => document.querySelector('#reading-today-list [data-content-id="' + id + '"]');
+      const catalogItem = (id) => document.querySelector('#reading-list [data-content-id="' + id + '"]');
+      const action = (container, name) => container?.querySelector('[data-reading-action="' + name + '"]');
+
+      const pageSizeField = document.querySelector('#reading-page-size');
+      const initialPageSize = pageSizeField.value;
+      const initialRows = document.querySelectorAll('#reading-list > [data-content-id]').length;
+      const paginationCopies = [...document.querySelectorAll('.reader-pagination')]
+        .filter((pagination) => !pagination.hidden).length;
+      pageSizeField.value = '10';
+      pageSizeField.dispatchEvent(new Event('change', { bubbles: true }));
+      const expandedRows = document.querySelectorAll('#reading-list > [data-content-id]').length;
+      const storedPageSize = localStorage.getItem('job-prep-routine:maeil-reader:v1:page-size');
+      pageSizeField.value = '6';
+      pageSizeField.dispatchEvent(new Event('change', { bubbles: true }));
+
+      let target = category('distributed-cache');
+      target.focus();
+      target.click();
+      const categoryFocused = document.activeElement === category('distributed-cache')
+        && document.activeElement.getAttribute('aria-pressed') === 'true';
+
+      target = category('all');
+      target.focus();
+      target.click();
+      const allFocused = document.activeElement === category('all');
+
+      target = pageButton(2);
+      target.focus();
+      target.click();
+      const secondPageFocused = document.activeElement === pageButton(2);
+
+      target = pageButton(1);
+      target.focus();
+      target.click();
+      const firstPageFocused = document.activeElement === pageButton(1);
+
+      const addId = 'be-5';
+      target = action(catalogItem(addId), 'add');
+      target.focus();
+      target.click();
+      const addedTarget = action(todayItem(addId), 'toggle-completed');
+      const addFocused = document.activeElement === addedTarget;
+
+      addedTarget.click();
+      const toggledTarget = action(todayItem(addId), 'toggle-completed');
+      const toggleFocused = document.activeElement === toggledTarget
+        && toggledTarget.getAttribute('aria-pressed') === 'true';
+
+      const beforeReplace = [...document.querySelectorAll('#reading-today-list > [data-content-id]')];
+      const replaceIndex = beforeReplace.findIndex((item) => item.dataset.contentId !== addId);
+      const replacedId = beforeReplace[replaceIndex].dataset.contentId;
+      target = action(beforeReplace[replaceIndex], 'replace');
+      target.focus();
+      target.click();
+      const afterReplace = [...document.querySelectorAll('#reading-today-list > [data-content-id]')];
+      const replacementId = afterReplace[replaceIndex].dataset.contentId;
+      const replaceFocused = replacementId !== replacedId
+        && document.activeElement === action(afterReplace[replaceIndex], 'replace');
+
+      const removable = afterReplace.find((item) => (
+        item.dataset.contentId !== addId
+        && item.dataset.contentId !== replacementId
+      ));
+      const removedId = removable.dataset.contentId;
+      target = action(removable, 'remove');
+      target.focus();
+      target.click();
+      const reAdd = action(catalogItem(removedId), 'add');
+      const removeFocused = document.activeElement === reAdd && reAdd.disabled === false;
+
+      const failureId = 'be-6';
+      const failureButton = action(catalogItem(failureId), 'add');
+      const nativeSetItem = Storage.prototype.setItem;
+      failureButton.focus();
+      try {
+        Storage.prototype.setItem = function setItemFailure() { throw new Error('quota'); };
+        failureButton.click();
+      } finally {
+        Storage.prototype.setItem = nativeSetItem;
+      }
+      const failureTarget = action(todayItem(failureId), 'toggle-completed');
+
+      return {
+        initialPageSize,
+        initialRows,
+        paginationCopies,
+        expandedRows,
+        storedPageSize,
+        categoryFocused,
+        allFocused,
+        secondPageFocused,
+        firstPageFocused,
+        addFocused,
+        toggleFocused,
+        replaceFocused,
+        removeFocused,
+        failureFocusRestored: document.activeElement === failureTarget,
+        failureMessage: document.querySelector('#reading-live').textContent,
+      };
+    })()`);
+
+    assert.deepEqual(focusResults, {
+      initialPageSize: '6',
+      initialRows: 6,
+      paginationCopies: 1,
+      expandedRows: 10,
+      storedPageSize: '10',
+      categoryFocused: true,
+      allFocused: true,
+      secondPageFocused: true,
+      firstPageFocused: true,
+      addFocused: true,
+      toggleFocused: true,
+      replaceFocused: true,
+      removeFocused: true,
+      failureFocusRestored: true,
+      failureMessage: '읽기 기록을 저장하지 못했습니다. 현재 화면에서는 계속 사용할 수 있어요.',
+    });
+
+    await navigate(cdp, sessionId, `${baseUrl}/content.html?id=be-8`, 'data-content-ready');
+    const detailFailure = await evaluate(cdp, sessionId, `(() => {
+      const nativeSetItem = Storage.prototype.setItem;
+      const add = document.querySelector('#content-add-today');
+      try {
+        Storage.prototype.setItem = function setItemFailure() { throw new Error('quota'); };
+        add.click();
+      } finally {
+        Storage.prototype.setItem = nativeSetItem;
+      }
+      const addFailure = {
+        message: document.querySelector('#content-live').textContent,
+        memoryUpdated: add.disabled,
+      };
+
+      const mark = document.querySelector('#content-mark-read');
+      try {
+        Storage.prototype.setItem = function setItemFailure() { throw new Error('quota'); };
+        mark.click();
+      } finally {
+        Storage.prototype.setItem = nativeSetItem;
+      }
+      return {
+        addFailure,
+        markMessage: document.querySelector('#content-live').textContent,
+        markMemoryUpdated: mark.getAttribute('aria-pressed'),
+      };
+    })()`);
+
+    assert.deepEqual(detailFailure, {
+      addFailure: {
+        message: '읽기 기록을 저장하지 못했습니다. 본문은 계속 읽을 수 있어요.',
+        memoryUpdated: true,
+      },
+      markMessage: '읽기 기록을 저장하지 못했습니다. 본문은 계속 읽을 수 있어요.',
+      markMemoryUpdated: 'true',
+    });
+  }, 'job-prep-reader-focus-storage-chrome-');
+});
+
+test('be-3 퀴즈는 꼬리 문제 3개가 연결된 최신 데이터로 정상 시작한다', { timeout: 45_000 }, async () => {
+  await withBrowser(async ({ baseUrl, cdp, sessionId }) => {
+    await navigate(cdp, sessionId, `${baseUrl}/quiz.html?source=be-3`, 'data-quiz-ready');
+    const state = await evaluate(cdp, sessionId, `(() => {
+      const sessionKey = Object.keys(localStorage)
+        .find((key) => key.includes('job-prep-routine:quiz:v2:session:') && key.endsWith(':be-3'));
+      const session = sessionKey ? JSON.parse(localStorage.getItem(sessionKey)) : null;
+      return {
+        ready: document.documentElement.dataset.quizReady,
+        invalidHidden: document.querySelector('#quiz-invalid').hidden,
+        sessionVisible: !document.querySelector('#quiz-session').hidden,
+        primarySourceId: session?.primarySourceId ?? null,
+        firstMainId: session?.mainQuestionIds?.[0] ?? null,
+        allTailCounts: Object.values(session?.followUpIdsByMain ?? {}).map((ids) => ids.length),
+      };
+    })()`);
+
+    assert.deepEqual(state, {
+      ready: 'true',
+      invalidHidden: true,
+      sessionVisible: true,
+      primarySourceId: 'be-3',
+      firstMainId: 'quiz-be-3-main',
+      allTailCounts: Array(10).fill(3),
+    });
+  }, 'job-prep-quiz-be-3-chrome-');
 });

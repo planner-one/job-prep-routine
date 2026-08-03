@@ -1,0 +1,2 @@
+# Ollama 퀴즈 생성 중 원자적으로 갱신되는 재개 정보
+*.checkpoint.json

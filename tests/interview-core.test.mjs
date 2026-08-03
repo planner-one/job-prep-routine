@@ -35,6 +35,7 @@ test('면접 상태와 큐의 공개 기본 계약을 제공한다', () => {
     answer: '',
     keywords: '',
     memo: '',
+    sourceCommit: '',
     lastStudiedAt: null,
     updatedAt: null,
   });
@@ -56,7 +57,7 @@ test('손상된 질문 상태를 필드별로 정규화하고 알 수 없는 ID�
   }, new Set(['be-1']));
   assert.deepEqual(normalized.questions['be-1'], {
     status: 'review', favorite: true, queuePinned: false, confidence: 0,
-    answer: '내 답변', keywords: '', memo: '', lastStudiedAt: null, updatedAt: null,
+    answer: '내 답변', keywords: '', memo: '', sourceCommit: '', lastStudiedAt: null, updatedAt: null,
   });
   assert.equal(Object.hasOwn(normalized.questions, 'be-999'), false);
 });
@@ -66,7 +67,7 @@ test('최상위 필터를 비손실로 정규화하고 입력 객체를 변경�
     questions: {
       'be-1': {
         status: 'done', favorite: false, queuePinned: true, confidence: 5,
-        answer: '답', keywords: '키워드', memo: '메모',
+        answer: '답', keywords: '키워드', memo: '메모', sourceCommit: 'commit-old',
         lastStudiedAt: '2026-07-19T00:00:00.000Z', updatedAt: '2026-07-19T01:00:00.000Z',
       },
     },

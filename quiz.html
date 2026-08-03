@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="메인 문제와 꼬리 문제를 한 묶음씩 푸는 백엔드 퀴즈">
+    <title>백엔드 문제별 퀴즈</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=3">
+    <link rel="stylesheet" href="./assets/reader.css?v=2">
+    <link rel="stylesheet" href="./assets/quiz.css?v=7">
+  </head>
+  <body class="reader-body quiz-body">
+    <a class="reader-skip-link" href="#quiz-main">본문으로 건너뛰기</a>
+    <div class="reader-shell">
+      <header class="app-topbar screen-only">
+        <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈">
+          <img src="./assets/favicon.svg" alt="" width="28" height="28">
+          <span>취업 준비 루틴 보드</span>
+        </a>
+        <nav aria-label="주요 이동">
+          <a href="./roadmap.html">로드맵</a>
+          <a href="./weekly.html">주간</a>
+          <a href="./daily.html">데일리</a>
+          <a href="./history.html">기록</a>
+          <a href="./contents.html" aria-current="page">학습</a>
+        </nav>
+      </header>
+
+      <main id="quiz-main" class="reader-page quiz-page" data-quiz-page>
+        <header class="quiz-hero">
+          <div>
+            <p class="reader-kicker">SOURCE-GROUNDED QUIZ</p>
+            <h1>문제별 꼬리 퀴즈</h1>
+            <p id="quiz-description">메인 개념을 확인하고 바로 이어지는 꼬리 문제로 이해를 점검합니다.</p>
+          </div>
+          <nav class="reader-mode-switch screen-only" aria-label="학습 방식 선택">
+            <a href="./contents.html">읽기</a>
+            <a class="is-active" href="./quizzes.html" aria-current="page">퀴즈</a>
+            <a href="./templates.html">면접 연습</a>
+          </nav>
+        </header>
+
+        <section class="quiz-invalid" id="quiz-invalid" hidden>
+          <h2>퀴즈를 준비하지 못했습니다.</h2>
+          <p id="quiz-invalid-message"></p>
+          <a class="quiz-primary-button" href="./quizzes.html">퀴즈 목록으로</a>
+        </section>
+
+        <article class="quiz-session" id="quiz-session" hidden>
+          <header class="quiz-session-strip">
+            <div>
+              <span>시작 원문</span>
+              <strong id="quiz-title">문항을 준비하고 있습니다.</strong>
+            </div>
+            <p id="quiz-category">백엔드 질문</p>
+          </header>
+
+          <div class="quiz-flow-return-row">
+            <button class="quiz-summary-return" id="quiz-summary-return" type="button" hidden>← 1라운드 선택 화면으로</button>
+          </div>
+
+          <div class="quiz-flow-layout">
+            <aside class="quiz-flow-sidebar" aria-label="퀴즈 진행표">
+              <div class="quiz-round-heading">
+                <div>
+                  <p class="reader-kicker" id="quiz-round-kicker">ROUND 1</p>
+                  <h2 id="quiz-round-title">메인 1/5</h2>
+                </div>
+                <strong id="quiz-total-progress">0%</strong>
+              </div>
+              <div class="quiz-progress-track" aria-hidden="true"><span id="quiz-progress-bar"></span></div>
+              <p class="quiz-tail-progress" id="quiz-tail-progress">꼬리 0/2</p>
+              <nav id="quiz-main-pages" class="quiz-main-pages" aria-label="메인 문제 이동"></nav>
+              <button class="quiz-deferred-button" id="quiz-deferred-button" type="button" disabled>
+                보류 문제 <strong id="quiz-deferred-count">0</strong>
+              </button>
+              <div class="quiz-legend" aria-label="상태 안내">
+                <span><i class="is-current"></i>진행</span>
+                <span><i class="is-complete"></i>완료</span>
+                <span><i class="is-deferred"></i>보류</span>
+              </div>
+            </aside>
+
+            <section class="quiz-cluster-panel" aria-live="polite">
+              <div id="quiz-cluster"></div>
+              <div class="quiz-cluster-actions" id="quiz-cluster-actions"></div>
+            </section>
+          </div>
+
+          <section class="quiz-summary" id="quiz-round-summary" hidden aria-labelledby="quiz-round-summary-title">
+            <p class="reader-kicker">ROUND SUMMARY</p>
+            <h2 id="quiz-round-summary-title" tabindex="-1">첫 5개 메인 문제를 마쳤습니다</h2>
+            <p id="quiz-round-summary-copy"></p>
+            <div class="quiz-score-grid" id="quiz-round-score-grid"></div>
+            <div class="quiz-summary-actions">
+              <button class="quiz-secondary-button" id="quiz-summary-deferred" type="button">보류 꼬리 이어 풀기</button>
+              <button class="quiz-primary-button" id="quiz-start-second-round" type="button">추가 메인 5문제 시작</button>
+              <button class="quiz-secondary-button" id="quiz-summary-review" type="button">문제별 해설 복습</button>
+            </div>
+          </section>
+
+          <section class="quiz-summary" id="quiz-final-summary" hidden aria-labelledby="quiz-final-summary-title">
+            <p class="reader-kicker">FINAL RESULT</p>
+            <h2 id="quiz-final-summary-title" tabindex="-1">이번 퀴즈 결과</h2>
+            <p id="quiz-final-summary-copy"></p>
+            <div class="quiz-score-grid" id="quiz-final-score-grid"></div>
+            <div class="quiz-summary-actions">
+              <button class="quiz-secondary-button" id="quiz-final-deferred" type="button">보류 문제 풀기</button>
+              <button class="quiz-secondary-button" id="quiz-final-review" type="button">문제별 해설 복습</button>
+              <a class="quiz-secondary-button" id="quiz-interview-link" href="./templates.html">면접 연습으로 이어가기</a>
+              <button class="quiz-primary-button" id="quiz-restart" type="button">다시 풀기</button>
+            </div>
+          </section>
+        </article>
+
+        <p class="visually-hidden" id="quiz-live" aria-live="polite"></p>
+      </main>
+    </div>
+    <script type="module" src="./src/quiz-app.js?v=8"></script>
+  </body>
+</html>

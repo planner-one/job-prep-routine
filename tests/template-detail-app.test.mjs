@@ -4,12 +4,19 @@ import { INTERVIEW_QUESTIONS } from '../src/interview-data.js';
 import { INTERVIEW_STATE_KEY, interviewQueueKey } from '../src/interview-core.js';
 import {
   collectQuestionPatch,
+  evaluationMatchesAnswerSnapshot,
+  evaluationMatchesDraftSnapshot,
   formatLastStudied,
   initTemplateDetailPage,
   previousNextQuestions,
+  interviewSourceDetailUrl,
   questionIdFromLocation,
+  renderInterviewEvaluation,
+  renderInterviewHintKeywords,
+  renderInterviewHintOutline,
   syncDetailPrintValues,
 } from '../src/template-detail-app.js';
+import { AI_PROVIDER_ERROR_CODES } from '../src/ai-provider.js';
 
 class FakeElement {
   constructor(tagName, ownerDocument) {
@@ -124,6 +131,7 @@ class FakeDocument {
   }
 
   createElement(tagName) { return new FakeElement(tagName, this); }
+  createDocumentFragment() { return new FakeElement('fragment', this); }
   getElementById(id) { return this.documentElement.querySelector(`#${id}`); }
   querySelector(selector) { return this.documentElement.querySelector(selector); }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
@@ -150,6 +158,17 @@ function detailFixture(search = '?id=be-1') {
   appendElement(document, detail, 'p', { data: { detailCategory: '' } });
   appendElement(document, detail, 'h1', { data: { detailQuestion: '' } });
   appendElement(document, detail, 'p', { data: { detailPosition: '' } });
+  const hint = appendElement(document, detail, 'section', { id: 'detail-hint' });
+  hint.hidden = true;
+  const hintToggle = appendElement(document, detail, 'button', { id: 'detail-hint-toggle' });
+  hintToggle.setAttribute('aria-expanded', 'false');
+  appendElement(document, hint, 'ol', { id: 'detail-hint-outline' });
+  const keywordToggle = appendElement(document, hint, 'button', { id: 'detail-hint-keywords-toggle' });
+  keywordToggle.setAttribute('aria-expanded', 'false');
+  const hintKeywords = appendElement(document, hint, 'div', { id: 'detail-hint-keywords' });
+  hintKeywords.hidden = true;
+  appendElement(document, hintKeywords, 'p', { id: 'detail-hint-keywords-status' });
+  appendElement(document, hintKeywords, 'ul', { id: 'detail-hint-keywords-list' });
   appendElement(document, detail, 'select', { id: 'detail-status' });
   appendElement(document, detail, 'select', { id: 'detail-confidence' });
   const favorite = appendElement(document, detail, 'button', { id: 'detail-favorite' });
@@ -159,6 +178,18 @@ function detailFixture(search = '?id=be-1') {
   appendElement(document, detail, 'textarea', { id: 'detail-answer' });
   appendElement(document, detail, 'input', { id: 'detail-keywords' });
   appendElement(document, detail, 'textarea', { id: 'detail-memo' });
+  const reference = appendElement(document, detail, 'section', { id: 'detail-reference' });
+  reference.hidden = true;
+  appendElement(document, detail, 'button', { id: 'detail-reveal-reference' });
+  appendElement(document, reference, 'p', { id: 'detail-reference-status' });
+  appendElement(document, reference, 'article', { id: 'detail-reference-body' });
+  appendElement(document, detail, 'button', { id: 'detail-ai-evaluate' });
+  appendElement(document, detail, 'span', { id: 'detail-ai-health' });
+  appendElement(document, detail, 'p', { id: 'detail-ai-status' });
+  const aiSetup = appendElement(document, detail, 'aside', { id: 'detail-ai-setup' });
+  aiSetup.hidden = true;
+  const aiResult = appendElement(document, detail, 'div', { id: 'detail-ai-result' });
+  aiResult.hidden = true;
   appendElement(document, detail, 'time', { id: 'detail-last-studied' }).setAttribute('datetime', '');
   const complete = appendElement(document, detail, 'button', { className: 'interview-complete-today' });
   complete.setAttribute('aria-pressed', 'false');
@@ -231,9 +262,426 @@ function initFixture(entries = {}, search = '?id=be-1') {
   return { ...fixture, storage, app };
 }
 
+function verifiedEvaluation(overrides = {}) {
+  return {
+    version: 1,
+    id: 'be-1:2026-07-21T06:00:00.000Z',
+    questionId: 'be-1',
+    evaluatedAt: '2026-07-21T06:00:00.000Z',
+    sourceCommit: 'd00877afb0a302072078d34ded66b3b69143a5ca',
+    provider: 'ollama',
+    model: 'qwen3:14b',
+    promptVersion: 'maeil-interview-evaluation-v2',
+    answerSnapshot: '평가 당시 답변',
+    selfAssessment: { confidence: 0, keywords: '', memo: '' },
+    scores: { accuracy: 85, coverage: 80, clarity: 75, interviewReadiness: 70 },
+    strengths: [{
+      feedback: '정확한 근거로 확인된 강점',
+      evidenceQuote: '원문 근거 문장입니다.',
+      evidenceVerified: true,
+    }],
+    gaps: [],
+    unsupportedClaims: [],
+    improvedAnswer: '검증 완료된 평가의 개선 답변',
+    followUps: ['검증 완료 꼬리 질문 1', '검증 완료 꼬리 질문 2'],
+    evidence: [{
+      feedback: '판단 근거',
+      evidenceQuote: '원문 근거 문장입니다.',
+      evidenceVerified: true,
+    }],
+    unverifiedFeedback: [],
+    verification: {
+      status: 'verified', verifiedEvidenceCount: 2, rejectedFeedbackCount: 0, withheldFields: [],
+    },
+    ...overrides,
+  };
+}
+
+function verifiedProvider() {
+  return {
+    id: 'ollama',
+    async healthCheck() {
+      return { ok: true, model: 'qwen3:14b', code: null };
+    },
+    async evaluateInterview() {
+      return {
+        provider: 'ollama',
+        model: 'qwen3:14b',
+        promptVersion: 'maeil-interview-evaluation-v2',
+        evaluation: {
+          scores: { accuracy: 85, coverage: 80, clarity: 75, interviewReadiness: 70 },
+          strengths: [{
+            feedback: '정확한 근거로 확인된 강점',
+            evidenceQuote: '원문 근거 문장입니다.',
+          }],
+          gaps: [],
+          unsupportedClaims: [],
+          improvedAnswer: '검증 완료된 평가의 개선 답변',
+          followUps: ['꼬리 질문 1', '꼬리 질문 2'],
+          evidence: [{
+            feedback: '판단 근거',
+            evidenceQuote: '원문 근거 문장입니다.',
+          }],
+        },
+      };
+    },
+  };
+}
+
+test('답변 힌트는 정답 본문 없이 사고 순서와 원문 키워드를 각각 렌더링한다', () => {
+  const { document } = detailFixture();
+  const outline = renderInterviewHintOutline(document, INTERVIEW_QUESTIONS[0]);
+  assert.equal(outline.length, 3);
+  assert.equal(document.querySelector('#detail-hint-outline').children.length, 3);
+  assert.match(document.querySelector('#detail-hint-outline').textContent, /개념/u);
+
+  const keywords = renderInterviewHintKeywords(document, ['OSIV', '@Transactional']);
+  assert.deepEqual(keywords, ['OSIV', '@Transactional']);
+  assert.equal(document.querySelector('#detail-hint-keywords-list').children.length, 2);
+});
+
+test('검증 완료 평가만 점수·개선 답변·꼬리 질문을 렌더링한다', () => {
+  const { document } = detailFixture();
+  renderInterviewEvaluation(document, verifiedEvaluation());
+
+  const result = document.querySelector('#detail-ai-result');
+  assert.equal(result.hidden, false);
+  assert.equal(result.querySelectorAll('.interview-ai-score').length, 4);
+  assert.match(result.textContent, /85점/u);
+  assert.match(result.textContent, /검증 완료된 평가의 개선 답변/u);
+  assert.match(result.textContent, /검증 완료 꼬리 질문 1/u);
+  assert.match(result.textContent, /정확한 근거로 확인된 강점/u);
+});
+
+test('partial·unverified 평가는 점수·개선 답변·꼬리 질문과 미검증 피드백을 노출하지 않는다', () => {
+  for (const status of ['partial', 'unverified']) {
+    const { document } = detailFixture();
+    const unverifiedItem = {
+      feedback: '화면에 나오면 안 되는 미검증 피드백',
+      evidenceQuote: '원문에 없는 문장',
+      evidenceVerified: false,
+    };
+    const evaluation = verifiedEvaluation({
+      strengths: status === 'partial'
+        ? [...verifiedEvaluation().strengths, unverifiedItem]
+        : [unverifiedItem],
+      verification: {
+        status,
+        verifiedEvidenceCount: status === 'partial' ? 2 : 0,
+        rejectedFeedbackCount: 1,
+        withheldFields: ['scores', 'improvedAnswer', 'followUps'],
+      },
+    });
+    renderInterviewEvaluation(document, evaluation);
+
+    const result = document.querySelector('#detail-ai-result');
+    assert.equal(result.querySelector('.interview-ai-score-grid'), null);
+    assert.equal(result.querySelector('.interview-ai-draft'), null);
+    assert.doesNotMatch(result.textContent, /85점/u);
+    assert.doesNotMatch(result.textContent, /검증 완료된 평가의 개선 답변/u);
+    assert.doesNotMatch(result.textContent, /검증 완료 꼬리 질문/u);
+    assert.doesNotMatch(result.textContent, /화면에 나오면 안 되는 미검증 피드백/u);
+    if (status === 'partial') {
+      assert.match(result.textContent, /정확한 근거로 확인된 강점/u);
+      assert.match(result.textContent, /보류했습니다/u);
+    }
+  }
+});
+
+test('평가 뒤 답변을 수정하면 이전 결과를 숨기고 원래 답변으로 되돌리면 다시 표시한다', async () => {
+  const fixture = detailFixture();
+  const storage = memoryStorage();
+  fixture.view.localStorage = storage;
+  let savedEvaluation = null;
+  const evaluationStorage = {
+    getLatest() { return null; },
+    save(evaluation) { savedEvaluation = evaluation; return evaluation; },
+  };
+  const app = initTemplateDetailPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    provider: verifiedProvider(),
+    evaluationStorage,
+    fetchImpl: async () => ({
+      ok: true,
+      async text() { return '# 원문\n원문 근거 문장입니다.'; },
+    }),
+    now: () => new Date(NOW),
+  });
+  const answer = fixture.document.querySelector('#detail-answer');
+  answer.value = '평가할 면접 답변';
+
+  await app.evaluateCurrentAnswer();
+
+  const result = fixture.document.querySelector('#detail-ai-result');
+  const status = fixture.document.querySelector('#detail-ai-status');
+  const button = fixture.document.querySelector('#detail-ai-evaluate');
+  assert.equal(result.hidden, false);
+  assert.match(result.textContent, /85점/u);
+  assert.equal(savedEvaluation.answerSnapshot, '평가할 면접 답변');
+
+  answer.value = '평가 뒤 수정한 답변';
+  fixture.page.emit('input', answer);
+  assert.equal(result.hidden, true);
+  assert.equal(result.textContent, '');
+  assert.equal(result.dataset.answerState, 'stale');
+  assert.equal(status.dataset.evaluationState, 'stale');
+  assert.match(status.textContent, /이전 답변의 평가|다시 평가/u);
+  assert.match(button.textContent, /수정한 내용 다시 평가/u);
+  assert.equal(savedEvaluation.answerSnapshot, '평가할 면접 답변');
+
+  answer.value = '평가할 면접 답변';
+  fixture.page.emit('input', answer);
+  assert.equal(result.hidden, false);
+  assert.equal(result.dataset.answerState, 'current');
+  assert.match(result.textContent, /85점/u);
+  assert.match(status.textContent, /현재 답변과 자가평가.*일치/u);
+});
+
+test('자신감·키워드·복기 메모가 평가 스냅샷과 달라져도 이전 결과를 숨긴다', () => {
+  const answerSnapshot = '자가평가까지 포함해 평가한 답변';
+  const selfAssessment = { confidence: 3, keywords: '프록시, AOP', memo: '내부 호출 복기' };
+
+  for (const { selector, eventType, value } of [
+    { selector: '#detail-confidence', eventType: 'change', value: '4' },
+    { selector: '#detail-keywords', eventType: 'input', value: '프록시, AOP, 트랜잭션' },
+    { selector: '#detail-memo', eventType: 'input', value: '수정한 복기 메모' },
+  ]) {
+    const fixture = detailFixture();
+    const storage = memoryStorage({
+      [INTERVIEW_STATE_KEY]: JSON.stringify({
+        version: 1,
+        questions: {
+          'be-1': {
+            answer: answerSnapshot,
+            confidence: selfAssessment.confidence,
+            keywords: selfAssessment.keywords,
+            memo: selfAssessment.memo,
+          },
+        },
+        filters: {},
+      }),
+    });
+    fixture.view.localStorage = storage;
+    const storedEvaluation = verifiedEvaluation({ answerSnapshot, selfAssessment });
+
+    initTemplateDetailPage(fixture.document, {
+      view: fixture.view,
+      storage,
+      evaluationStorage: {
+        getLatest() { return storedEvaluation; },
+        save() { throw new Error('호출되면 안 됨'); },
+      },
+      now: () => new Date(NOW),
+    });
+    const result = fixture.document.querySelector('#detail-ai-result');
+    assert.equal(result.hidden, false);
+
+    const field = fixture.document.querySelector(selector);
+    field.value = value;
+    fixture.page.emit(eventType, field);
+
+    assert.equal(result.hidden, true, `${selector} 변경 시 평가 결과를 숨겨야 합니다.`);
+    assert.equal(result.textContent, '');
+    assert.equal(fixture.document.querySelector('#detail-ai-status').dataset.evaluationState, 'stale');
+    assert.match(fixture.document.querySelector('#detail-ai-status').textContent, /자가평가|다시 평가/u);
+    assert.equal(evaluationMatchesDraftSnapshot(storedEvaluation, collectQuestionPatch(fixture.document)), false);
+  }
+});
+
+test('재접속 시 저장 평가와 현재 답변이 다르면 결과 대신 재평가 상태만 표시한다', () => {
+  const fixture = detailFixture();
+  const storage = memoryStorage({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-1': { answer: '재접속 전에 수정한 답변' } },
+      filters: {},
+    }),
+  });
+  fixture.view.localStorage = storage;
+  const storedEvaluation = verifiedEvaluation({ answerSnapshot: '이전 평가의 답변' });
+
+  initTemplateDetailPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    evaluationStorage: {
+      getLatest() { return storedEvaluation; },
+      save() { throw new Error('호출되면 안 됨'); },
+    },
+    now: () => new Date(NOW),
+  });
+
+  const result = fixture.document.querySelector('#detail-ai-result');
+  assert.equal(evaluationMatchesAnswerSnapshot(storedEvaluation, '재접속 전에 수정한 답변'), false);
+  assert.equal(result.hidden, true);
+  assert.equal(result.textContent, '');
+  assert.match(fixture.document.querySelector('#detail-ai-status').textContent, /이전 답변의 평가|결과를 숨겼/u);
+  assert.match(fixture.document.querySelector('#detail-ai-evaluate').textContent, /다시 평가/u);
+});
+
+test('재접속 시 answerSnapshot과 현재 답변이 같으면 저장 평가를 최신 결과로 표시한다', () => {
+  const answerSnapshot = '평가 당시와 동일한 답변';
+  const fixture = detailFixture();
+  const storage = memoryStorage({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-1': { answer: answerSnapshot } },
+      filters: {},
+    }),
+  });
+  fixture.view.localStorage = storage;
+  const storedEvaluation = verifiedEvaluation({ answerSnapshot });
+
+  initTemplateDetailPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    evaluationStorage: {
+      getLatest() { return storedEvaluation; },
+      save() { throw new Error('호출되면 안 됨'); },
+    },
+    now: () => new Date(NOW),
+  });
+
+  const result = fixture.document.querySelector('#detail-ai-result');
+  assert.equal(evaluationMatchesAnswerSnapshot(storedEvaluation, answerSnapshot), true);
+  assert.equal(evaluationMatchesDraftSnapshot(storedEvaluation, collectQuestionPatch(fixture.document)), true);
+  assert.equal(result.hidden, false);
+  assert.equal(result.dataset.answerState, 'current');
+  assert.match(result.textContent, /85점/u);
+  assert.match(fixture.document.querySelector('#detail-ai-status').textContent, /현재 답변과 자가평가.*일치/u);
+});
+
+test('답변 초기화는 저장 평가를 삭제하지 않고 이전 답변 평가 상태로 전환한다', () => {
+  const answerSnapshot = '초기화 전 평가 답변';
+  const fixture = detailFixture();
+  const storage = memoryStorage({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-1': { answer: answerSnapshot } },
+      filters: {},
+    }),
+  });
+  fixture.view.localStorage = storage;
+  const storedEvaluation = verifiedEvaluation({ answerSnapshot });
+  let removeCalls = 0;
+  const evaluationStorage = {
+    getLatest() { return storedEvaluation; },
+    save() { throw new Error('호출되면 안 됨'); },
+    remove() { removeCalls += 1; },
+  };
+
+  initTemplateDetailPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    evaluationStorage,
+    now: () => new Date(NOW),
+  });
+  assert.equal(fixture.document.querySelector('#detail-ai-result').hidden, false);
+
+  fixture.page.emit('click', fixture.document.querySelector('[data-detail-reset]'));
+
+  assert.equal(fixture.document.querySelector('#detail-answer').value, '');
+  assert.equal(fixture.document.querySelector('#detail-ai-result').hidden, true);
+  assert.equal(fixture.document.querySelector('#detail-ai-result').textContent, '');
+  assert.match(fixture.document.querySelector('#detail-ai-status').textContent, /이전 답변의 평가|다시 평가/u);
+  assert.match(fixture.document.querySelector('#detail-ai-evaluate').textContent, /답변 작성 후 다시 평가/u);
+  assert.equal(evaluationStorage.getLatest(), storedEvaluation);
+  assert.equal(removeCalls, 0);
+});
+
+test('AI 평가 성공 후 저장 실패해도 결과를 표시하고 Ollama 설치 안내를 열지 않는다', async () => {
+  const fixture = detailFixture();
+  const storage = memoryStorage();
+  fixture.view.localStorage = storage;
+  const referenceAnswer = '# 원문\n원문 근거 문장입니다.';
+  const provider = {
+    id: 'ollama',
+    async healthCheck() {
+      return { ok: true, model: 'qwen3:14b', code: null };
+    },
+    async evaluateInterview() {
+      return {
+        provider: 'ollama',
+        model: 'qwen3:14b',
+        promptVersion: 'maeil-interview-evaluation-v2',
+        evaluation: {
+          scores: { accuracy: 85, coverage: 80, clarity: 75, interviewReadiness: 70 },
+          strengths: [{
+            feedback: '정확한 근거로 확인된 강점',
+            evidenceQuote: '원문 근거 문장입니다.',
+          }],
+          gaps: [],
+          unsupportedClaims: [],
+          improvedAnswer: '검증 완료된 평가의 개선 답변',
+          followUps: ['꼬리 질문 1', '꼬리 질문 2'],
+          evidence: [{
+            feedback: '판단 근거',
+            evidenceQuote: '원문 근거 문장입니다.',
+          }],
+        },
+      };
+    },
+  };
+  const evaluationStorage = {
+    getLatest() { return null; },
+    save() { throw new Error('quota'); },
+  };
+  const app = initTemplateDetailPage(fixture.document, {
+    view: fixture.view,
+    storage,
+    provider,
+    evaluationStorage,
+    fetchImpl: async () => ({ ok: true, async text() { return referenceAnswer; } }),
+    now: () => new Date(NOW),
+  });
+  fixture.document.querySelector('#detail-answer').value = '내 면접 답변';
+
+  const evaluation = await app.evaluateCurrentAnswer();
+
+  assert.equal(evaluation.verification.status, 'verified');
+  assert.equal(fixture.document.querySelector('#detail-ai-result').hidden, false);
+  assert.match(fixture.document.querySelector('#detail-ai-result').textContent, /85점/u);
+  assert.equal(
+    fixture.document.querySelector('#detail-ai-status').textContent,
+    '평가 완료·저장 실패: 결과는 화면에 표시했지만 브라우저 저장 공간에 보관하지 못했습니다.',
+  );
+  assert.equal(fixture.document.querySelector('#detail-ai-setup').hidden, true);
+});
+
+test('Ollama 미실행·모델 누락만 설치 안내를 열고 시간 초과에는 열지 않는다', async () => {
+  for (const [code, expectedHidden] of [
+    [AI_PROVIDER_ERROR_CODES.PROVIDER_UNAVAILABLE, false],
+    [AI_PROVIDER_ERROR_CODES.MODEL_NOT_FOUND, false],
+    [AI_PROVIDER_ERROR_CODES.TIMEOUT, true],
+  ]) {
+    const fixture = detailFixture();
+    const storage = memoryStorage();
+    fixture.view.localStorage = storage;
+    const app = initTemplateDetailPage(fixture.document, {
+      view: fixture.view,
+      storage,
+      provider: {
+        async healthCheck() { return { ok: false, code, message: '사용 불가' }; },
+        async evaluateInterview() { throw new Error('호출되면 안 됨'); },
+      },
+      now: () => new Date(NOW),
+    });
+
+    await app.checkAiHealth();
+    assert.equal(fixture.document.querySelector('#detail-ai-setup').hidden, expectedHidden);
+  }
+});
+
 test('상세 URL에서 질문 ID를 정확히 읽는다', () => {
   assert.equal(questionIdFromLocation({ search: '?id=be-42' }), 'be-42');
   assert.equal(questionIdFromLocation({ search: '?id=' }), '');
+});
+
+test('면접 질문 원문은 GitHub가 아닌 해당 내부 읽기 상세 답변으로 연결한다', () => {
+  assert.equal(
+    interviewSourceDetailUrl('be-42'),
+    './content.html?id=be-42',
+  );
 });
 
 test('이전·다음은 필터와 무관하게 원본 order를 따른다', () => {
@@ -269,7 +717,10 @@ test('저장된 상세 상태를 필드와 인쇄 미러에 복원하고 안전�
   assert.equal(document.querySelector('#detail-status').value, 'review');
   assert.equal(document.querySelector('#detail-confidence').value, '4');
   assert.equal(document.querySelector('#detail-answer').value, saved.questions['be-1'].answer);
-  assert.equal(document.querySelector('.interview-source-link').href, INTERVIEW_QUESTIONS[0].sourceUrl);
+  assert.equal(
+    document.querySelector('.interview-source-link').href,
+    interviewSourceDetailUrl(INTERVIEW_QUESTIONS[0].id),
+  );
   assert.match(document.querySelector('#detail-print-values').textContent, /<img src=x onerror=alert\(1\)>/u);
   assert.equal(document.querySelector('#detail-print-values').querySelector('img'), null);
   assert.deepEqual(collectQuestionPatch(document), {

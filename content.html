@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="매일메일 백엔드 GitHub 원문을 읽고 읽음 상태를 기록하는 상세 페이지">
+    <title>백엔드 콘텐츠 읽기</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=3">
+    <link rel="stylesheet" href="./assets/reader.css?v=11">
+  </head>
+  <body class="reader-body">
+    <a class="reader-skip-link" href="#reader-main">본문으로 건너뛰기</a>
+    <div class="reader-shell reader-shell--detail">
+      <header class="app-topbar screen-only">
+        <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈">
+          <img src="./assets/favicon.svg" alt="" width="28" height="28">
+          <span>취업 준비 루틴 보드</span>
+        </a>
+        <nav aria-label="주요 이동">
+          <a href="./roadmap.html">로드맵</a>
+          <a href="./weekly.html">주간</a>
+          <a href="./daily.html">데일리</a>
+          <a href="./history.html">기록</a>
+          <a href="./contents.html" aria-current="page">학습</a>
+        </nav>
+      </header>
+
+      <main id="reader-main" class="reader-page reader-detail-page" data-reader-page="detail">
+        <section class="reader-invalid" id="content-invalid" hidden aria-labelledby="content-invalid-title">
+          <p class="reader-kicker">CONTENT NOT FOUND</p>
+          <h1 id="content-invalid-title">요청한 백엔드 글을 찾을 수 없습니다.</h1>
+          <p>주소를 확인하거나 전체 콘텐츠 목록에서 다시 선택해 주세요.</p>
+          <a class="reader-primary-link" href="./contents.html">전체 콘텐츠 보기</a>
+        </section>
+
+        <article id="content-detail" class="reader-article" hidden>
+          <a class="reader-quiz-return screen-only" id="content-quiz-return" href="./quiz.html" hidden>
+            ← 진행 중인 퀴즈로 돌아가기
+          </a>
+          <div class="reader-detail-toolbar">
+            <nav class="reader-repo-path reader-article-path" aria-label="저장소 파일 경로">
+              <a href="https://github.com/maeil-mail/maeil-mail-contents" target="_blank" rel="noopener noreferrer">maeil-mail-contents</a>
+              <span>/</span>
+              <a href="./contents.html">backend</a>
+              <span>/</span>
+              <strong id="content-file-name">be-1.md</strong>
+            </nav>
+
+            <nav class="reader-mode-switch reader-detail-mode-switch screen-only" aria-label="학습 방식 선택">
+              <a class="is-active" id="content-read-mode" href="./content.html" aria-current="page">읽기</a>
+              <a id="content-quiz-mode" href="./quiz.html">퀴즈</a>
+              <a id="content-interview-mode" href="./templates.html">면접 연습</a>
+            </nav>
+          </div>
+
+          <header class="reader-question-hero">
+            <div class="reader-article-header">
+              <p class="reader-category-label" id="content-category">카테고리</p>
+              <p class="reader-question-label">오늘의 백엔드 질문</p>
+              <h1 id="content-title">백엔드 콘텐츠</h1>
+              <div class="reader-article-meta">
+                <span id="content-number">No. 1</span>
+                <span id="content-reading-time">읽는 시간 계산 중</span>
+                <span id="content-load-source">GitHub 원문</span>
+              </div>
+            </div>
+
+            <nav class="reader-learning-choices screen-only" aria-label="이 질문 학습 방법">
+              <a class="reader-learning-choice is-reading" href="#content-answer">
+                <span>원문 학습</span>
+                <strong>답변 읽기</strong>
+                <small>공식 아카이브의 답변과 근거를 차분히 읽어요.</small>
+              </a>
+              <a class="reader-learning-choice is-quiz" id="content-quiz-link" href="./quiz.html">
+                <span>지식 확인</span>
+                <strong>5문제 풀기</strong>
+                <small>이 질문에서 시작해 검증된 객관식 문제를 풀어요.</small>
+              </a>
+              <a class="reader-learning-choice is-interview" id="content-practice-link" href="./templates.html">
+                <span>말하기 연습</span>
+                <strong>면접 답변하기</strong>
+                <small>직접 답한 뒤 원문과 비교하고 피드백을 받아요.</small>
+              </a>
+            </nav>
+          </header>
+
+          <div class="reader-article-actions reader-utility-actions screen-only" aria-label="읽기 관리 도구">
+            <button type="button" id="content-add-today">오늘 목록에 담기</button>
+            <button type="button" id="content-mark-read" class="reader-primary-button" aria-pressed="false">읽음으로 표시</button>
+            <a id="content-source-link" href="https://github.com/maeil-mail/maeil-mail-contents" target="_blank" rel="noopener noreferrer">GitHub 원문 ↗</a>
+            <button type="button" id="content-print">PDF 미리보기</button>
+          </div>
+
+          <section class="reader-answer-section" id="content-answer" aria-labelledby="content-answer-title">
+            <header class="reader-answer-heading">
+              <p class="reader-kicker">ARCHIVE ANSWER</p>
+              <h2 id="content-answer-title">답변을 읽어보세요</h2>
+              <p>먼저 내 답을 떠올린 다음, 원문의 설명과 비교하면 더 오래 기억할 수 있어요.</p>
+            </header>
+
+            <p class="reader-content-status" id="content-loading" role="status">고정 원문을 불러오는 중입니다.</p>
+            <section class="reader-content-error" id="content-error" hidden aria-live="assertive">
+              <strong>본문을 불러오지 못했습니다.</strong>
+              <p>인터넷 연결을 확인한 뒤 다시 시도하거나 GitHub 원문을 열어 주세요.</p>
+              <div>
+                <button type="button" id="content-retry">다시 시도</button>
+                <a id="content-error-source" href="https://github.com/maeil-mail/maeil-mail-contents" target="_blank" rel="noopener noreferrer">GitHub 원문 열기 ↗</a>
+              </div>
+            </section>
+
+            <div class="reader-article-layout">
+              <div class="reader-markdown-panel">
+                <div class="reader-markdown-heading">
+                  <span id="content-document-name">be-1.md</span>
+                  <span>원문 그대로 읽기</span>
+                </div>
+                <div class="github-markdown-body" id="content-body"></div>
+              </div>
+              <aside class="reader-toc screen-only" id="content-toc-panel" aria-labelledby="content-toc-title" hidden>
+                <h2 id="content-toc-title">이 글의 목차</h2>
+                <nav id="content-toc" aria-label="글 목차"></nav>
+              </aside>
+            </div>
+          </section>
+
+          <section class="reader-practice-callout screen-only" aria-labelledby="reader-practice-title">
+            <div>
+              <p class="reader-kicker">OPTIONAL</p>
+              <h2 id="reader-practice-title">면접 답변으로 정리해 볼까요?</h2>
+              <p>읽은 내용을 말로 정리하고 싶을 때만 시작하세요. 읽기만 마쳐도 괜찮습니다.</p>
+            </div>
+            <a id="content-practice-callout-link" href="./template.html">이 질문으로 면접 답변 연습하기</a>
+          </section>
+
+          <nav class="reader-article-navigation screen-only" aria-label="이전 및 다음 콘텐츠">
+            <a id="content-previous" href="./contents.html">← 이전 글</a>
+            <a id="content-back-list" href="./contents.html">전체 목록</a>
+            <a id="content-next" href="./contents.html">다음 글 →</a>
+          </nav>
+
+          <footer class="reader-print-source print-only">
+            <p>출처: <span id="content-print-source"></span></p>
+          </footer>
+        </article>
+
+        <p class="visually-hidden" id="content-live" aria-live="polite"></p>
+      </main>
+    </div>
+
+    <script type="module" src="./src/content-app.js?v=2"></script>
+  </body>
+</html>

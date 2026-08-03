@@ -39,6 +39,7 @@ export const createEmptyQuestionState = () => ({
   answer: '',
   keywords: '',
   memo: '',
+  sourceCommit: '',
   lastStudiedAt: null,
   updatedAt: null,
 });
@@ -63,6 +64,7 @@ function normalizeQuestionState(candidate) {
     answer: typeof source.answer === 'string' ? source.answer : '',
     keywords: typeof source.keywords === 'string' ? source.keywords : '',
     memo: typeof source.memo === 'string' ? source.memo : '',
+    sourceCommit: typeof source.sourceCommit === 'string' ? source.sourceCommit : '',
     lastStudiedAt: typeof source.lastStudiedAt === 'string' || source.lastStudiedAt === null
       ? source.lastStudiedAt
       : null,

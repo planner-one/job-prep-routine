@@ -1,8 +1,8 @@
 import { writeFile } from 'node:fs/promises';
 
-const SNAPSHOT_COMMIT = '8714ebdea872550df26a92b7846338dbdccf3986';
+const SNAPSHOT_COMMIT = 'd00877afb0a302072078d34ded66b3b69143a5ca';
 const SOURCE_URL = `https://raw.githubusercontent.com/maeil-mail/maeil-mail-contents/${SNAPSHOT_COMMIT}/backend/toc-category.md`;
-const SOURCE_LINK_ROOT = 'https://github.com/maeil-mail/maeil-mail-contents/blob/main/backend/contents';
+const SOURCE_LINK_ROOT = `https://github.com/maeil-mail/maeil-mail-contents/blob/${SNAPSHOT_COMMIT}/backend/contents`;
 const CATEGORY_IDS = new Map([
   ['Spring과 애플리케이션 계층', 'spring-application'],
   ['Persistence와 데이터베이스', 'persistence-database'],
@@ -57,7 +57,7 @@ if (new Set(questions.map(({ id }) => id)).size !== questions.length) {
 const source = {
   repository: 'maeil-mail/maeil-mail-contents',
   snapshotCommit: SNAPSHOT_COMMIT,
-  tocUrl: 'https://github.com/maeil-mail/maeil-mail-contents/blob/main/backend/toc-category.md',
+  tocUrl: `https://github.com/maeil-mail/maeil-mail-contents/blob/${SNAPSHOT_COMMIT}/backend/toc-category.md`,
 };
 const output = `// ${SOURCE_URL}에서 생성한 백엔드 질문 메타데이터입니다.\n`
   + `export const INTERVIEW_SOURCE = Object.freeze(${JSON.stringify(source, null, 2)});\n\n`

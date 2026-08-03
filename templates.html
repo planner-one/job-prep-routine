@@ -5,32 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="백엔드 면접 152문항을 검색하고 오늘의 학습 큐와 학습 상태를 관리하는 페이지">
     <title>백엔드 면접 학습</title>
-    <link rel="stylesheet" href="./assets/routine.css">
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=3">
+    <link rel="stylesheet" href="./assets/interview.css?v=3">
+    <link rel="stylesheet" href="./assets/interview-list.css?v=4">
+    <link rel="stylesheet" href="./assets/learning-lists.css?v=7">
   </head>
-  <body>
-    <div class="app-shell interview-shell">
-      <main class="daily-paper interview-paper" id="templates-page">
-        <header class="daily-header interview-header">
-          <div class="title-block">
-            <p class="eyebrow">BACKEND INTERVIEW</p>
-            <h1>백엔드 면접 학습</h1>
-            <p class="date-line">152문항을 찾고, 오늘 답할 질문에 집중하세요.</p>
-          </div>
-          <div class="interview-header-actions screen-only">
-            <a class="board-link" href="./index.html">홈</a>
-          </div>
-        </header>
+  <body class="interview-body">
+    <div class="interview-app-shell">
+      <header class="app-topbar screen-only">
+        <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈">
+          <img src="./assets/favicon.svg" alt="" width="28" height="28">
+          <span>취업 준비 루틴 보드</span>
+        </a>
+        <nav aria-label="주요 이동">
+          <a href="./roadmap.html">로드맵</a>
+          <a href="./weekly.html">주간</a>
+          <a href="./daily.html">데일리</a>
+          <a href="./history.html">기록</a>
+          <a href="./contents.html" aria-current="page">학습</a>
+        </nav>
+      </header>
 
-        <section class="interview-overview" aria-labelledby="interview-stats-title">
-          <div class="interview-section-heading">
-            <div>
-              <p class="section-kicker">학습 요약</p>
-              <h2 id="interview-stats-title">전체 문항 진행 상태</h2>
+      <main class="interview-page learning-list-page" id="templates-page">
+        <section class="reader-learning-overview interview-dashboard learning-dashboard" aria-label="면접 연습 요약">
+          <header class="reader-hero interview-hero learning-list-hero">
+            <div class="reader-hero-copy interview-hero-copy">
+              <p class="reader-kicker interview-kicker">BACKEND INTERVIEW PRACTICE</p>
+              <h1>면접 답변 연습</h1>
+              <div class="reader-hero-description">
+                <p>질문을 고르고, 내 답변을 다듬어 보세요.</p>
+              </div>
             </div>
-          </div>
-          <div class="interview-stats" id="interview-stats" aria-live="polite">
+            <nav class="reader-mode-switch interview-mode-switch learning-mode-switch screen-only" aria-label="백엔드 학습 방식 선택">
+              <a href="./contents.html">읽기</a>
+              <a href="./quizzes.html">퀴즈</a>
+              <a class="is-active" href="./templates.html" aria-current="page">면접 연습</a>
+            </nav>
+          </header>
+
+          <h2 class="visually-hidden" id="interview-stats-title">나의 답변 준비도</h2>
+          <section class="reader-list-stats interview-stats learning-stats" id="interview-stats" aria-labelledby="interview-stats-title" aria-live="polite">
             <article class="interview-stat-card">
-              <span>전체 문항</span>
+              <span>전체</span>
               <strong data-interview-stat="total">152</strong>
             </article>
             <article class="interview-stat-card interview-stat-card--learning">
@@ -38,70 +55,84 @@
               <strong data-interview-stat="studying">0</strong>
             </article>
             <article class="interview-stat-card interview-stat-card--review">
-              <span>복습 필요</span>
+              <span>복습</span>
               <strong data-interview-stat="review">0</strong>
             </article>
             <article class="interview-stat-card interview-stat-card--complete">
               <span>완료</span>
               <strong data-interview-stat="done">0</strong>
             </article>
-          </div>
+          </section>
         </section>
 
-        <section class="interview-queue" id="interview-queue" aria-labelledby="interview-queue-title">
-          <div class="interview-section-heading">
+        <section class="interview-queue learning-today-section" id="interview-queue" aria-labelledby="interview-queue-title">
+          <div class="interview-section-heading interview-queue-heading learning-section-heading">
             <div>
-              <p class="section-kicker">오늘의 면접 큐</p>
-              <h2 id="interview-queue-title">먼저 답할 다섯 문항</h2>
-              <p>기준일 <time id="interview-queue-date">불러오는 중</time></p>
+              <p class="interview-kicker">TODAY'S PRACTICE</p>
+              <h2 id="interview-queue-title">오늘의 면접 질문</h2>
+              <p>다섯 문항을 한 번에 확인하고 바로 답변합니다. <time id="interview-queue-date">불러오는 중</time></p>
             </div>
           </div>
-          <ol class="interview-queue-list" aria-label="오늘 학습할 면접 문항"></ol>
+          <ol class="interview-queue-list learning-today-list" aria-label="오늘 학습할 면접 문항"></ol>
         </section>
 
-        <section class="interview-catalog" aria-labelledby="interview-catalog-title">
-          <div class="interview-section-heading">
+        <section class="interview-catalog learning-catalog" aria-labelledby="interview-catalog-title">
+          <div class="interview-catalog-heading learning-section-heading learning-catalog-heading">
             <div>
-              <p class="section-kicker">문항 카탈로그</p>
-              <h2 id="interview-catalog-title">조건을 조합해 질문 찾기</h2>
+              <p class="interview-kicker">QUESTION LIBRARY</p>
+              <h2 id="interview-catalog-title">필요한 질문을 찾아 연습하세요</h2>
+              <p>카테고리와 학습 상태를 기준으로 다음 답변을 고를 수 있습니다.</p>
             </div>
           </div>
 
-          <div class="interview-filters screen-only">
-            <div class="interview-filter-field interview-filter-field--search">
-              <label for="interview-search">질문 검색</label>
-              <input type="search" id="interview-search" placeholder="질문·키워드 검색" autocomplete="off">
-            </div>
+          <div class="interview-catalog-layout learning-catalog-layout">
+            <div class="interview-results-area">
+              <div class="interview-catalog-controls screen-only">
+                <div class="interview-filters learning-filters">
+                  <div class="interview-filter-field interview-filter-field--search">
+                    <label for="interview-search">질문 검색</label>
+                    <input type="search" id="interview-search" placeholder="질문·키워드 검색" autocomplete="off">
+                  </div>
+                  <div class="interview-filter-field">
+                    <label for="interview-status-filter">학습 상태</label>
+                    <select id="interview-status-filter">
+                      <option value="all">전체 상태</option>
+                      <option value="unseen">미학습</option>
+                      <option value="studying">학습 중</option>
+                      <option value="review">복습 필요</option>
+                      <option value="done">완료</option>
+                    </select>
+                  </div>
+                  <button type="button" class="interview-filter-toggle" id="interview-favorites-only" aria-pressed="false">★ 즐겨찾기</button>
+                </div>
+              </div>
 
-            <fieldset class="interview-filter-field interview-category-field">
-              <legend>카테고리</legend>
+              <div class="interview-results-heading learning-results-heading">
+                <div>
+                  <p id="interview-results-count" aria-live="polite" aria-atomic="true">전체 152문항</p>
+                  <p id="interview-page-summary" aria-live="polite">1–10번 · 이 페이지 연습 0문항</p>
+                </div>
+                <p class="interview-results-hint">질문을 열면 답변 작성과 원문 비교를 바로 시작할 수 있어요.</p>
+              </div>
+              <ol class="interview-question-list learning-card-grid" id="interview-list"></ol>
+              <p class="interview-empty" id="interview-empty" hidden>선택한 조건에 맞는 문항이 없습니다.</p>
+              <nav class="interview-pagination" id="interview-pagination" aria-label="면접 문항 페이지">
+                <button type="button" class="interview-pagination-control" data-interview-page-action="previous">이전</button>
+                <div class="interview-pagination-pages" id="interview-pagination-pages" aria-label="페이지 번호"></div>
+                <button type="button" class="interview-pagination-control" data-interview-page-action="next">다음</button>
+              </nav>
+            </div>
+            <aside class="reader-category-panel interview-category-panel learning-category-panel learning-category-sidebar screen-only" aria-labelledby="interview-category-title">
+              <h3 id="interview-category-title">카테고리</h3>
               <div class="interview-category-filters" id="interview-category-filters" role="group" aria-label="면접 문항 카테고리"></div>
-            </fieldset>
-
-            <div class="interview-filter-field">
-              <label for="interview-status-filter">학습 상태</label>
-              <select id="interview-status-filter">
-                <option value="all">전체 상태</option>
-                <option value="not-started">시작 전</option>
-                <option value="learning">학습 중</option>
-                <option value="complete">완료</option>
-              </select>
-            </div>
-
-            <button type="button" class="interview-filter-toggle" id="interview-favorites-only" aria-pressed="false">즐겨찾기만 보기</button>
+            </aside>
           </div>
-
-          <div class="interview-results-heading">
-            <p id="interview-results-count" aria-live="polite" aria-atomic="true">전체 152문항</p>
-          </div>
-          <ol class="interview-question-list" id="interview-list"></ol>
-          <p class="interview-empty" id="interview-empty" hidden>선택한 조건에 맞는 문항이 없습니다.</p>
         </section>
 
         <p class="visually-hidden" id="interview-live" aria-live="polite"></p>
       </main>
     </div>
 
-    <script type="module" src="./src/templates-app.js"></script>
+    <script type="module" src="./src/templates-app.js?v=2"></script>
   </body>
 </html>

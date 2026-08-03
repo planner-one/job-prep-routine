@@ -217,8 +217,14 @@ function templatesFixture() {
   const favorite = appendElement(document, filters, 'button', { id: 'interview-favorites-only' });
   favorite.setAttribute('aria-pressed', 'false');
   appendElement(document, root, 'p', { id: 'interview-results-count' });
+  appendElement(document, root, 'p', { id: 'interview-page-summary' });
   appendElement(document, root, 'ol', { id: 'interview-list' });
   appendElement(document, root, 'p', { id: 'interview-empty' }).hidden = true;
+  const pagination = appendElement(document, root, 'nav', { id: 'interview-pagination' });
+  const previous = appendElement(document, pagination, 'button', { data: { interviewPageAction: 'previous' } });
+  previous.disabled = true;
+  appendElement(document, pagination, 'div', { id: 'interview-pagination-pages' });
+  appendElement(document, pagination, 'button', { data: { interviewPageAction: 'next' } });
   appendElement(document, root, 'p', { id: 'interview-live' });
 
   const timers = [];
@@ -317,7 +323,7 @@ test('초기화하면 전체 문항·공식 카테고리·오늘의 다섯 문�
   const categories = document.querySelector('#interview-category-filters').children;
   const queueCards = document.querySelector('.interview-queue-list').children;
 
-  assert.equal(rows.length, 152);
+  assert.equal(rows.length, 14);
   assert.equal(categories.length, 9);
   assert.deepEqual(
     categories.slice(1).map((button) => button.textContent),
@@ -328,6 +334,7 @@ test('초기화하면 전체 문항·공식 카테고리·오늘의 다섯 문�
   assert.equal(document.querySelector('#interview-queue-date').textContent, '2026년 7월 20일');
   assert.equal(document.querySelector('#interview-queue-date').getAttribute('datetime'), DATE);
   assert.match(rows.find((row) => row.dataset.questionId === 'be-5').textContent, /ResponseEntity<T>/u);
+  assert.equal(document.querySelector('#interview-page-summary').textContent, '1–14번 · 1/11페이지 · 이 페이지 연습 0문항');
   assert.equal(storage.json(interviewQueueKey(DATE)).ids.length, 5);
   assert.equal(document.documentElement.dataset.templatesReady, 'true');
 });
@@ -367,6 +374,28 @@ test('검색·카테고리·상태·즐겨찾기 네 필터를 이벤트로 연�
   assert.deepEqual(storage.json(INTERVIEW_STATE_KEY).filters, {
     query: 'redis', categoryId: 'distributed-cache', status: 'review', favoritesOnly: true,
   });
+});
+
+test('문항 목록은 14개씩 페이지를 나누고 현재 페이지의 연습 수를 보여준다', () => {
+  const { document, root } = initFixture({
+    [INTERVIEW_STATE_KEY]: JSON.stringify({
+      version: 1,
+      questions: { 'be-88': { status: 'done' }, 'be-89': { lastStudiedAt: FIXED_NOW.toISOString() } },
+      filters: {},
+    }),
+  });
+  const next = document.querySelector('[data-interview-page-action="next"]');
+
+  root.emit('click', next);
+
+  assert.equal(document.querySelector('#interview-list').children.length, 14);
+  assert.equal(document.querySelector('#interview-list').children[0].dataset.questionId, 'be-88');
+  assert.equal(document.querySelector('#interview-page-summary').textContent, '15–28번 · 2/11페이지 · 이 페이지 연습 2문항');
+  assert.equal(
+    document.querySelector('#interview-pagination-pages').querySelectorAll('button')
+      .find((button) => button.getAttribute('aria-current') === 'page').textContent,
+    '2',
+  );
 });
 
 test('목록 앱은 주입한 시간이 오전 2시 경계를 넘으면 timer에서 reload한다', () => {
@@ -447,10 +476,10 @@ test('카탈로그 직접 추가 성공은 교체 가능한 마지막 문항을 
   const beforeState = app.getState();
   const beforeQueue = app.getQueue();
 
-  root.emit('click', action(root, 'add-queue', 'be-66'));
+  root.emit('click', action(root, 'add-queue', 'be-7'));
 
   assert.equal(app.getQueue().ids.length, 5);
-  assert.equal(app.getQueue().ids.includes('be-66'), true);
+  assert.equal(app.getQueue().ids.includes('be-7'), true);
   assert.equal(app.getQueue().ids.includes(beforeQueue.ids.at(-1)), false);
   assert.deepEqual(app.getState(), beforeState);
   assert.deepEqual(storage.json(interviewQueueKey(DATE)).ids, app.getQueue().ids);
@@ -533,7 +562,7 @@ test('직접 추가가 불가능하면 큐를 유지하고 코어 이유를 live
   const beforeState = app.getState();
   const beforeQueue = app.getQueue();
 
-  root.emit('click', action(root, 'add-queue', 'be-66'));
+  root.emit('click', action(root, 'add-queue', 'be-7'));
 
   assert.deepEqual(app.getState(), beforeState);
   assert.deepEqual(app.getQueue(), beforeQueue);
@@ -605,11 +634,11 @@ test('오늘 완료와 취소 성공 뒤 같은 질문의 완료 버튼으로 �
 
 test('직접 추가 성공 뒤 같은 카탈로그 질문 버튼으로 포커스를 복원한다', () => {
   const { document, root } = initFixture();
-  const add = action(root, 'add-queue', 'be-66');
+  const add = action(root, 'add-queue', 'be-7');
   add.focus();
   root.emit('click', add);
 
-  const rendered = action(root, 'add-queue', 'be-66');
+  const rendered = action(root, 'add-queue', 'be-7');
   assert.equal(document.activeElement === rendered, true);
   assert.equal(rendered.disabled, false);
   assert.equal(rendered.getAttribute('aria-disabled'), 'true');

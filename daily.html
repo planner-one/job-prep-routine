@@ -4,9 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>데일리 포커스 보드</title>
-    <link rel="stylesheet" href="./assets/routine.css">
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=3">
   </head>
   <body>
+    <header class="app-topbar screen-only">
+      <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈">
+        <img src="./assets/favicon.svg" alt="" width="28" height="28">
+        <span>취업 준비 루틴 보드</span>
+      </a>
+      <nav aria-label="주요 이동">
+        <a href="./roadmap.html">로드맵</a>
+        <a href="./weekly.html">주간</a>
+        <a href="./daily.html" aria-current="page">데일리</a>
+        <a href="./history.html">기록</a>
+        <a href="./contents.html">학습</a>
+      </nav>
+    </header>
     <div class="app-shell">
       <main class="daily-paper" id="daily-page">
         <header class="daily-header">

@@ -5,13 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="백엔드 면접 문항별 답변과 학습 상태를 기록하고 인쇄하는 상세 페이지">
     <title>백엔드 면접 문항</title>
-    <link rel="stylesheet" href="./assets/routine.css">
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=3">
+    <link rel="stylesheet" href="./assets/interview.css?v=6">
+    <link rel="stylesheet" href="./assets/interview-ai.css?v=2">
   </head>
-  <body>
-    <div class="app-shell interview-shell">
-      <main class="daily-paper interview-paper" id="template-detail-page">
-        <nav class="interview-back-nav screen-only" aria-label="면접 문항 목록으로 이동">
-          <a class="board-link" href="./templates.html">← 면접 문항 목록</a>
+  <body class="interview-body">
+    <header class="app-topbar screen-only">
+      <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈">
+        <img src="./assets/favicon.svg" alt="" width="28" height="28">
+        <span>취업 준비 루틴 보드</span>
+      </a>
+      <nav aria-label="주요 이동">
+        <a href="./roadmap.html">로드맵</a>
+        <a href="./weekly.html">주간</a>
+        <a href="./daily.html">데일리</a>
+        <a href="./history.html">기록</a>
+        <a href="./contents.html" aria-current="page">학습</a>
+      </nav>
+    </header>
+    <div class="app-shell interview-shell interview-detail-shell">
+      <main class="daily-paper interview-paper interview-detail-paper" id="template-detail-page">
+        <nav class="interview-mode-switch screen-only" aria-label="학습 모드 전환">
+          <a id="detail-reading-link" href="./contents.html">읽기</a>
+          <a id="detail-quiz-link" href="./quiz.html">퀴즈</a>
+          <a class="is-active" href="./templates.html" aria-current="page">면접 연습</a>
         </nav>
 
         <section class="interview-invalid" id="interview-invalid" aria-labelledby="interview-invalid-title" hidden>
@@ -26,68 +44,152 @@
             <div>
               <p class="eyebrow" data-detail-category>카테고리</p>
               <h1 data-detail-question>면접 질문</h1>
-              <p class="date-line" data-detail-position>문항 번호</p>
             </div>
+            <p class="date-line" data-detail-position>문항 번호</p>
           </header>
 
           <div class="interview-detail-controls screen-only">
             <section class="interview-detail-fields" aria-label="면접 문항 학습 기록">
-              <div class="interview-detail-field-grid">
-                <div class="interview-field">
-                  <label for="detail-status">학습 상태</label>
-                  <select id="detail-status">
-                    <option value="not-started">시작 전</option>
-                    <option value="learning">학습 중</option>
-                    <option value="complete">완료</option>
-                  </select>
-                </div>
-                <div class="interview-field">
-                  <label for="detail-confidence">자신감</label>
-                  <select id="detail-confidence">
-                    <option value="0">선택 안 함</option>
-                    <option value="1">1 · 다시 학습 필요</option>
-                    <option value="2">2 · 일부 설명 가능</option>
-                    <option value="3">3 · 핵심 설명 가능</option>
-                    <option value="4">4 · 꼬리 질문 대응 가능</option>
-                    <option value="5">5 · 자신 있게 설명 가능</option>
-                  </select>
-                </div>
-                <div class="interview-toggle-group" role="group" aria-label="문항 표시 설정">
-                  <button type="button" id="detail-favorite" aria-pressed="false">즐겨찾기</button>
-                  <button type="button" id="detail-pinned" aria-pressed="false">오늘의 큐에 고정</button>
+              <div class="interview-step-heading">
+                <span>1</span>
+                <div>
+                  <p class="section-kicker">자가평가</p>
+                  <h2>내 언어로 먼저 답해보세요</h2>
+                  <p>작성 내용은 AI 없이도 이 브라우저에 자동 저장됩니다.</p>
                 </div>
               </div>
 
-              <div class="interview-field">
-                <label for="detail-answer">나의 답변</label>
-                <textarea id="detail-answer" rows="12" placeholder="면접에서 말할 답변을 내 언어로 정리하세요."></textarea>
-              </div>
+              <div class="interview-answer-workspace">
+                <div class="interview-answer-primary">
+                  <div class="interview-field interview-answer-field">
+                    <label for="detail-answer">나의 답변</label>
+                    <textarea id="detail-answer" rows="9" placeholder="면접에서 말할 답변을 내 언어로 정리하세요."></textarea>
+                  </div>
 
-              <div class="interview-field">
-                <label for="detail-keywords">핵심 키워드</label>
-                <input type="text" id="detail-keywords" placeholder="쉼표로 구분해 입력">
-              </div>
+                  <section class="interview-hint-panel" aria-labelledby="detail-hint-title">
+                    <div class="interview-hint-heading">
+                      <div>
+                        <p class="section-kicker">답변 힌트</p>
+                        <h3 id="detail-hint-title">막힐 때만 생각할 순서를 확인하세요</h3>
+                      </div>
+                      <button type="button" id="detail-hint-toggle" aria-expanded="false" aria-controls="detail-hint">힌트 보기</button>
+                    </div>
+                    <div id="detail-hint" hidden>
+                      <p class="interview-hint-note">먼저 아래 순서대로 말해본 뒤, 막히는 부분만 원문 키워드로 확인하세요.</p>
+                      <ol id="detail-hint-outline" class="interview-hint-outline"></ol>
+                      <div class="interview-hint-source">
+                        <button type="button" id="detail-hint-keywords-toggle" aria-expanded="false" aria-controls="detail-hint-keywords">원문 키워드 더 보기</button>
+                        <div id="detail-hint-keywords" hidden>
+                          <p id="detail-hint-keywords-status" role="status">원문 키워드는 아직 열지 않았습니다.</p>
+                          <ul id="detail-hint-keywords-list"></ul>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
 
-              <div class="interview-field">
-                <label for="detail-memo">복기 메모</label>
-                <textarea id="detail-memo" rows="6" placeholder="놓친 내용과 다음에 확인할 점을 기록하세요."></textarea>
+                <aside class="interview-answer-sidebar" aria-label="답변 학습 정보">
+                  <div class="interview-detail-field-grid">
+                    <div class="interview-field">
+                      <label for="detail-status">학습 상태</label>
+                      <select id="detail-status">
+                        <option value="not-started">시작 전</option>
+                        <option value="learning">학습 중</option>
+                        <option value="complete">완료</option>
+                      </select>
+                    </div>
+                    <div class="interview-field">
+                      <label for="detail-confidence">자신감</label>
+                      <select id="detail-confidence">
+                        <option value="0">선택 안 함</option>
+                        <option value="1">1 · 다시 학습 필요</option>
+                        <option value="2">2 · 일부 설명 가능</option>
+                        <option value="3">3 · 핵심 설명 가능</option>
+                        <option value="4">4 · 꼬리 질문 대응 가능</option>
+                        <option value="5">5 · 자신 있게 설명 가능</option>
+                      </select>
+                    </div>
+                    <div class="interview-toggle-group" role="group" aria-label="문항 표시 설정">
+                      <button type="button" id="detail-favorite" aria-pressed="false">즐겨찾기</button>
+                      <button type="button" id="detail-pinned" aria-pressed="false">오늘의 큐에 고정</button>
+                    </div>
+                  </div>
+
+                  <div class="interview-field">
+                    <label for="detail-keywords">핵심 키워드</label>
+                    <input type="text" id="detail-keywords" placeholder="쉼표로 구분해 입력">
+                  </div>
+
+                  <div class="interview-field">
+                    <label for="detail-memo">복기 메모</label>
+                    <textarea id="detail-memo" rows="4" placeholder="놓친 내용과 다음에 확인할 점"></textarea>
+                  </div>
+                </aside>
               </div>
             </section>
+
+            <section class="interview-reference-panel" aria-labelledby="detail-reference-title">
+              <div class="interview-step-heading">
+                <span>2</span>
+                <div>
+                  <p class="section-kicker">원문 비교</p>
+                  <h2 id="detail-reference-title">내 답변을 작성한 뒤 원문을 확인하세요</h2>
+                  <p>답변을 작성한 뒤 필요한 경우에만 펼쳐보세요.</p>
+                </div>
+              </div>
+              <button type="button" class="board-link interview-reference-toggle" id="detail-reveal-reference" aria-expanded="false" aria-controls="detail-reference">원문 답안과 비교하기</button>
+              <div class="interview-reference" id="detail-reference" hidden>
+                <p id="detail-reference-status" role="status">원문을 불러오는 중입니다.</p>
+                <article class="github-markdown-body" id="detail-reference-body"></article>
+              </div>
+            </section>
+
+            <details class="interview-ai-panel" aria-labelledby="detail-ai-title">
+              <summary class="interview-ai-summary">
+                <span class="interview-ai-label">선택 기능</span>
+                <strong id="detail-ai-title">AI 평가와 피드백</strong>
+                <span class="interview-ai-health" id="detail-ai-health">상태 확인 전</span>
+                <span class="interview-ai-open-label">설정·평가 열기</span>
+              </summary>
+              <div class="interview-ai-content">
+                <p class="interview-ai-description"><code>qwen3:14b</code>가 원문을 근거로 답변을 평가합니다. 사용하지 않아도 답변 저장과 자기평가는 정상 동작합니다.</p>
+                <div class="interview-ai-actions">
+                  <button type="button" class="pdf-button" id="detail-ai-evaluate" aria-describedby="detail-ai-status">내 답변 AI 평가하기</button>
+                </div>
+                <p class="interview-ai-status" id="detail-ai-status" role="status">AI 평가는 선택입니다.</p>
+                <details class="interview-ai-setup" id="detail-ai-setup" hidden>
+                  <summary>Ollama 설정 방법 보기</summary>
+                  <div class="interview-ai-setup-body">
+                    <strong>로컬 AI 사용 준비</strong>
+                    <a href="https://ollama.com/download" target="_blank" rel="noopener noreferrer">Ollama 공식 설치 페이지 열기 ↗</a>
+                    <code>ollama serve</code>
+                    <code>ollama pull qwen3:14b</code>
+                    <p>설치 후 앱을 실행하고 모델을 받은 다음 다시 평가하세요.</p>
+                  </div>
+                </details>
+                <div class="interview-ai-result" id="detail-ai-result" hidden></div>
+              </div>
+            </details>
 
             <section class="interview-detail-meta" aria-label="문항 학습 정보와 출처">
               <p>마지막 학습일 <time id="detail-last-studied">아직 학습하지 않음</time></p>
               <button type="button" class="interview-complete-today" aria-pressed="false">오늘 학습 완료</button>
-              <a class="interview-source-link" href="https://github.com/ksundong/backend-interview-question" target="_blank" rel="noopener noreferrer">GitHub 원문 출처 열기</a>
+              <a class="interview-source-link" href="./content.html">이 질문 원문 상세보기 →</a>
             </section>
 
-            <nav class="interview-detail-navigation" aria-label="이전 및 다음 면접 문항">
-              <button type="button" class="board-link" data-detail-previous>← 이전 문항</button>
-              <button type="button" class="board-link" data-detail-next>다음 문항 →</button>
-            </nav>
+            <div class="interview-detail-footer">
+              <nav class="interview-detail-navigation interview-detail-navigation--previous" aria-label="이전 면접 문항">
+                <button type="button" class="board-link" data-detail-previous>← 이전 문항</button>
+              </nav>
 
-            <div class="interview-detail-actions">
-              <button type="button" class="pdf-button" data-detail-pdf>PDF 미리보기</button>
-              <button type="button" class="reset-button interview-reset" data-detail-reset>현재 질문 초기화</button>
+              <div class="interview-detail-actions">
+                <button type="button" class="reset-button interview-reset" data-detail-reset>현재 질문 초기화</button>
+                <button type="button" class="pdf-button" data-detail-pdf>PDF 미리보기</button>
+              </div>
+
+              <nav class="interview-detail-navigation interview-detail-navigation--next" aria-label="다음 면접 문항">
+                <button type="button" class="board-link" data-detail-next>다음 문항 →</button>
+              </nav>
             </div>
           </div>
 
@@ -99,6 +201,6 @@
       </main>
     </div>
 
-    <script type="module" src="./src/template-detail-app.js"></script>
+    <script type="module" src="./src/template-detail-app.js?v=4"></script>
   </body>
 </html>

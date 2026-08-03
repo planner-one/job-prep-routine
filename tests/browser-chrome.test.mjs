@@ -64,6 +64,7 @@ test('모든 브라우저 회귀 테스트는 공통 Chrome resolver만 사용�
     'daily-browser.test.mjs',
     'interview-browser.test.mjs',
     'roadmap-browser.test.mjs',
+    'study-history-browser.test.mjs',
     'weekly-browser.test.mjs',
   ]);
 

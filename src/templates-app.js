@@ -38,6 +38,7 @@ const STATUS_FILTERS = Object.freeze([
   ['done', '완료'],
 ]);
 const STORAGE_ERROR_MESSAGE = '저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';
+const INTERVIEW_PAGE_SIZE = 14;
 
 function find(root, selector) {
   if (!root) return null;
@@ -63,9 +64,10 @@ function appendTextElement(document, parent, tagName, className, text) {
   return element;
 }
 
-function actionButton(document, action, id, text) {
+function actionButton(document, action, id, text, className = '') {
   const button = document.createElement('button');
   button.type = 'button';
+  if (className) button.className = className;
   button.dataset.interviewAction = action;
   button.dataset.questionId = id;
   button.textContent = text;
@@ -101,6 +103,79 @@ export function renderInterviewStats(root, stats) {
   setText(root, '[data-interview-stat="done"]', stats.done ?? 0);
 }
 
+export function paginateInterviewQuestions(questions, page = 1, pageSize = INTERVIEW_PAGE_SIZE) {
+  const total = questions.length;
+  const normalizedPageSize = Math.max(1, Number.parseInt(pageSize, 10) || INTERVIEW_PAGE_SIZE);
+  const pageCount = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const normalizedPage = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pageCount);
+  const from = total === 0 ? 0 : ((normalizedPage - 1) * normalizedPageSize) + 1;
+  const to = Math.min(normalizedPage * normalizedPageSize, total);
+
+  return {
+    items: questions.slice(from - 1, to),
+    page: normalizedPage,
+    pageCount,
+    pageSize: normalizedPageSize,
+    total,
+    from,
+    to,
+  };
+}
+
+function practicedQuestionCount(questions, state) {
+  return questions.filter((question) => {
+    const saved = questionStateFor(state, question.id);
+    return saved.status !== 'unseen' || Boolean(saved.lastStudiedAt) || Boolean(saved.answer?.trim());
+  }).length;
+}
+
+function paginationWindow(page, pageCount) {
+  return [...new Set([
+    1,
+    pageCount,
+    page - 2,
+    page - 1,
+    page,
+    page + 1,
+    page + 2,
+  ].filter((pageNumber) => pageNumber >= 1 && pageNumber <= pageCount))]
+    .sort((left, right) => left - right);
+}
+
+function renderInterviewPagination(root, pagination) {
+  const navigation = find(root, '#interview-pagination');
+  if (!navigation) return;
+  const document = documentFor(navigation);
+  const previous = navigation.querySelector?.('[data-interview-page-action="previous"]');
+  const next = navigation.querySelector?.('[data-interview-page-action="next"]');
+  const pages = find(navigation, '#interview-pagination-pages');
+  navigation.hidden = pagination.total === 0;
+  if (previous) previous.disabled = pagination.page <= 1;
+  if (next) next.disabled = pagination.page >= pagination.pageCount;
+  if (!pages) return;
+
+  pages.replaceChildren();
+  let previousPage = 0;
+  for (const page of paginationWindow(pagination.page, pagination.pageCount)) {
+    if (page - previousPage > 1) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'interview-pagination-ellipsis';
+      ellipsis.setAttribute('aria-hidden', 'true');
+      ellipsis.textContent = '…';
+      pages.append(ellipsis);
+    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'interview-page-button';
+    button.dataset.interviewPage = String(page);
+    button.textContent = String(page);
+    button.setAttribute('aria-label', `${page}페이지`);
+    if (page === pagination.page) button.setAttribute('aria-current', 'page');
+    pages.append(button);
+    previousPage = page;
+  }
+}
+
 export function renderInterviewQueue(root, context) {
   const list = find(root, '.interview-queue-list');
   if (!list) return [];
@@ -109,7 +184,7 @@ export function renderInterviewQueue(root, context) {
   const completed = new Set(queue.completedIds);
   list.replaceChildren();
 
-  for (const id of queue.ids) {
+  for (const [index, id] of queue.ids.entries()) {
     const question = getInterviewQuestion(id);
     if (!question) continue;
     const saved = questionStateFor(state, id);
@@ -117,32 +192,60 @@ export function renderInterviewQueue(root, context) {
     const card = document.createElement('li');
     card.className = 'interview-queue-card';
     card.dataset.questionId = id;
+    card.dataset.status = saved.status;
+    if (index === 0) card.classList.add('interview-queue-card--primary');
     if (isCompleted) card.classList.add('interview-queue-card--completed');
 
-    appendTextElement(document, card, 'p', 'interview-queue-category', question.category);
-    card.append(detailLink(document, question));
-    appendTextElement(document, card, 'p', 'interview-queue-status', statusLabel(saved.status));
+    const intro = document.createElement('div');
+    intro.className = 'interview-queue-card-intro';
+    appendTextElement(
+      document,
+      intro,
+      'p',
+      'interview-queue-order',
+      index === 0 ? '첫 번째 질문' : `${index + 1}번째 질문`,
+    );
+    appendTextElement(document, intro, 'p', 'interview-queue-category', question.category);
+    card.append(intro);
+
+    const body = document.createElement('div');
+    body.className = 'interview-queue-card-body';
+    body.append(detailLink(document, question));
+    appendTextElement(document, body, 'span', 'interview-status-badge', statusLabel(saved.status));
+    card.append(body);
 
     const actions = document.createElement('div');
     actions.className = 'interview-queue-actions';
+    const start = detailLink(document, question);
+    start.classList.add('interview-queue-start');
+    start.textContent = isCompleted ? '답변 다시 보기' : '답변 시작하기';
     const pin = actionButton(
       document,
       'toggle-pin',
       id,
       saved.queuePinned ? '고정 취소' : '오늘의 큐 고정',
+      'interview-queue-action',
     );
     pin.setAttribute('aria-pressed', String(Boolean(saved.queuePinned)));
-    const replace = actionButton(document, 'replace-queue', id, '교체');
+    const replace = actionButton(document, 'replace-queue', id, '다른 질문', 'interview-queue-action');
     replace.disabled = Boolean(saved.queuePinned) || isCompleted;
     const complete = actionButton(
       document,
       'toggle-complete',
       id,
       isCompleted ? '오늘 완료 취소' : '오늘 완료',
+      'interview-complete-today',
     );
-    complete.className = 'interview-complete-today';
     complete.setAttribute('aria-pressed', String(isCompleted));
-    actions.append(pin, replace, complete);
+    const management = document.createElement('details');
+    management.className = 'interview-queue-management';
+    const managementSummary = document.createElement('summary');
+    managementSummary.textContent = '관리';
+    const managementMenu = document.createElement('div');
+    managementMenu.className = 'interview-queue-management-menu';
+    managementMenu.append(pin, replace);
+    management.append(managementSummary, managementMenu);
+    actions.append(start, complete, management);
     card.append(actions);
     list.append(card);
   }
@@ -174,48 +277,48 @@ export function renderInterviewList(root, context) {
   const filters = context.filters ?? state?.filters;
   const queueIds = new Set(context.queue?.ids ?? []);
   const filtered = filterInterviewQuestions(questions, state, filters);
+  const pagination = paginateInterviewQuestions(filtered, context.page, context.pageSize);
   list.replaceChildren();
 
-  for (const question of filtered) {
+  for (const question of pagination.items) {
     const saved = questionStateFor(state, question.id);
     const row = document.createElement('li');
     row.className = 'interview-question-row';
     row.dataset.questionId = question.id;
-    appendTextElement(document, row, 'span', 'interview-question-number', `${question.number}`);
+    row.dataset.status = saved.status;
+    if (saved.favorite) row.dataset.favorite = 'true';
+    appendTextElement(document, row, 'span', 'interview-question-number', `Q${question.number}`);
 
     const body = document.createElement('div');
     body.className = 'interview-question-body';
+    appendTextElement(document, body, 'span', 'interview-question-category', question.category);
     body.append(detailLink(document, question));
     const meta = document.createElement('p');
     meta.className = 'interview-question-meta';
-    appendTextElement(document, meta, 'span', '', question.category);
-    appendTextElement(document, meta, 'span', '', statusLabel(saved.status));
-    appendTextElement(
-      document,
-      meta,
-      'span',
-      '',
-      saved.confidence > 0 ? `${saved.confidence} / 5` : '미선택',
-    );
-    appendTextElement(
-      document,
-      meta,
-      'span',
-      'interview-favorite-indicator',
-      saved.favorite ? '★ 즐겨찾기' : '☆ 즐겨찾기 아님',
-    );
+    appendTextElement(document, meta, 'span', `interview-status-badge interview-status-badge--${saved.status}`, statusLabel(saved.status));
+    if (saved.confidence > 0) {
+      appendTextElement(document, meta, 'span', 'interview-confidence', `자신감 ${saved.confidence} / 5`);
+    }
+    if (saved.favorite) appendTextElement(document, meta, 'span', 'interview-favorite-indicator', '★ 즐겨찾기');
     body.append(meta);
     row.append(body);
 
+    const actions = document.createElement('div');
+    actions.className = 'interview-question-actions';
+    const start = detailLink(document, question);
+    start.classList.add('interview-question-start');
+    start.textContent = '답변 시작';
     const isQueued = queueIds.has(question.id);
     const add = actionButton(
       document,
       'add-queue',
       question.id,
       isQueued ? '오늘의 큐에 있음' : '오늘의 큐에 추가',
+      'interview-add-queue',
     );
     add.setAttribute('aria-disabled', String(isQueued));
-    row.append(add);
+    actions.append(start, add);
+    row.append(actions);
     list.append(row);
   }
 
@@ -232,7 +335,15 @@ export function renderInterviewList(root, context) {
     '#interview-results-count',
     hasFilters ? `조건에 맞는 ${filtered.length}문항` : `전체 ${filtered.length}문항`,
   );
-  return filtered;
+  const practicedCount = practicedQuestionCount(pagination.items, state);
+  const range = pagination.total === 0 ? '표시할 문항 없음' : `${pagination.from}–${pagination.to}번`;
+  setText(
+    root,
+    '#interview-page-summary',
+    `${range} · ${pagination.page}/${pagination.pageCount}페이지 · 이 페이지 연습 ${practicedCount}문항`,
+  );
+  renderInterviewPagination(root, pagination);
+  return pagination;
 }
 
 function renderCategoryFilters(root, categories, selectedId, total) {
@@ -327,6 +438,7 @@ export function initTemplatesPage(root = document, options = {}) {
     now(),
     () => { startupMessage = STORAGE_ERROR_MESSAGE; },
   );
+  let currentPage = 1;
 
   const queueBeforePinnedSync = queue;
   let pinnedSyncFailed = false;
@@ -374,13 +486,26 @@ export function initTemplatesPage(root = document, options = {}) {
   function renderAll() {
     renderInterviewStats(page, stats());
     renderInterviewQueue(page, { queue, state });
-    renderInterviewList(page, {
+    const pagination = renderInterviewList(page, {
       questions: INTERVIEW_QUESTIONS,
       queue,
       state,
       filters: state.filters,
+      page: currentPage,
     });
+    currentPage = pagination.page;
     renderFilters();
+  }
+
+  function renderList() {
+    const pagination = renderInterviewList(page, {
+      questions: INTERVIEW_QUESTIONS,
+      queue,
+      state,
+      filters: state.filters,
+      page: currentPage,
+    });
+    currentPage = pagination.page;
   }
 
   function persistFilters(nextFilters) {
@@ -392,12 +517,8 @@ export function initTemplatesPage(root = document, options = {}) {
       state = candidate;
       notify(STORAGE_ERROR_MESSAGE);
     }
-    renderInterviewList(page, {
-      questions: INTERVIEW_QUESTIONS,
-      queue,
-      state,
-      filters: state.filters,
-    });
+    currentPage = 1;
+    renderList();
     renderFilters();
   }
 
@@ -465,6 +586,7 @@ export function initTemplatesPage(root = document, options = {}) {
           && candidate.dataset.questionId === descriptor.questionId
         )) ?? null;
     }
+    target?.closest?.('.interview-queue-management')?.setAttribute('open', '');
     target?.focus?.();
   }
 
@@ -537,6 +659,21 @@ export function initTemplatesPage(root = document, options = {}) {
     const favorites = event.target.closest?.('#interview-favorites-only');
     if (favorites && page.contains(favorites)) {
       persistFilters({ ...state.filters, favoritesOnly: !state.filters.favoritesOnly });
+      return;
+    }
+    const requestedPage = event.target.closest?.('[data-interview-page]');
+    if (requestedPage && page.contains(requestedPage)) {
+      currentPage = Number.parseInt(requestedPage.dataset.interviewPage, 10) || 1;
+      renderList();
+      requestedPage.focus?.();
+      return;
+    }
+    const paginationAction = event.target.closest?.('[data-interview-page-action]');
+    if (paginationAction && page.contains(paginationAction) && !paginationAction.disabled) {
+      currentPage += paginationAction.dataset.interviewPageAction === 'next' ? 1 : -1;
+      renderList();
+      const selector = `[data-interview-page-action="${paginationAction.dataset.interviewPageAction}"]`;
+      find(page, '#interview-pagination')?.querySelector?.(selector)?.focus?.();
     }
   }
 

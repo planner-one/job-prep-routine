@@ -9,7 +9,7 @@ import {
 } from '../src/interview-data.js';
 
 test('공식 백엔드 152문항과 8개 카테고리를 원본 순서로 제공한다', () => {
-  assert.equal(INTERVIEW_SOURCE.snapshotCommit, '8714ebdea872550df26a92b7846338dbdccf3986');
+  assert.equal(INTERVIEW_SOURCE.snapshotCommit, 'd00877afb0a302072078d34ded66b3b69143a5ca');
   assert.equal(INTERVIEW_CATEGORIES.length, 8);
   assert.equal(INTERVIEW_QUESTIONS.length, 152);
   assert.deepEqual(
@@ -36,7 +36,7 @@ test('질문 ID·제목·카테고리·출처가 모두 유효하고 고유하�
     assert.equal(categoryIds.has(question.categoryId), true);
     assert.equal(
       question.sourceUrl,
-      `https://github.com/maeil-mail/maeil-mail-contents/blob/main/backend/contents/${question.id}.md`,
+      `https://github.com/maeil-mail/maeil-mail-contents/blob/${INTERVIEW_SOURCE.snapshotCommit}/backend/contents/${question.id}.md`,
     );
     assert.equal(getInterviewQuestion(question.id), question);
   }
