@@ -2,10 +2,11 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>주간 실행 보드</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
-    <link rel="stylesheet" href="./assets/routine.css?v=9">
+    <link rel="stylesheet" href="./assets/site-shell.css?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=11">
   </head>
   <body>
     <header class="app-topbar screen-only">
@@ -14,9 +15,10 @@
         <span>취업 준비 루틴 보드</span>
       </a>
       <nav aria-label="주요 이동">
-        <a href="./roadmap.html">로드맵</a>
+        <a href="./index.html">오늘</a>
         <a href="./weekly.html" aria-current="page">주간</a>
-        <a href="./daily.html">데일리</a>
+        <a href="./interview/">면접</a>
+        <a href="./roadmap.html">로드맵</a>
         <a href="./history.html">기록</a>
       </nav>
     </header>
@@ -36,7 +38,67 @@
           </div>
         </header>
 
-        <section class="weekly-progress-grid" id="weekly-progress" aria-labelledby="weekly-progress-title" aria-live="polite">
+        <nav class="weekday-tabs weekly-primary-flow screen-only" id="weekday-tabs" role="tablist" aria-label="요일 선택">
+          <button type="button" role="tab" id="weekday-tab-mon" aria-controls="day-detail" aria-selected="true" data-day="mon">월<span data-day-badge>운동</span></button>
+          <button type="button" role="tab" id="weekday-tab-tue" aria-controls="day-detail" aria-selected="false" data-day="tue">화<span data-day-badge>실행</span></button>
+          <button type="button" role="tab" id="weekday-tab-wed" aria-controls="day-detail" aria-selected="false" data-day="wed">수<span data-day-badge>러닝</span></button>
+          <button type="button" role="tab" id="weekday-tab-thu" aria-controls="day-detail" aria-selected="false" data-day="thu">목<span data-day-badge>운동</span></button>
+          <button type="button" role="tab" id="weekday-tab-fri" aria-controls="day-detail" aria-selected="false" data-day="fri">금<span data-day-badge>실행</span></button>
+          <button type="button" role="tab" id="weekday-tab-sat" aria-controls="day-detail" aria-selected="false" data-day="sat">토<span data-day-badge>운동</span></button>
+          <button type="button" role="tab" id="weekday-tab-sun" aria-controls="day-detail" aria-selected="false" data-day="sun">일<span data-day-badge>유지</span></button>
+        </nav>
+
+        <section class="weekly-detail-card page-primary" id="day-detail" role="tabpanel" aria-labelledby="weekday-tab-mon" tabindex="0">
+          <header class="weekly-detail-header">
+            <div>
+              <p class="section-kicker" id="selected-day-role">실행일</p>
+              <h2 id="selected-day-title">월요일 실행</h2>
+              <p class="weekly-selected-date" id="selected-day-date"></p>
+            </div>
+          </header>
+
+          <details class="weekly-settings screen-only">
+            <summary>요일 설정</summary>
+            <div class="weekly-detail-toolbar" id="execution-day-controls">
+              <div class="weekly-mode-buttons" id="weekly-mode-controls" role="group" aria-label="선택 요일 모드">
+                <button type="button" data-weekly-mode="workout" aria-pressed="true">운동일</button>
+                <button type="button" data-weekly-mode="normal" aria-pressed="false">비운동일</button>
+                <button type="button" data-weekly-mode="running" aria-pressed="false">러닝일</button>
+              </div>
+              <fieldset class="run-picker" id="weekly-run-start-controls" hidden>
+                <legend>러닝 시작</legend>
+                <label><input type="radio" name="weekly-run-start" value="21" checked> 21시</label>
+                <label><input type="radio" name="weekly-run-start" value="22"> 22시</label>
+              </fieldset>
+            </div>
+            <div class="weekly-setting-actions">
+              <button type="button" class="maintenance-button" id="set-maintenance-day">이 요일을 핵심 유지일로</button>
+              <button type="button" id="weekly-time-edit" aria-pressed="false">시간 편집</button>
+            </div>
+          </details>
+
+          <section class="weekly-planner" aria-labelledby="weekly-planner-title">
+            <header class="weekly-planner-header">
+              <div>
+                <p class="section-kicker">선택하고 순서를 정하는 이번 주 계획</p>
+                <h3 id="weekly-planner-title">월요일 일정</h3>
+              </div>
+              <div class="weekly-planner-actions screen-only">
+                <button type="button" id="weekly-add-plan" aria-expanded="false" aria-controls="weekly-add-panel">일정 추가</button>
+              </div>
+            </header>
+            <section id="weekly-add-panel" class="weekly-add-panel screen-only" hidden></section>
+            <p id="weekly-plan-status" class="visually-hidden" aria-live="polite"></p>
+            <ol id="weekly-plan-list" class="weekly-plan-list"></ol>
+            <section id="weekly-unscheduled" class="weekly-unscheduled" hidden>
+              <h4>미배치 일정 <span id="weekly-unscheduled-count">0</span></h4>
+              <p>시간이 부족해 배치되지 않은 일정이 있습니다.</p>
+              <ol id="weekly-unscheduled-list"></ol>
+            </section>
+          </section>
+        </section>
+
+        <section class="weekly-progress-grid page-secondary" id="weekly-progress" aria-labelledby="weekly-progress-title" aria-live="polite">
           <h2 class="visually-hidden" id="weekly-progress-title">주간 목표와 진척</h2>
 
           <article class="weekly-progress-card weekly-progress-card--application" data-weekly-progress="applications">
@@ -78,65 +140,17 @@
               <div><dt>저녁 러닝</dt><dd id="weekly-runs-value">0 / 1–2회</dd></div>
             </dl>
           </article>
-
-        </section>
-
-        <nav class="weekday-tabs screen-only" id="weekday-tabs" role="tablist" aria-label="요일 선택">
-          <button type="button" role="tab" id="weekday-tab-mon" aria-controls="day-detail" aria-selected="true" data-day="mon">월<span data-day-badge>운동</span></button>
-          <button type="button" role="tab" id="weekday-tab-tue" aria-controls="day-detail" aria-selected="false" data-day="tue">화<span data-day-badge>실행</span></button>
-          <button type="button" role="tab" id="weekday-tab-wed" aria-controls="day-detail" aria-selected="false" data-day="wed">수<span data-day-badge>러닝</span></button>
-          <button type="button" role="tab" id="weekday-tab-thu" aria-controls="day-detail" aria-selected="false" data-day="thu">목<span data-day-badge>운동</span></button>
-          <button type="button" role="tab" id="weekday-tab-fri" aria-controls="day-detail" aria-selected="false" data-day="fri">금<span data-day-badge>실행</span></button>
-          <button type="button" role="tab" id="weekday-tab-sat" aria-controls="day-detail" aria-selected="false" data-day="sat">토<span data-day-badge>운동</span></button>
-          <button type="button" role="tab" id="weekday-tab-sun" aria-controls="day-detail" aria-selected="false" data-day="sun">일<span data-day-badge>유지</span></button>
-        </nav>
-
-        <section class="weekly-detail-card" id="day-detail" role="tabpanel" aria-labelledby="weekday-tab-mon" tabindex="0">
-          <header class="weekly-detail-header">
-            <div>
-              <p class="section-kicker" id="selected-day-role">실행일</p>
-              <h2 id="selected-day-title">월요일 실행</h2>
-              <p class="weekly-selected-date" id="selected-day-date"></p>
-            </div>
-            <button type="button" class="maintenance-button screen-only" id="set-maintenance-day">이 요일을 핵심 유지일로</button>
-          </header>
-
-          <div class="weekly-detail-toolbar screen-only" id="execution-day-controls">
-            <div class="weekly-mode-buttons" id="weekly-mode-controls" role="group" aria-label="선택 요일 모드">
-              <button type="button" data-weekly-mode="workout" aria-pressed="true">운동일</button>
-              <button type="button" data-weekly-mode="normal" aria-pressed="false">비운동일</button>
-              <button type="button" data-weekly-mode="running" aria-pressed="false">러닝일</button>
-            </div>
-            <fieldset class="run-picker" id="weekly-run-start-controls" hidden>
-              <legend>러닝 시작</legend>
-              <label><input type="radio" name="weekly-run-start" value="21" checked> 21시</label>
-              <label><input type="radio" name="weekly-run-start" value="22"> 22시</label>
-            </fieldset>
-          </div>
-
-          <section class="weekly-planner" aria-labelledby="weekly-planner-title">
-            <header class="weekly-planner-header">
-              <div>
-                <p class="section-kicker">선택하고 순서를 정하는 이번 주 계획</p>
-                <h3 id="weekly-planner-title">월요일 일정</h3>
-              </div>
-              <div class="weekly-planner-actions screen-only">
-                <button type="button" id="weekly-add-plan" aria-expanded="false" aria-controls="weekly-add-panel">일정 추가</button>
-                <button type="button" id="weekly-time-edit" aria-pressed="false">시간 편집</button>
-              </div>
-            </header>
-            <section id="weekly-add-panel" class="weekly-add-panel screen-only" hidden></section>
-            <p id="weekly-plan-status" class="visually-hidden" aria-live="polite"></p>
-            <ol id="weekly-plan-list" class="weekly-plan-list"></ol>
-            <section id="weekly-unscheduled" class="weekly-unscheduled" hidden>
-              <h4>미배치 일정 <span id="weekly-unscheduled-count">0</span></h4>
-              <p>시간이 부족해 배치되지 않은 일정이 있습니다.</p>
-              <ol id="weekly-unscheduled-list"></ol>
-            </section>
-          </section>
         </section>
       </main>
     </div>
+
+    <nav class="mobile-tabbar screen-only" aria-label="모바일 주요 이동">
+      <a href="./index.html">오늘</a>
+      <a href="./weekly.html" aria-current="page">주간</a>
+      <a href="./interview/">면접</a>
+      <a href="./roadmap.html">로드맵</a>
+      <a href="./history.html">기록</a>
+    </nav>
 
     <script type="module" src="./src/weekly-app.js"></script>
   </body>

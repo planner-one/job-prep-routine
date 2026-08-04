@@ -7,6 +7,7 @@ import {
   logicalDateString,
   scheduleLogicalDayRollover,
 } from './routine-core.js';
+import { loadUiPreferences, saveUiPreferences } from './ui-preferences.js';
 
 const MODE_LABELS = {
   workout: '운동일',
@@ -282,7 +283,7 @@ function setPressedPeriod(root, period) {
 export function initHistoryPage(pageDocument, storage, date = logicalDateString()) {
   const root = pageDocument.getElementById('history-page');
   if (!root) return null;
-  let period = 7;
+  let period = loadUiPreferences(storage).history.period;
   const view = pageDocument.defaultView;
 
   const dateElement = root.querySelector('#history-current-date');
@@ -304,6 +305,7 @@ export function initHistoryPage(pageDocument, storage, date = logicalDateString(
     const periodButton = event.target.closest?.('[data-history-period]');
     if (periodButton && root.contains(periodButton)) {
       period = Number(periodButton.dataset.historyPeriod) === 30 ? 30 : 7;
+      saveUiPreferences(storage, { history: { period } });
       render();
       return;
     }

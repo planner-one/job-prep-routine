@@ -37,9 +37,18 @@ test('선택 요일은 중복 체크리스트 없이 하나의 세로 플래너�
   assert.doesNotMatch(html, /weekly-checklist-column|weekly-schedule-column/);
 });
 
-test('목록 상단 오른쪽에 일정 추가와 시간 편집을 둔다', () => {
+test('일정 추가는 목록의 주요 행동으로 두고 시간 편집은 요일 설정에 묶는다', () => {
   const header = html.match(/<header class="weekly-planner-header"[\s\S]*?<\/header>/)?.[0] ?? '';
-  assert.match(header, /id="weekly-add-plan"[\s\S]*id="weekly-time-edit"/);
+  const settings = html.match(/<details class="weekly-settings[\s\S]*?<\/details>/)?.[0] ?? '';
+  assert.match(header, /id="weekly-add-plan"/);
+  assert.doesNotMatch(header, /id="weekly-time-edit"/);
+  assert.match(settings, /<summary>요일 설정<\/summary>/);
+  assert.match(settings, /id="weekly-mode-controls"[\s\S]*id="set-maintenance-day"[\s\S]*id="weekly-time-edit"/);
+});
+
+test('요일과 선택 일정은 주간 진척보다 먼저 제공한다', () => {
+  assert.ok(html.indexOf('id="weekday-tabs"') < html.indexOf('id="day-detail"'));
+  assert.ok(html.indexOf('id="day-detail"') < html.indexOf('id="weekly-progress"'));
 });
 
 test('PDF 미리보기는 상단 조작의 마지막이며 화면 문구에 물결표를 쓰지 않는다', () => {

@@ -2,10 +2,11 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>취업 준비 운영 로드맵</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
-    <link rel="stylesheet" href="./assets/routine.css?v=9">
+    <link rel="stylesheet" href="./assets/site-shell.css?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=11">
   </head>
   <body>
     <header class="app-topbar screen-only">
@@ -14,9 +15,10 @@
         <span>취업 준비 루틴 보드</span>
       </a>
       <nav aria-label="주요 이동">
-        <a href="./roadmap.html" aria-current="page">로드맵</a>
+        <a href="./index.html">오늘</a>
         <a href="./weekly.html">주간</a>
-        <a href="./daily.html">데일리</a>
+        <a href="./interview/">면접</a>
+        <a href="./roadmap.html" aria-current="page">로드맵</a>
         <a href="./history.html">기록</a>
       </nav>
     </header>
@@ -32,24 +34,10 @@
           <div class="roadmap-actions screen-only">
             <a class="board-link" href="./index.html">홈</a>
             <a class="board-link" href="./daily.html">데일리 포커스</a>
-            <a class="pdf-button" href="./output/pdf/취업준비-운영-로드맵.pdf" download>PDF 다운로드</a>
           </div>
         </header>
 
-        <section class="focus-anchors roadmap-principles screen-only" aria-label="핵심 운영 원칙">
-          <article class="focus-anchor focus-anchor--application">
-            <span class="principle-number" aria-hidden="true">01</span>
-            <h2>지원은 하루 3~4개</h2>
-            <p>공고 분석부터 자소서 조정·제출까지 한 흐름으로 끝낸다.</p>
-          </article>
-          <article class="focus-anchor focus-anchor--review">
-            <span class="principle-number" aria-hidden="true">02</span>
-            <h2>면접 언어를 매일 다듬기</h2>
-            <p>이력서와 포트폴리오를 내 말로 설명하는 시간을 지킨다.</p>
-          </article>
-        </section>
-
-        <section class="roadmap-view-selector screen-only" aria-label="운영 일정 선택">
+        <section class="roadmap-view-selector roadmap-primary-flow screen-only" aria-label="운영 일정 선택">
           <div class="roadmap-selector-heading">
             <div>
               <p class="eyebrow">일정 카테고리</p>
@@ -70,9 +58,36 @@
           </div>
         </section>
 
-        <div id="roadmap-reference-list" class="roadmap-reference-list"></div>
+        <div id="roadmap-reference-list" class="roadmap-reference-list page-primary"></div>
+
+        <section class="focus-anchors roadmap-principles roadmap-secondary screen-only" aria-label="핵심 운영 원칙">
+          <article class="focus-anchor focus-anchor--application">
+            <span class="principle-number" aria-hidden="true">01</span>
+            <h2>지원은 하루 3~4개</h2>
+            <p>공고 분석부터 자소서 조정·제출까지 한 흐름으로 끝낸다.</p>
+          </article>
+          <article class="focus-anchor focus-anchor--review">
+            <span class="principle-number" aria-hidden="true">02</span>
+            <h2>면접 언어를 매일 다듬기</h2>
+            <p>이력서와 포트폴리오를 내 말로 설명하는 시간을 지킨다.</p>
+          </article>
+        </section>
+
+        <details class="roadmap-secondary roadmap-download screen-only">
+          <summary>문서로 보관하기</summary>
+          <p>운영 시간표를 인쇄하거나 오프라인에서 확인할 수 있습니다.</p>
+          <a class="pdf-button" href="./output/pdf/취업준비-운영-로드맵.pdf" download>PDF 다운로드</a>
+        </details>
       </main>
     </div>
+
+    <nav class="mobile-tabbar screen-only" aria-label="모바일 주요 이동">
+      <a href="./index.html">오늘</a>
+      <a href="./weekly.html">주간</a>
+      <a href="./interview/">면접</a>
+      <a href="./roadmap.html" aria-current="page">로드맵</a>
+      <a href="./history.html">기록</a>
+    </nav>
 
     <script type="module" src="./src/roadmap-app.js"></script>
   </body>

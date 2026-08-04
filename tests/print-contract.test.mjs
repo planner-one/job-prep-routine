@@ -146,15 +146,13 @@ test('로드맵 PDF npm 명령은 기존 8787 origin을 사용한다', () => {
   );
 });
 
-test('한국어 선택 홈은 배포된 루틴 보드와 면접 대시보드로 이동한다', () => {
+test('한국어 오늘 허브는 루틴 실행과 면접 연습을 바로 이어간다', () => {
   assert.match(home, /<html\s+lang="ko">/);
-  assert.equal((home.match(/class="home-board-card/g) ?? []).length, 2);
-
-  for (const [href, label] of [
-    ['./roadmap.html', '루틴 보드'],
-    ['./interview/', '면접 대시보드'],
-  ]) {
-    assert.match(home, new RegExp(`href="${href.replaceAll('.', '\\.').replaceAll('/', '\\/')}`));
-    assert.match(home, new RegExp(label));
-  }
+  assert.match(home, /id="home-page"/);
+  assert.match(home, /id="home-next-schedule"/);
+  assert.match(home, /href="\.\/daily\.html"[^>]*>오늘 실행 이어가기/);
+  assert.match(home, /href="\.\/interview\/\?view=difficulty&amp;routine=implementation"/);
+  assert.match(home, /href="\.\/roadmap\.html"/);
+  assert.match(home, /href="\.\/history\.html"/);
+  assert.match(home, /src="\.\/src\/home-app\.js"/);
 });

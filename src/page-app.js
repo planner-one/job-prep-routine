@@ -23,6 +23,7 @@ import {
   normalizeWeeklyState,
   weekMondayKey,
 } from './weekly-plan-core.js';
+import { loadUiPreferences, saveUiPreferences } from './ui-preferences.js';
 
 const DAILY_PAGE_NAME = 'daily';
 const PERIODS = [
@@ -369,6 +370,22 @@ function updateProgress(root, scheduleItems, state) {
     pipelineSummary.textContent = `지원 ${pipeline.applied}개 · ${pipeline.completedSteps} / ${pipeline.totalSteps}단계`;
   }
 
+  const nextAction = root.querySelector('#daily-next-action');
+  const nextActionLabel = root.querySelector('#daily-next-action-label');
+  const nextActionTime = root.querySelector('#daily-next-action-time');
+  const checkedIds = new Set(state.checkedIds);
+  const nextItem = scheduleItems.find((item) => !checkedIds.has(item.id));
+  if (nextAction && nextActionLabel && nextActionTime) {
+    nextAction.disabled = !nextItem;
+    nextAction.dataset.nextScheduleId = nextItem?.id ?? '';
+    nextActionLabel.textContent = nextItem?.label ?? '오늘 시간표를 모두 완료했습니다';
+    nextActionTime.textContent = nextItem ? scheduleTime(nextItem) : '완료';
+    nextAction.setAttribute(
+      'aria-label',
+      nextItem ? `다음 미완료 일정, ${scheduleTime(nextItem)} ${nextItem.label}` : '오늘 시간표 완료',
+    );
+  }
+
   syncScheduleCompletion(root);
 }
 
@@ -392,7 +409,7 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
   let prepared = prepareDailyPlan(state, resolvedPlan);
   let checkedIds = new Set(state.checkedIds);
   let renderedIds = new Set();
-  let activeCategory = 'all';
+  let activeCategory = loadUiPreferences(storage).daily.categoryFilter;
 
   const dateElement = root.querySelector('#current-date');
   if (dateElement) {
@@ -457,7 +474,6 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
     compatibilityFields = {};
     state = normalizeDailyState(createDefaultState());
     prepared = prepareDailyPlan(state, resolvedPlan);
-    activeCategory = 'all';
     paintState();
   }
 
@@ -473,6 +489,17 @@ export function initDailyPage(pageDocument, storage, date = logicalDateString())
     const categoryButton = event.target.closest?.('#daily-category-filters [data-category-filter]');
     if (categoryButton && root.contains(categoryButton)) {
       activeCategory = applyDailyCategoryFilter(root, categoryButton.dataset.categoryFilter);
+      saveUiPreferences(storage, { daily: { categoryFilter: activeCategory } });
+      return;
+    }
+
+    const nextAction = event.target.closest?.('#daily-next-action');
+    if (nextAction && root.contains(nextAction) && nextAction.dataset.nextScheduleId) {
+      activeCategory = applyDailyCategoryFilter(root, 'all');
+      saveUiPreferences(storage, { daily: { categoryFilter: activeCategory } });
+      const input = root.querySelector(`[data-schedule-id="${CSS.escape(nextAction.dataset.nextScheduleId)}"]`);
+      input?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      input?.focus();
       return;
     }
 

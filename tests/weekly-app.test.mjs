@@ -36,6 +36,13 @@ test('오전 2시 이전 Date 초기화는 논리 날짜와 같은 주 키를 �
   });
 });
 
+test('저장된 선택이 없을 때 사용할 논리 날짜의 요일을 계산한다', () => {
+  assertFunction('weekdayIdForDate');
+  assert.equal(weeklyApp.weekdayIdForDate('2026-07-20'), 'mon');
+  assert.equal(weeklyApp.weekdayIdForDate('2026-08-04'), 'tue');
+  assert.equal(weeklyApp.weekdayIdForDate('2026-08-09'), 'sun');
+});
+
 test('시간 입력은 분 단위로 바꾸고 24:00 경계를 허용한다', () => {
   assertFunction('minuteFromInput');
   assert.equal(weeklyApp.minuteFromInput('05:40'), 340);

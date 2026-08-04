@@ -1,9 +1,19 @@
 (() => {
   "use strict";
 
-  const PRIVATE_BUILD_CANARY = "INTERVIEW_DASHBOARD_LOCAL_CANARY_20260803";
   const PRACTICE_STORAGE_KEY = "interview-prep.practice-counts.v1";
-  void PRIVATE_BUILD_CANARY;
+  const SESSION_STORAGE_KEY = "interview-prep.session.v1";
+  const CATALOG_VERSION = "v5_3";
+  const VALID_VIEWS = new Set(["emphasis", "difficulty", "compact", "all", "warnings"]);
+  const FILTER_DEFAULTS = Object.freeze({
+    search: "",
+    category: "all",
+    project: "all",
+    difficulty: "all",
+    evidence: "all",
+    stage: "all",
+  });
+  const FILTER_PARAM_NAMES = Object.keys(FILTER_DEFAULTS);
 
   const root = document.getElementById("dashboard-root");
   const summary = document.getElementById("data-summary");
@@ -22,7 +32,8 @@
     .filter(Array.isArray)
     .flat()
     .filter((question) => question && question.id && question.question);
-  const validQuestionIds = new Set(questions.map((question) => question.id));
+  const questionById = new Map(questions.map((question) => [question.id, question]));
+  const validQuestionIds = new Set(questionById.keys());
 
   const stageOrder = [
     "실제 사용 위치",
@@ -34,14 +45,83 @@
     "대안·확장",
     "경험",
   ];
-
-  const normalizeStage = (stage) => String(stage || "").replace(/^\d+\.\s*/, "");
+  const categoryOrder = ["공통·인성", "경험", "이력서 기술", "필수 CS"];
 
   let practiceStorageAvailable = true;
+  let sessionStorageAvailable = true;
   let sidebarReturnFocus = null;
-  let highlightTimer = 0;
-  let sidebarPracticeScopes = new Map();
-  let sidebarScopeSequence = 0;
+
+  const escapeHtml = (value = "") =>
+    String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  const unique = (items) => [...new Set(items.filter(Boolean))];
+  const uniqueQuestionsById = (items) => {
+    const seen = new Set();
+    return items.filter((question) => {
+      if (!question || seen.has(question.id)) return false;
+      seen.add(question.id);
+      return true;
+    });
+  };
+  const normalizeStage = (stage) => String(stage || "").replace(/^\d+\.\s*/, "");
+  const normalizePriority = (priority) => ({
+    최우선: "핵심",
+    핵심: "핵심",
+    높음: "핵심",
+    중요: "중요",
+    보통: "중요",
+    보충: "보충",
+  }[priority] || priority);
+  const priorityScore = (priority) => ({ 핵심: 0, 중요: 1, 보충: 2 }[normalizePriority(priority)] ?? 3);
+  const sortQuestions = (items) =>
+    [...items].sort((a, b) => {
+      const aStage = stageOrder.indexOf(normalizeStage(a.stage));
+      const bStage = stageOrder.indexOf(normalizeStage(b.stage));
+      if (aStage >= 0 && bStage >= 0 && aStage !== bStage) return aStage - bStage;
+      const priorityDifference = priorityScore(a.priority) - priorityScore(b.priority);
+      if (priorityDifference !== 0) return priorityDifference;
+      return a.id.localeCompare(b.id, "ko");
+    });
+
+  const normalizeFilters = (candidate = {}) => {
+    const source = candidate && typeof candidate === "object" && !Array.isArray(candidate)
+      ? candidate
+      : {};
+    return {
+      search: typeof source.search === "string" ? source.search.slice(0, 120) : "",
+      category: typeof source.category === "string" && source.category ? source.category : "all",
+      project: typeof source.project === "string" && source.project ? source.project : "all",
+      difficulty: typeof source.difficulty === "string" && source.difficulty ? source.difficulty : "all",
+      evidence: typeof source.evidence === "string" && source.evidence ? source.evidence : "all",
+      stage: typeof source.stage === "string" && source.stage ? source.stage : "all",
+    };
+  };
+
+  const hasWarning = (question) =>
+    Boolean(question.warnings?.length) || question.evidence?.status === "지원자 확인 필요";
+  const matchesAny = (value, candidates) => !candidates?.length || candidates.includes(value);
+  const intersects = (values, candidates) =>
+    !candidates?.length || values?.some((value) => candidates.includes(value));
+  const matchesTopic = (question, candidates) =>
+    !candidates?.length || candidates.some((candidate) =>
+      question.topic?.includes(candidate) || question.tags?.includes(candidate),
+    );
+  const matchesQuery = (question, query = {}) => {
+    if (!matchesAny(question.category, query.categories)) return false;
+    if (!matchesAny(question.project, query.projects)) return false;
+    if (!matchesTopic(question, query.topics)) return false;
+    if (!matchesAny(normalizeStage(question.stage), query.stages)) return false;
+    if (!matchesAny(question.difficulty, query.difficulties)) return false;
+    if (!matchesAny(normalizePriority(question.priority), query.priorities)) return false;
+    if (!intersects(question.tags || [], query.tags)) return false;
+    if (query.hasWarning === true && !hasWarning(question)) return false;
+    return true;
+  };
 
   const sanitizePracticeCounts = (counts) => {
     if (!counts || typeof counts !== "object" || Array.isArray(counts)) return {};
@@ -64,19 +144,12 @@
   const loadPracticeCounts = () => {
     try {
       const raw = window.localStorage.getItem(PRACTICE_STORAGE_KEY);
-      if (raw === null) {
-        window.localStorage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify({ version: 1, counts: {} }));
-        return {};
-      }
-
-      let parsed;
+      let parsed = null;
       try {
-        parsed = JSON.parse(raw);
+        parsed = raw ? JSON.parse(raw) : null;
       } catch {
-        window.localStorage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify({ version: 1, counts: {} }));
-        return {};
+        parsed = null;
       }
-
       const counts = parsed?.version === 1 ? sanitizePracticeCounts(parsed.counts) : {};
       window.localStorage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify({ version: 1, counts }));
       return counts;
@@ -87,401 +160,52 @@
   };
 
   const state = {
-    view: "emphasis",
+    view: "difficulty",
     selectedRoutine: {
       emphasis: routineData.emphasis?.[0]?.id || "",
-      difficulty: routineData.difficulty?.[1]?.id || routineData.difficulty?.[0]?.id || "",
+      difficulty: routineData.difficulty?.find((routine) => routine.id === "implementation")?.id
+        || routineData.difficulty?.[1]?.id
+        || routineData.difficulty?.[0]?.id
+        || "",
     },
-    filters: {
-      search: "",
-      category: "all",
-      project: "all",
-      difficulty: "all",
-      evidence: "all",
-      stage: "all",
-    },
+    filters: { ...FILTER_DEFAULTS },
     sidebarMode: "category",
     sidebarSearch: "",
+    filtersExpanded: false,
     visibleQuestions: [],
+    activeQuestionId: "",
     practiceCounts: loadPracticeCounts(),
+    session: null,
+    showSummary: false,
   };
-
-  const escapeHtml = (value = "") =>
-    String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-
-  const unique = (items) => [...new Set(items.filter(Boolean))];
-
-  const difficultyProfiles = {
-    기초: {
-      label: "기초 꼬리질문",
-      guide: "역할·용어·실제 사용 위치를 짧고 정확하게 확인합니다.",
-      className: "is-foundation",
-    },
-    중급: {
-      label: "중급 꼬리질문",
-      guide: "선택 이유·구현 흐름·검증 기준을 연결해 설명합니다.",
-      className: "is-implementation",
-    },
-    심화: {
-      label: "심화 꼬리질문",
-      guide: "대안·한계·장애 상황과 트레이드오프까지 방어합니다.",
-      className: "is-advanced",
-    },
-    압박: {
-      label: "압박 꼬리질문",
-      guide: "반박과 미확인 주장을 구분하고 재설계 기준까지 답합니다.",
-      className: "is-pressure",
-    },
-  };
-
-  const getDifficultyProfile = (difficulty) => difficultyProfiles[difficulty] || {
-    label: "꼬리질문",
-    guide: "사실과 판단 근거를 구분해 답합니다.",
-    className: "",
-  };
-
-  const followupDifficultyByType = {
-    "사실 확인": "기초",
-    "선택 압박": "중급",
-    "장애·대안": "심화",
-  };
-
-  const getFollowupDifficultyProfile = (followup) => {
-    const difficulty = followup.difficulty || followupDifficultyByType[followup.type] || "중급";
-    return { difficulty, ...getDifficultyProfile(difficulty) };
-  };
-
-  const getMinuteSummaryLabels = (question) => {
-    if (question.category === "필수 CS") return ["정의·결론", "원리·근거", "적용·한계"];
-    if (question.category === "공통·인성") return ["입장·결론", "경험·행동", "결과·배움"];
-    return ["역할·결론", "문제·접근", "검증·결과"];
-  };
-
-  const normalizePriority = (priority) => ({
-    최우선: "핵심",
-    핵심: "핵심",
-    높음: "핵심",
-    중요: "중요",
-    보통: "중요",
-    보충: "보충",
-  }[priority] || priority);
-
-  const priorityScore = (priority) => ({ 핵심: 0, 중요: 1, 보충: 2 }[normalizePriority(priority)] ?? 3);
-
-  const sortQuestions = (items) =>
-    [...items].sort((a, b) => {
-      const aStage = stageOrder.indexOf(normalizeStage(a.stage));
-      const bStage = stageOrder.indexOf(normalizeStage(b.stage));
-      if (aStage >= 0 && bStage >= 0 && aStage !== bStage) return aStage - bStage;
-      const priorityDifference = priorityScore(a.priority) - priorityScore(b.priority);
-      if (priorityDifference !== 0) return priorityDifference;
-      return a.id.localeCompare(b.id, "ko");
-    });
-
-  const hasWarning = (question) =>
-    Boolean(question.warnings?.length) || question.evidence?.status === "지원자 확인 필요";
 
   const getPracticeCount = (questionId) => state.practiceCounts[questionId] || 0;
 
-  const matchesAny = (value, candidates) => !candidates?.length || candidates.includes(value);
-
-  const intersects = (values, candidates) =>
-    !candidates?.length || values?.some((value) => candidates.includes(value));
-
-  const matchesTopic = (question, candidates) =>
-    !candidates?.length || candidates.some((candidate) =>
-      question.topic?.includes(candidate) || question.tags?.includes(candidate),
-    );
-
-  const matchesQuery = (question, query = {}) => {
-    if (!matchesAny(question.category, query.categories)) return false;
-    if (!matchesAny(question.project, query.projects)) return false;
-    if (!matchesTopic(question, query.topics)) return false;
-    if (!matchesAny(normalizeStage(question.stage), query.stages)) return false;
-    if (!matchesAny(question.difficulty, query.difficulties)) return false;
-    if (!matchesAny(normalizePriority(question.priority), query.priorities)) return false;
-    if (!intersects(question.tags || [], query.tags)) return false;
-    if (query.hasWarning === true && !hasWarning(question)) return false;
-    return true;
-  };
-
-  const evidenceClass = (status) => {
-    if (status === "확인됨") return "badge-confirmed";
-    if (status === "지원자 확인 필요") return "badge-warning";
-    if (status === "일반론") return "badge-general";
-    return "";
-  };
-
-  const renderWarnings = (question) => {
-    const warnings = question.warnings || [];
-    if (!warnings.length && question.evidence?.status !== "지원자 확인 필요") return "";
-    const lines = warnings.length
-      ? warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")
-      : "<li>실제 구현 코드나 원본 측정 자료를 본인이 다시 확인해야 합니다.</li>";
-    return `<div class="warning-box"><strong>확인 필요</strong><ul>${lines}</ul></div>`;
-  };
-
-  const renderQuestionCard = (question, options = {}) => {
-    const answer = question.answer || {};
-    const compact = answer.compact || {};
-    const coreLabel = answer.coreLevel ? `${answer.coreLevel} 핵심문장` : "핵심 답변";
-    const evidence = question.evidence || {};
-    const followups = question.followups || [];
-    const keywords = answer.keywords || [];
-    const sources = evidence.sources || [];
-    const difficulty = question.difficulty || "미분류";
-    const difficultyProfile = getDifficultyProfile(difficulty);
-    const minuteSummaryLabels = getMinuteSummaryLabels(question);
-    const conciseAnswer = {
-      conclusion: compact.conclusion || answer.conclusion || "답변 준비 중입니다.",
-      evidence1: compact.evidence1 || answer.evidence1 || "근거 확인이 필요합니다.",
-      evidence2: compact.evidence2 || answer.evidence2 || "근거 확인이 필요합니다.",
-    };
-    const minuteSummaryAnswer = {
-      conclusion: answer.conclusion || conciseAnswer.conclusion,
-      evidence1: answer.evidence1 || conciseAnswer.evidence1,
-      evidence2: answer.evidence2 || conciseAnswer.evidence2,
-    };
-    const cardClasses = hasWarning(question) ? "question-card has-warning" : "question-card";
-    const ordinal = options.ordinal ? `<span class="badge">Q${options.ordinal}</span>` : "";
-    const practiceCount = getPracticeCount(question.id);
-
-    return `
-      <article class="${cardClasses}" id="question-${escapeHtml(question.id)}" tabindex="-1" data-question-card="${escapeHtml(question.id)}" aria-labelledby="question-title-${escapeHtml(question.id)}">
-        <div class="card-meta">
-          ${ordinal}
-          <span class="badge badge-project">${escapeHtml(question.project || question.category)}</span>
-          <span class="badge">${escapeHtml(question.topic)}</span>
-          <span class="badge">${escapeHtml(normalizeStage(question.stage))}</span>
-          <span class="badge badge-difficulty ${difficultyProfile.className}">문항 난이도 · ${escapeHtml(difficulty)}</span>
-          <span class="badge ${evidenceClass(evidence.status)}">${escapeHtml(evidence.status || "근거 미분류")}</span>
-          ${question.minutes ? `<span class="badge">약 ${escapeHtml(question.minutes)}분</span>` : ""}
-        </div>
-        <h4 id="question-title-${escapeHtml(question.id)}">${escapeHtml(question.question)}</h4>
-        <div class="practice-row" aria-label="질문 연습 횟수">
-          <span class="practice-count">연습 <strong data-practice-count="${escapeHtml(question.id)}">${practiceCount}</strong>회</span>
-          <div class="practice-actions">
-            <button
-              class="practice-button is-complete"
-              type="button"
-              data-practice-action="increment"
-              data-question-id="${escapeHtml(question.id)}"
-              aria-label="${escapeHtml(question.question)} 답변 완료 1회 추가"
-            >이번 답변 완료 <span aria-hidden="true">+1</span></button>
-            <button
-              class="practice-button"
-              type="button"
-              data-practice-action="decrement"
-              data-question-id="${escapeHtml(question.id)}"
-              aria-label="${escapeHtml(question.question)} 연습 횟수 1회 되돌리기"
-              ${practiceCount === 0 ? "disabled" : ""}
-            >되돌리기</button>
-          </div>
-        </div>
-        ${renderWarnings(question)}
-        <div class="answer-grid">
-          <div class="answer-block is-conclusion">
-            <p class="answer-label">${escapeHtml(coreLabel)} · 1문장</p>
-            <p>${escapeHtml(conciseAnswer.conclusion)}</p>
-          </div>
-          <div class="answer-block">
-            <p class="answer-label">근거 1 · 1문장</p>
-            <p>${escapeHtml(conciseAnswer.evidence1)}</p>
-          </div>
-          <div class="answer-block">
-            <p class="answer-label">근거 2 · 1문장</p>
-            <p>${escapeHtml(conciseAnswer.evidence2)}</p>
-          </div>
-        </div>
-        ${keywords.length ? `<ul class="keywords" aria-label="핵심 키워드">${keywords.map((keyword) => `<li>${escapeHtml(keyword)}</li>`).join("")}</ul>` : ""}
-        ${answer.caution ? `<p class="caution"><strong>말할 때 주의:</strong> ${escapeHtml(answer.caution)}</p>` : ""}
-        <details class="minute-summary">
-          <summary>1분 요약 말하기 순서</summary>
-          <ol class="minute-summary-list" aria-label="1분 요약 말하기 순서">
-            <li>
-              <span>${escapeHtml(minuteSummaryLabels[0])}</span>
-              <p>${escapeHtml(minuteSummaryAnswer.conclusion)}</p>
-            </li>
-            <li>
-              <span>${escapeHtml(minuteSummaryLabels[1])}</span>
-              <p>${escapeHtml(minuteSummaryAnswer.evidence1)}</p>
-            </li>
-            <li>
-              <span>${escapeHtml(minuteSummaryLabels[2])}</span>
-              <p>${escapeHtml(minuteSummaryAnswer.evidence2)}</p>
-            </li>
-            ${keywords.length ? `
-              <li>
-                <span>설명 확장</span>
-                <p>관련해서 ${escapeHtml(keywords.join(", "))}을 중심으로 설명드릴 수 있습니다.</p>
-              </li>
-            ` : ""}
-          </ol>
-        </details>
-        <details class="followup-details">
-          <summary>난이도별 꼬리질문 대비 ${followups.length ? `(${followups.length})` : ""}</summary>
-          <p class="followup-guide">기초는 사실 확인, 중급은 선택 이유, 심화는 장애·대안을 중심으로 답합니다.</p>
-          ${followups.length ? `
-            <ul class="followup-list">
-              ${followups.map((followup) => {
-                const profile = getFollowupDifficultyProfile(followup);
-                return `
-                  <li>
-                    <div class="followup-meta">
-                      <span class="followup-difficulty ${profile.className}">${escapeHtml(profile.difficulty)}</span>
-                      <span class="followup-type">${escapeHtml(followup.type)}</span>
-                    </div>
-                    <div>
-                      <p class="followup-question"><strong>${escapeHtml(followup.question)}</strong></p>
-                      <p class="followup-defense">${escapeHtml(followup.defense)}</p>
-                    </div>
-                  </li>
-                `;
-              }).join("")}
-            </ul>
-          ` : `<p class="evidence-note">추가 꼬리질문을 준비 중입니다.</p>`}
-        </details>
-        <details>
-          <summary>근거 상태와 출처</summary>
-          <p class="evidence-note">${escapeHtml(evidence.note || "근거 설명을 준비 중입니다.")}</p>
-          ${sources.length ? `<ul class="sources">${sources.map((source) => `<li>${escapeHtml(source)}</li>`).join("")}</ul>` : ""}
-        </details>
-      </article>
-    `;
+  const getRoutine = (view, routineId) => {
+    if (view === "compact") return routineData.compact?.id === routineId || !routineId
+      ? routineData.compact
+      : null;
+    if (view !== "emphasis" && view !== "difficulty") return null;
+    return (routineData[view] || []).find((routine) => routine.id === routineId) || null;
   };
 
   const selectSectionQuestions = (section, seenIds) => {
-    const allMatches = sortQuestions(questions.filter((question) => matchesQuery(question, section.query)));
-    let matches = allMatches.filter((question) => !seenIds.has(question.id));
-    if (!matches.length) matches = allMatches;
-    const selected = matches.slice(0, section.limit || matches.length);
+    const matches = sortQuestions(questions.filter((question) => matchesQuery(question, section.query)));
+    const freshMatches = matches.filter((question) => !seenIds.has(question.id));
+    const selected = (freshMatches.length ? freshMatches : matches).slice(0, section.limit || matches.length);
     selected.forEach((question) => seenIds.add(question.id));
     return selected;
   };
 
-  const renderSchedule = (routine) => `
-    <div class="schedule" aria-label="120분 시간 구성">
-      ${routine.sections.map((section) => `
-        <div class="schedule-item">
-          <strong>${escapeHtml(section.title)}</strong>
-          <span>${section.minutes}분</span>
-        </div>
-      `).join("")}
-    </div>
-  `;
-
-  const renderRoutineContent = (routine) => {
+  const getRoutineQuestions = (routine) => {
+    if (!routine) return [];
     const seenIds = new Set();
-    const visibleQuestions = [];
-    let ordinal = 0;
-    const totalMinutes = routine.sections.reduce((sum, section) => sum + section.minutes, 0);
-    const sectionsHtml = routine.sections.map((section) => {
-      const selected = selectSectionQuestions(section, seenIds);
-      const cards = selected.map((question) => {
-        ordinal += 1;
-        if (!visibleQuestions.some((item) => item.id === question.id)) visibleQuestions.push(question);
-        return renderQuestionCard(question, { ordinal });
-      }).join("");
-      return `
-        <section class="routine-section">
-          <div class="routine-section-heading">
-            <h3>${escapeHtml(section.title)}</h3>
-            <span>권장 ${section.minutes}분 · ${selected.length}문항</span>
-          </div>
-          ${cards ? `<div class="question-list">${cards}</div>` : `<p class="empty-state">이 구간의 질문 데이터를 준비 중입니다.</p>`}
-        </section>
-      `;
-    }).join("");
-
-    state.visibleQuestions = visibleQuestions;
-
-    return `
-      <div class="routine-header">
-        <div>
-          <p class="section-kicker">SELECTED ROUTINE</p>
-          <h3>${escapeHtml(routine.title)}</h3>
-          <p>${escapeHtml(routine.summary)}</p>
-        </div>
-        <div class="total-time">
-          <strong>${totalMinutes}분</strong>
-          <span>권장 복습 시간</span>
-        </div>
-      </div>
-      ${renderSchedule(routine)}
-      ${sectionsHtml}
-    `;
+    const selected = routine.sections.flatMap((section) => selectSectionQuestions(section, seenIds));
+    return uniqueQuestionsById(selected);
   };
 
-  const routineIntro = {
-    emphasis: {
-      kicker: "FOCUS ROUTINES",
-      title: "강조점에 따라 고르는 120분",
-      description: "모든 루틴에 공통·인성과 이력서 기술을 함께 넣고, 면접 성격에 따라 비중만 바꿨습니다.",
-    },
-    difficulty: {
-      kicker: "DEPTH ROUTINES",
-      title: "기초부터 압박까지 4단계",
-      description: "사용 경험과 개념 확인에서 시작해 구현, 검증, 장애와 대안까지 단계적으로 깊어집니다.",
-    },
-  };
-
-  const renderRoutineView = (mode) => {
-    const routines = routineData[mode] || [];
-    const selectedId = state.selectedRoutine[mode];
-    const selected = routines.find((routine) => routine.id === selectedId) || routines[0];
-    const intro = routineIntro[mode];
-    if (!selected) state.visibleQuestions = [];
-
-    root.innerHTML = `
-      <section>
-        <p class="section-kicker">${intro.kicker}</p>
-        <h2 class="section-title">${intro.title}</h2>
-        <p class="section-description">${intro.description}</p>
-        <div class="routine-choices" role="group" aria-label="루틴 선택">
-          ${routines.map((routine) => `
-            <button type="button" class="choice-button ${routine.id === selected?.id ? "is-active" : ""}" data-routine-id="${escapeHtml(routine.id)}" aria-pressed="${routine.id === selected?.id}">
-              <strong>${escapeHtml(routine.title)}</strong>
-              <span>${escapeHtml(routine.summary)}</span>
-            </button>
-          `).join("")}
-        </div>
-        ${selected ? renderRoutineContent(selected) : `<p class="empty-state">루틴 데이터를 준비 중입니다.</p>`}
-      </section>
-    `;
-
-    root.querySelectorAll("[data-routine-id]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.selectedRoutine[mode] = button.dataset.routineId;
-        render();
-      });
-    });
-  };
-
-  const renderCompactView = () => {
-    const compact = routineData.compact;
-    if (!compact) state.visibleQuestions = [];
-    root.innerHTML = `
-      <section>
-        <p class="section-kicker">LAST-MINUTE REVIEW</p>
-        <h2 class="section-title">면접 직전 2시간 압축 복습</h2>
-        <p class="section-description">자기소개부터 위험 표현까지 순서대로 읽으면 정확히 120분이 되도록 구성했습니다.</p>
-        ${compact ? renderRoutineContent(compact) : `<p class="empty-state">압축 복습 데이터를 준비 중입니다.</p>`}
-      </section>
-    `;
-  };
-
-  const optionMarkup = (values, selected, allLabel) => `
-    <option value="all">${allLabel}</option>
-    ${values.map((value) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}
-  `;
-
-  const filterQuestions = () => {
-    const { search, category, project, difficulty, evidence, stage } = state.filters;
+  const filterQuestions = (filters = state.filters) => {
+    const { search, category, project, difficulty, evidence, stage } = normalizeFilters(filters);
     const normalizedSearch = search.trim().toLocaleLowerCase("ko");
     return sortQuestions(questions.filter((question) => {
       if (category !== "all" && question.category !== category) return false;
@@ -505,241 +229,614 @@
     }));
   };
 
-  const attachFilterListeners = () => {
-    root.querySelectorAll("[data-filter]").forEach((control) => {
-      const eventName = control.tagName === "INPUT" ? "input" : "change";
-      control.addEventListener(eventName, () => {
-        const filterName = control.dataset.filter;
-        const selectionStart = control.selectionStart;
-        const selectionEnd = control.selectionEnd;
-        state.filters[filterName] = control.value;
-        render();
-        const nextControl = root.querySelector(`[data-filter="${filterName}"]`);
-        nextControl?.focus({ preventScroll: true });
-        if (nextControl?.setSelectionRange && selectionStart !== null && selectionEnd !== null) {
-          nextControl.setSelectionRange(selectionStart, selectionEnd);
-        }
-      });
-    });
+  const getContextQuestions = (view, routineId = "", filters = state.filters) => {
+    if (view === "all") return filterQuestions(filters);
+    if (view === "warnings") return sortQuestions(questions.filter(hasWarning));
+    return getRoutineQuestions(getRoutine(view, routineId));
   };
 
-  const renderAllQuestions = () => {
+  const normalizeContext = (context) => {
+    if (!context || !VALID_VIEWS.has(context.view)) return null;
+    if (context.view === "emphasis" || context.view === "difficulty") {
+      return getRoutine(context.view, context.routineId)
+        ? { view: context.view, routineId: context.routineId }
+        : null;
+    }
+    if (context.view === "compact") {
+      const compactId = routineData.compact?.id || "";
+      return compactId && (!context.routineId || context.routineId === compactId)
+        ? { view: "compact", routineId: compactId }
+        : null;
+    }
+    return { view: context.view, routineId: "" };
+  };
+
+  const sanitizeSession = (value) => {
+    if (!value || value.version !== 1 || typeof value !== "object") return null;
+    const context = normalizeContext(value.context);
+    if (!context) return null;
+    const filters = context.view === "all" ? normalizeFilters(value.filters) : { ...FILTER_DEFAULTS };
+    const contextIds = new Set(getContextQuestions(context.view, context.routineId, filters).map((question) => question.id));
+    const questionIds = unique((Array.isArray(value.questionIds) ? value.questionIds : [])
+      .filter((id) => validQuestionIds.has(id) && contextIds.has(id)));
+    if (!questionIds.length) return null;
+    const currentQuestionId = questionIds.includes(value.currentQuestionId)
+      ? value.currentQuestionId
+      : questionIds[0];
+    const completionScopeIds = context.view === "all"
+      ? validQuestionIds
+      : new Set(getContextQuestions(context.view, context.routineId, filters).map((question) => question.id));
+    const completedQuestionIds = unique((Array.isArray(value.completedQuestionIds)
+      ? value.completedQuestionIds
+      : []).filter((id) => completionScopeIds.has(id)));
+    return {
+      version: 1,
+      catalogVersion: CATALOG_VERSION,
+      context,
+      filters,
+      questionIds,
+      currentQuestionId,
+      completedQuestionIds,
+      startedAt: typeof value.startedAt === "string" ? value.startedAt : new Date().toISOString(),
+      updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
+    };
+  };
+
+  const loadSession = () => {
+    try {
+      const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) return null;
+      let parsed = null;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+      const session = sanitizeSession(parsed);
+      if (!session) window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      return session;
+    } catch {
+      sessionStorageAvailable = false;
+      return null;
+    }
+  };
+
+  const writeSession = () => {
+    if (!sessionStorageAvailable || !state.session?.questionIds.length) return false;
+    state.session.updatedAt = new Date().toISOString();
+    try {
+      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(state.session));
+      return true;
+    } catch {
+      sessionStorageAvailable = false;
+      return false;
+    }
+  };
+
+  const sameContext = (left, right) =>
+    left?.view === right?.view && left?.routineId === right?.routineId;
+
+  const createSession = (context, items, currentQuestionId, previousSession = state.session) => {
+    const questionIds = uniqueQuestionsById(items).map((question) => question.id);
+    if (!questionIds.length) return null;
+    const preserveProgress = sameContext(previousSession?.context, context);
+    const completionScopeIds = context.view === "all"
+      ? validQuestionIds
+      : new Set(getContextQuestions(context.view, context.routineId).map((question) => question.id));
+    const completedQuestionIds = preserveProgress
+      ? previousSession.completedQuestionIds.filter((id) => completionScopeIds.has(id))
+      : [];
+    return {
+      version: 1,
+      catalogVersion: CATALOG_VERSION,
+      context,
+      filters: context.view === "all" ? normalizeFilters(state.filters) : { ...FILTER_DEFAULTS },
+      questionIds,
+      currentQuestionId: questionIds.includes(currentQuestionId) ? currentQuestionId : questionIds[0],
+      completedQuestionIds,
+      startedAt: preserveProgress ? previousSession.startedAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  };
+
+  const applySession = (session) => {
+    state.session = session;
+    state.view = session.context.view;
+    if (state.view === "emphasis" || state.view === "difficulty") {
+      state.selectedRoutine[state.view] = session.context.routineId;
+    }
+    if (state.view === "all") state.filters = normalizeFilters(session.filters);
+    state.visibleQuestions = session.questionIds.map((id) => questionById.get(id)).filter(Boolean);
+    state.activeQuestionId = session.currentQuestionId;
+    state.showSummary = false;
+  };
+
+  const findRoutineContext = (routineId) => {
+    for (const view of ["emphasis", "difficulty"]) {
+      if ((routineData[view] || []).some((routine) => routine.id === routineId)) {
+        return { view, routineId };
+      }
+    }
+    if (routineData.compact?.id === routineId) return { view: "compact", routineId };
+    return null;
+  };
+
+  const readUrlState = () => {
+    const params = new URL(window.location.href).searchParams;
+    const hasDirectState = ["view", "routine", "question", ...FILTER_PARAM_NAMES]
+      .some((key) => params.has(key));
+    if (!hasDirectState) return null;
+
+    const rawRoutine = params.get("routine") || "";
+    const rawQuestion = params.get("question") || "";
+    let view = params.get("view") || "";
+    if (!view && rawRoutine) view = findRoutineContext(rawRoutine)?.view || "";
+    if (!view && rawQuestion) view = "all";
+    if (!view && FILTER_PARAM_NAMES.some((key) => params.has(key))) view = "all";
+    if (!VALID_VIEWS.has(view)) return null;
+
+    let context;
+    if (view === "emphasis" || view === "difficulty") {
+      const fallbackId = state.selectedRoutine[view];
+      const routineId = rawRoutine || fallbackId;
+      if (!getRoutine(view, routineId)) return null;
+      context = { view, routineId };
+    } else if (view === "compact") {
+      const compactId = routineData.compact?.id || "";
+      if (!compactId || (rawRoutine && rawRoutine !== compactId)) return null;
+      context = { view, routineId: compactId };
+    } else {
+      if (rawRoutine) return null;
+      context = { view, routineId: "" };
+    }
+
+    const filters = context.view === "all"
+      ? normalizeFilters(Object.fromEntries(FILTER_PARAM_NAMES.map((key) => [key, params.get(key) ?? FILTER_DEFAULTS[key]])))
+      : { ...FILTER_DEFAULTS };
+    const items = getContextQuestions(context.view, context.routineId, filters);
+    if (!items.length) return null;
+    if (rawQuestion && !items.some((question) => question.id === rawQuestion)) return null;
+    return { context, filters, items, questionId: rawQuestion || items[0].id };
+  };
+
+  const syncUrl = (mode = "replace") => {
+    const url = new URL(window.location.href);
+    url.search = "";
+    const context = state.session?.context || { view: state.view, routineId: "" };
+    url.searchParams.set("view", context.view);
+    if (context.routineId) url.searchParams.set("routine", context.routineId);
+    if (context.view === "all") {
+      const filters = normalizeFilters(state.filters);
+      FILTER_PARAM_NAMES.forEach((key) => {
+        if (filters[key] !== FILTER_DEFAULTS[key]) url.searchParams.set(key, filters[key]);
+      });
+    }
+    if (state.activeQuestionId) url.searchParams.set("question", state.activeQuestionId);
+    window.history[mode === "push" ? "pushState" : "replaceState"]({}, "", url);
+  };
+
+  const activateContext = (context, questionId = "", historyMode = "push", filters = null) => {
+    const normalized = normalizeContext(context);
+    if (!normalized) return false;
+    state.view = normalized.view;
+    if (state.view === "all" && filters) state.filters = normalizeFilters(filters);
+    if (state.view === "emphasis" || state.view === "difficulty") {
+      state.selectedRoutine[state.view] = normalized.routineId;
+    }
+    const items = getContextQuestions(normalized.view, normalized.routineId);
+    const nextSession = createSession(normalized, items, questionId);
+    if (!nextSession) {
+      state.session = null;
+      state.visibleQuestions = [];
+      state.activeQuestionId = "";
+      state.showSummary = false;
+      if (historyMode) syncUrl(historyMode);
+      return false;
+    }
+    applySession(nextSession);
+    writeSession();
+    if (historyMode) syncUrl(historyMode);
+    return true;
+  };
+
+  const difficultyProfiles = {
+    기초: { className: "is-foundation" },
+    중급: { className: "is-implementation" },
+    심화: { className: "is-advanced" },
+    압박: { className: "is-pressure" },
+  };
+  const followupDifficultyByType = {
+    "사실 확인": "기초",
+    "선택 압박": "중급",
+    "장애·대안": "심화",
+  };
+  const getMinuteSummaryLabels = (question) => {
+    if (question.category === "필수 CS") return ["정의·결론", "원리·근거", "적용·한계"];
+    if (question.category === "공통·인성") return ["입장·결론", "경험·행동", "결과·배움"];
+    return ["역할·결론", "문제·접근", "검증·결과"];
+  };
+  const evidenceClass = (status) => {
+    if (status === "확인됨") return "badge-confirmed";
+    if (status === "지원자 확인 필요") return "badge-warning";
+    if (status === "일반론") return "badge-general";
+    return "";
+  };
+
+  const renderWarnings = (question) => {
+    const warnings = question.warnings || [];
+    if (!warnings.length && question.evidence?.status !== "지원자 확인 필요") return "";
+    const lines = warnings.length
+      ? warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")
+      : "<li>실제 구현 코드나 원본 측정 자료를 본인이 다시 확인해야 합니다.</li>";
+    return `<div class="warning-box"><strong>확인 필요</strong><ul>${lines}</ul></div>`;
+  };
+
+  const renderQuestionCard = (question, ordinal, total) => {
+    const answer = question.answer || {};
+    const compact = answer.compact || {};
+    const evidence = question.evidence || {};
+    const followups = question.followups || [];
+    const keywords = answer.keywords || [];
+    const sources = evidence.sources || [];
+    const coreLabel = answer.coreLevel ? `${answer.coreLevel} 핵심문장` : "핵심 답변";
+    const difficulty = question.difficulty || "미분류";
+    const difficultyProfile = difficultyProfiles[difficulty] || { className: "" };
+    const minuteSummaryLabels = getMinuteSummaryLabels(question);
+    const conciseAnswer = {
+      conclusion: compact.conclusion || answer.conclusion || "답변 준비 중입니다.",
+      evidence1: compact.evidence1 || answer.evidence1 || "근거 확인이 필요합니다.",
+      evidence2: compact.evidence2 || answer.evidence2 || "근거 확인이 필요합니다.",
+    };
+    const minuteSummaryAnswer = {
+      conclusion: answer.conclusion || conciseAnswer.conclusion,
+      evidence1: answer.evidence1 || conciseAnswer.evidence1,
+      evidence2: answer.evidence2 || conciseAnswer.evidence2,
+    };
+    const practiceCount = getPracticeCount(question.id);
+
+    return `
+      <article class="question-card ${hasWarning(question) ? "has-warning" : ""}" id="question-${escapeHtml(question.id)}" tabindex="-1" data-question-card="${escapeHtml(question.id)}" aria-labelledby="question-title-${escapeHtml(question.id)}">
+        <div class="question-position">
+          <span>${ordinal} / ${total}</span>
+          <span>${escapeHtml(question.id)}</span>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-project">${escapeHtml(question.project || question.category)}</span>
+          <span class="badge">${escapeHtml(question.topic)}</span>
+          <span class="badge badge-difficulty ${difficultyProfile.className}">${escapeHtml(difficulty)}</span>
+          <span class="badge ${evidenceClass(evidence.status)}">${escapeHtml(evidence.status || "근거 미분류")}</span>
+        </div>
+        <h3 id="question-title-${escapeHtml(question.id)}">${escapeHtml(question.question)}</h3>
+
+        <section class="core-answer" aria-labelledby="core-label-${escapeHtml(question.id)}">
+          <p class="answer-label" id="core-label-${escapeHtml(question.id)}">${escapeHtml(coreLabel)} · 1문장</p>
+          <p>${escapeHtml(conciseAnswer.conclusion)}</p>
+        </section>
+
+        ${keywords.length ? `<ul class="keywords" aria-label="핵심 키워드">${keywords.map((keyword) => `<li>${escapeHtml(keyword)}</li>`).join("")}</ul>` : ""}
+        ${renderWarnings(question)}
+
+        <details class="answer-details">
+          <summary>
+            <span>근거 1·2 확인</span>
+            <small>각 1문장</small>
+          </summary>
+          <div class="answer-grid">
+            <div class="answer-block">
+              <p class="answer-label">근거 1</p>
+              <p>${escapeHtml(conciseAnswer.evidence1)}</p>
+            </div>
+            <div class="answer-block">
+              <p class="answer-label">근거 2</p>
+              <p>${escapeHtml(conciseAnswer.evidence2)}</p>
+            </div>
+          </div>
+        </details>
+
+        <details class="minute-summary">
+          <summary>
+            <span>1분 요약</span>
+            <small>말하기 순서 4단계</small>
+          </summary>
+          <ol class="minute-summary-list" aria-label="1분 요약 말하기 순서">
+            <li><span>${escapeHtml(minuteSummaryLabels[0])}</span><p>${escapeHtml(minuteSummaryAnswer.conclusion)}</p></li>
+            <li><span>${escapeHtml(minuteSummaryLabels[1])}</span><p>${escapeHtml(minuteSummaryAnswer.evidence1)}</p></li>
+            <li><span>${escapeHtml(minuteSummaryLabels[2])}</span><p>${escapeHtml(minuteSummaryAnswer.evidence2)}</p></li>
+            ${keywords.length ? `<li><span>설명 확장</span><p>관련해서 ${escapeHtml(keywords.join(", "))}을 중심으로 설명드릴 수 있습니다.</p></li>` : ""}
+          </ol>
+        </details>
+
+        <details class="followup-details">
+          <summary>
+            <span>난이도별 꼬리질문</span>
+            <small>${followups.length}개 대비</small>
+          </summary>
+          <p class="followup-guide">기초는 사실 확인, 중급은 선택 이유, 심화는 장애·대안을 중심으로 답합니다.</p>
+          ${followups.length ? `
+            <ul class="followup-list">
+              ${followups.map((followup) => {
+                const followupDifficulty = followup.difficulty || followupDifficultyByType[followup.type] || "중급";
+                const profile = difficultyProfiles[followupDifficulty] || { className: "" };
+                return `
+                  <li>
+                    <div class="followup-meta">
+                      <span class="followup-difficulty ${profile.className}">${escapeHtml(followupDifficulty)}</span>
+                      <span class="followup-type">${escapeHtml(followup.type)}</span>
+                    </div>
+                    <div>
+                      <p class="followup-question"><strong>${escapeHtml(followup.question)}</strong></p>
+                      <p class="followup-defense">${escapeHtml(followup.defense || "답변 근거를 확인합니다.")}</p>
+                    </div>
+                  </li>
+                `;
+              }).join("")}
+            </ul>
+          ` : `<p class="evidence-note">추가 꼬리질문을 준비 중입니다.</p>`}
+        </details>
+
+        ${answer.caution ? `
+          <details class="caution-details">
+            <summary><span>말할 때 주의</span><small>과장 없이 답하기</small></summary>
+            <p class="caution">${escapeHtml(answer.caution)}</p>
+          </details>
+        ` : ""}
+
+        <details class="source-details">
+          <summary><span>근거 상태와 출처</span><small>${escapeHtml(evidence.status || "미분류")}</small></summary>
+          <p class="evidence-note">${escapeHtml(evidence.note || "근거 설명을 준비 중입니다.")}</p>
+          ${sources.length ? `<ul class="sources">${sources.map((source) => `<li>${escapeHtml(source)}</li>`).join("")}</ul>` : ""}
+        </details>
+
+        <div class="practice-row" aria-label="현재 질문 누적 연습">
+          <span class="practice-count">누적 답변 <strong data-practice-count="${escapeHtml(question.id)}">${practiceCount}</strong>회</span>
+          <button class="practice-button" type="button" data-practice-action="decrement" data-question-id="${escapeHtml(question.id)}" ${practiceCount === 0 ? "disabled" : ""}>1회 되돌리기</button>
+        </div>
+      </article>
+    `;
+  };
+
+  const getCurrentRoutine = () => getRoutine(state.view, state.session?.context.routineId || "");
+  const getCompletedCount = () => {
+    if (!state.session) return 0;
+    const completed = new Set(state.session.completedQuestionIds);
+    return state.session.questionIds.filter((id) => completed.has(id)).length;
+  };
+  const getCurrentIndex = () => state.session
+    ? state.session.questionIds.indexOf(state.activeQuestionId)
+    : -1;
+
+  const renderRoutineChoices = () => {
+    if (state.view !== "emphasis" && state.view !== "difficulty") return "";
+    const routines = routineData[state.view] || [];
+    const currentRoutine = getCurrentRoutine();
+    return `
+      <div class="routine-picker">
+        <div>
+          <span class="control-label">연습 루틴</span>
+          <strong>${escapeHtml(currentRoutine?.title || "")}</strong>
+        </div>
+        <div class="routine-choices" role="group" aria-label="루틴 선택">
+          ${routines.map((routine) => `
+            <button type="button" class="choice-button ${routine.id === currentRoutine?.id ? "is-active" : ""}" data-routine-id="${escapeHtml(routine.id)}" aria-pressed="${routine.id === currentRoutine?.id}">
+              ${escapeHtml(routine.title)}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  };
+
+  const optionMarkup = (values, selected, allLabel) => `
+    <option value="all">${allLabel}</option>
+    ${values.map((value) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}
+  `;
+
+  const renderAllControls = () => {
     const categories = unique(questions.map((question) => question.category)).sort((a, b) => a.localeCompare(b, "ko"));
     const projects = unique(questions.map((question) => question.project)).sort((a, b) => a.localeCompare(b, "ko"));
     const difficulties = unique(questions.map((question) => question.difficulty));
     const evidenceStatuses = unique(questions.map((question) => question.evidence?.status));
-    const stages = unique(questions.map((question) => normalizeStage(question.stage))).sort((a, b) => stageOrder.indexOf(a) - stageOrder.indexOf(b));
-    const filtered = filterQuestions();
-    state.visibleQuestions = filtered;
-
-    root.innerHTML = `
-      <section>
-        <p class="section-kicker">QUESTION BANK</p>
-        <h2 class="section-title">전체 질문</h2>
-        <p class="section-description">질문은 한 번만 관리하며 여러 루틴에서 같은 답변을 참조합니다. 검색과 분류는 현재 화면에만 적용되고 저장되지 않습니다.</p>
-        <div class="toolbar">
-          <label>검색
-            <input type="search" data-filter="search" value="${escapeHtml(state.filters.search)}" placeholder="Redis, 트랜잭션, 갈등…" />
-          </label>
-          <label>분야
-            <select data-filter="category">${optionMarkup(categories, state.filters.category, "전체 분야")}</select>
-          </label>
-          <label>프로젝트
-            <select data-filter="project">${optionMarkup(projects, state.filters.project, "전체 프로젝트")}</select>
-          </label>
-          <label>난이도
-            <select data-filter="difficulty">${optionMarkup(difficulties, state.filters.difficulty, "전체 난이도")}</select>
-          </label>
-          <label>근거 상태
-            <select data-filter="evidence">${optionMarkup(evidenceStatuses, state.filters.evidence, "전체 상태")}</select>
-          </label>
-          <label>질문 단계
-            <select data-filter="stage">${optionMarkup(stages, state.filters.stage, "전체 단계")}</select>
-          </label>
-        </div>
-        <p class="result-count">전체 ${questions.length}문항 중 ${filtered.length}문항</p>
-        ${filtered.length ? `<div class="question-list">${filtered.map((question, index) => renderQuestionCard(question, { ordinal: index + 1 })).join("")}</div>` : `<p class="empty-state">조건에 맞는 질문이 없습니다.</p>`}
-      </section>
+    const stages = unique(questions.map((question) => normalizeStage(question.stage)))
+      .sort((a, b) => stageOrder.indexOf(a) - stageOrder.indexOf(b));
+    return `
+      <div class="all-question-controls">
+        <label class="primary-search">질문 검색
+          <input type="search" data-filter="search" value="${escapeHtml(state.filters.search)}" placeholder="Redis, 트랜잭션, 협업…" autocomplete="off" />
+        </label>
+        <details class="filter-panel" ${state.filtersExpanded ? "open" : ""}>
+          <summary><span>분류 필터</span><small>${state.visibleQuestions.length}문항</small></summary>
+          <div class="toolbar">
+            <label>분야<select data-filter="category">${optionMarkup(categories, state.filters.category, "전체 분야")}</select></label>
+            <label>프로젝트<select data-filter="project">${optionMarkup(projects, state.filters.project, "전체 프로젝트")}</select></label>
+            <label>난이도<select data-filter="difficulty">${optionMarkup(difficulties, state.filters.difficulty, "전체 난이도")}</select></label>
+            <label>근거 상태<select data-filter="evidence">${optionMarkup(evidenceStatuses, state.filters.evidence, "전체 상태")}</select></label>
+            <label>질문 단계<select data-filter="stage">${optionMarkup(stages, state.filters.stage, "전체 단계")}</select></label>
+          </div>
+        </details>
+      </div>
     `;
-    attachFilterListeners();
   };
 
-  const renderWarningsView = () => {
-    const warningQuestions = sortQuestions(questions.filter(hasWarning));
-    state.visibleQuestions = warningQuestions;
-    const counts = questions.reduce((accumulator, question) => {
+  const renderRiskSummary = () => {
+    const counts = questions.reduce((result, question) => {
       const status = question.evidence?.status || "미분류";
-      accumulator[status] = (accumulator[status] || 0) + 1;
-      return accumulator;
+      result[status] = (result[status] || 0) + 1;
+      return result;
     }, {});
+    return `
+      <div class="risk-summary" aria-label="근거 상태 요약">
+        <div class="risk-stat is-confirmed"><strong>${counts["확인됨"] || 0}</strong><span>코드·테스트 확인</span></div>
+        <div class="risk-stat"><strong>${counts["문서 근거"] || 0}</strong><span>문서 근거</span></div>
+        <div class="risk-stat is-warning"><strong>${counts["지원자 확인 필요"] || 0}</strong><span>본인 확인 필요</span></div>
+        <div class="risk-stat"><strong>${counts["일반론"] || 0}</strong><span>일반론</span></div>
+      </div>
+    `;
+  };
 
-    root.innerHTML = `
-      <section>
-        <p class="section-kicker">EVIDENCE CHECK</p>
-        <h2 class="section-title">확인하고 말해야 할 주장</h2>
-        <p class="section-description">루틴에는 포함하지만, 아래 질문은 경고를 읽고 안전한 범위까지만 답합니다. 코드나 원본 측정 자료가 없는 내용은 실제 성과로 단정하지 않습니다.</p>
-        <div class="risk-summary">
-          <div class="risk-stat is-confirmed"><strong>${counts["확인됨"] || 0}</strong><span>코드·테스트 확인</span></div>
-          <div class="risk-stat"><strong>${counts["문서 근거"] || 0}</strong><span>Wiki·README·스크린샷</span></div>
-          <div class="risk-stat is-warning"><strong>${counts["지원자 확인 필요"] || 0}</strong><span>본인 재확인 필요</span></div>
-          <div class="risk-stat"><strong>${counts["일반론"] || 0}</strong><span>경험이 아닌 개념</span></div>
+  const viewMeta = () => {
+    const routine = getCurrentRoutine();
+    if (state.view === "emphasis") {
+      return { kicker: "강조점별 루틴", title: routine?.title || "강조점별 연습", description: routine?.summary || "" };
+    }
+    if (state.view === "difficulty") {
+      return { kicker: "난이도별 루틴", title: `${routine?.title || "중급"} 답변 연습`, description: routine?.summary || "" };
+    }
+    if (state.view === "compact") {
+      return { kicker: "면접 직전", title: "2시간 압축 복습", description: routineData.compact?.summary || "" };
+    }
+    if (state.view === "all") {
+      return { kicker: "질문 탐색", title: "전체 질문", description: "검색한 목록에서도 한 번에 한 질문만 집중해서 연습합니다." };
+    }
+    return { kicker: "근거 확인", title: "확인하고 말할 답변", description: "과장하지 않고 확인된 범위까지만 답할 질문입니다." };
+  };
+
+  const renderSessionProgress = () => {
+    if (!state.session) return "";
+    const total = state.session.questionIds.length;
+    const completed = getCompletedCount();
+    const index = Math.max(0, getCurrentIndex());
+    const percent = total ? Math.round((completed / total) * 100) : 0;
+    return `
+      <div class="session-progress" aria-label="현재 세션 진행률">
+        <div class="session-progress-copy">
+          <span>${index + 1}번째 질문 · 완료 ${completed}개</span>
+          <strong>${percent}%</strong>
         </div>
-        <p class="result-count">경고가 있는 질문 ${warningQuestions.length}문항</p>
-        ${warningQuestions.length ? `<div class="question-list">${warningQuestions.map((question, index) => renderQuestionCard(question, { ordinal: index + 1 })).join("")}</div>` : `<p class="empty-state">현재 경고 질문이 없습니다.</p>`}
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${completed}" aria-label="${total}문항 중 ${completed}문항 완료">
+          <span style="width: ${percent}%"></span>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderSessionSummary = () => {
+    const total = state.session?.questionIds.length || 0;
+    const completed = getCompletedCount();
+    const remaining = Math.max(0, total - completed);
+    return `
+      <section class="session-complete" tabindex="-1" data-session-summary>
+        <span class="complete-mark" aria-hidden="true">✓</span>
+        <p class="section-kicker">SESSION COMPLETE</p>
+        <h3>이번 세션에서 ${completed}개 답변을 마쳤어요</h3>
+        <p>${remaining
+          ? `아직 ${remaining}개가 남았습니다. 목록에서 빠진 질문부터 이어가세요.`
+          : "핵심 답변을 모두 말했습니다. 다음은 확인이 필요한 주장만 짧게 점검하세요."}</p>
+        <div class="completion-actions">
+          ${remaining
+            ? `<button type="button" class="secondary-action" data-session-action="resume-incomplete">남은 질문 계속</button>`
+            : `<button type="button" class="secondary-action" data-switch-view="warnings">확인 필요 복습</button>`}
+          <button type="button" class="primary-action" data-session-action="restart">이 루틴 다시 연습</button>
+        </div>
       </section>
     `;
   };
 
-  const uniqueQuestionsById = (items) => {
-    const seen = new Set();
-    return items.filter((question) => {
-      if (seen.has(question.id)) return false;
-      seen.add(question.id);
-      return true;
-    });
+  const renderSessionActions = () => {
+    if (!state.session || state.showSummary) return "";
+    const index = getCurrentIndex();
+    const isLast = index === state.session.questionIds.length - 1;
+    return `
+      <div class="session-actions" role="group" aria-label="질문 이동과 완료">
+        <button type="button" class="session-action is-list" data-session-action="list" aria-controls="question-sidebar">
+          <span aria-hidden="true">☰</span>
+          목록
+        </button>
+        <button type="button" class="session-action" data-session-action="previous" ${index <= 0 ? "disabled" : ""}>
+          <span aria-hidden="true">←</span>
+          이전
+        </button>
+        <button type="button" class="session-action is-primary" data-session-action="complete">
+          ${isLast ? "완료하고 결과 보기" : "완료하고 다음"}
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    `;
   };
 
-  const summarizePractice = (items) => {
-    const scopedQuestions = uniqueQuestionsById(items);
-    return scopedQuestions.reduce((result, question) => {
-      const count = getPracticeCount(question.id);
-      result.total += 1;
-      result.attempts += count;
-      if (count > 0) result.practiced += 1;
-      return result;
-    }, { practiced: 0, total: 0, attempts: 0 });
+  const renderMain = () => {
+    const meta = viewMeta();
+    const activeQuestion = questionById.get(state.activeQuestionId);
+    const currentIndex = getCurrentIndex();
+    root.innerHTML = `
+      <section class="practice-workspace" aria-labelledby="workspace-title">
+        <header class="workspace-header">
+          <div>
+            <p class="section-kicker">${escapeHtml(meta.kicker)}</p>
+            <h2 id="workspace-title">${escapeHtml(meta.title)}</h2>
+            <p>${escapeHtml(meta.description)}</p>
+          </div>
+          ${state.session ? `<span class="question-total">총 ${state.session.questionIds.length}문항</span>` : ""}
+        </header>
+        ${renderRoutineChoices()}
+        ${state.view === "all" ? renderAllControls() : ""}
+        ${state.view === "warnings" ? renderRiskSummary() : ""}
+        ${renderSessionProgress()}
+        ${state.showSummary
+          ? renderSessionSummary()
+          : activeQuestion
+            ? renderQuestionCard(activeQuestion, currentIndex + 1, state.session.questionIds.length)
+            : `<p class="empty-state">조건에 맞는 질문이 없습니다. 검색어나 필터를 바꿔주세요.</p>`}
+        ${renderSessionActions()}
+      </section>
+    `;
   };
 
-  const registerSidebarScope = (items) => {
-    const key = `scope-${sidebarScopeSequence += 1}`;
-    sidebarPracticeScopes.set(key, uniqueQuestionsById(items).map((question) => question.id));
-    return key;
+  const renderSidebarQuestionLink = (question, index) => {
+    const isCurrent = question.id === state.activeQuestionId;
+    const isCompleted = state.session?.completedQuestionIds.includes(question.id);
+    return `
+      <li class="sidebar-question-item" data-sidebar-question-search="${escapeHtml([
+        question.question,
+        question.category,
+        question.project,
+        question.topic,
+      ].join(" ").toLocaleLowerCase("ko"))}">
+        <button class="sidebar-question-link ${isCurrent ? "is-current" : ""}" type="button" data-question-jump="${escapeHtml(question.id)}" ${isCurrent ? 'aria-current="true"' : ""}>
+          <span class="sidebar-sequence ${isCompleted ? "is-complete" : ""}" aria-label="${isCompleted ? "완료" : `${index + 1}번째`}">${isCompleted ? "✓" : index + 1}</span>
+          <span class="sidebar-question-copy">${escapeHtml(question.question)}</span>
+          <span class="sidebar-count"><span data-practice-count="${escapeHtml(question.id)}">${getPracticeCount(question.id)}</span>회</span>
+        </button>
+      </li>
+    `;
   };
-
-  const practiceSummaryText = (items) => {
-    const result = summarizePractice(items);
-    return `${result.practiced}/${result.total} · ${result.attempts}회`;
-  };
-
-  const renderSidebarProgress = (items) => {
-    const key = registerSidebarScope(items);
-    return `<span class="sidebar-progress" data-practice-summary-key="${key}">${practiceSummaryText(items)}</span>`;
-  };
-
-  const renderSidebarQuestionLink = (question) => `
-    <li class="sidebar-question-item" data-sidebar-question-search="${escapeHtml([
-      question.question,
-      question.category,
-      question.project,
-      question.topic,
-    ].join(" ").toLocaleLowerCase("ko"))}">
-      <button class="sidebar-question-link" type="button" data-question-jump="${escapeHtml(question.id)}">
-        <span class="sidebar-question-copy">${escapeHtml(question.question)}</span>
-        <span class="sidebar-count"><span data-practice-count="${escapeHtml(question.id)}">${getPracticeCount(question.id)}</span>회</span>
-      </button>
-    </li>
-  `;
-
-  const categoryOrder = ["공통·인성", "경험", "이력서 기술", "필수 CS"];
 
   const renderCategorySidebar = (items) => {
+    const indexById = new Map(items.map((question, index) => [question.id, index]));
     const categories = new Map();
-    uniqueQuestionsById(items).forEach((question) => {
+    items.forEach((question) => {
       if (!categories.has(question.category)) categories.set(question.category, []);
       categories.get(question.category).push(question);
     });
-
-    const orderedCategories = [...categories.entries()].sort(([a], [b]) => {
+    const ordered = [...categories.entries()].sort(([a], [b]) => {
       const aIndex = categoryOrder.indexOf(a);
       const bIndex = categoryOrder.indexOf(b);
-      if (aIndex >= 0 || bIndex >= 0) return (aIndex < 0 ? 99 : aIndex) - (bIndex < 0 ? 99 : bIndex);
-      return a.localeCompare(b, "ko");
+      return (aIndex < 0 ? 99 : aIndex) - (bIndex < 0 ? 99 : bIndex) || a.localeCompare(b, "ko");
     });
-
-    return orderedCategories.map(([category, categoryQuestions]) => {
-      const projects = new Map();
-      categoryQuestions.forEach((question) => {
-        if (!projects.has(question.project)) projects.set(question.project, []);
-        projects.get(question.project).push(question);
-      });
-
-      const projectMarkup = [...projects.entries()].map(([project, projectQuestions]) => `
-        <details class="sidebar-project" open>
-          <summary>
-            <span>${escapeHtml(project)}</span>
-            ${renderSidebarProgress(projectQuestions)}
-          </summary>
-          <ul class="sidebar-question-list">
-            ${projectQuestions.map(renderSidebarQuestionLink).join("")}
-          </ul>
-        </details>
-      `).join("");
-
+    return ordered.map(([category, categoryQuestions]) => {
+      const hasCurrent = categoryQuestions.some((question) => question.id === state.activeQuestionId);
+      const completed = categoryQuestions.filter((question) => state.session?.completedQuestionIds.includes(question.id)).length;
       return `
-        <details class="sidebar-category" open>
+        <details class="sidebar-category" ${hasCurrent ? "open" : ""}>
           <summary>
             <span>${escapeHtml(category)}</span>
-            ${renderSidebarProgress(categoryQuestions)}
+            <span class="sidebar-progress">${completed}/${categoryQuestions.length}</span>
           </summary>
-          <div class="sidebar-project-list">${projectMarkup}</div>
+          <ul class="sidebar-question-list">
+            ${categoryQuestions.map((question) => renderSidebarQuestionLink(question, indexById.get(question.id))).join("")}
+          </ul>
         </details>
       `;
     }).join("");
   };
 
-  const renderQuestionSidebar = (items) => `
+  const renderFlatSidebar = (items) => `
     <label class="sidebar-search-label" for="sidebar-question-search">현재 목록 검색</label>
-    <input
-      id="sidebar-question-search"
-      class="sidebar-search"
-      type="search"
-      value="${escapeHtml(state.sidebarSearch)}"
-      placeholder="질문, 프로젝트, 기술…"
-      autocomplete="off"
-    />
+    <input id="sidebar-question-search" class="sidebar-search" type="search" value="${escapeHtml(state.sidebarSearch)}" placeholder="질문, 프로젝트, 기술…" autocomplete="off" />
     <p id="sidebar-search-result" class="sidebar-search-result"></p>
     <ul class="sidebar-question-list is-flat">
-      ${uniqueQuestionsById(items).map(renderSidebarQuestionLink).join("")}
+      ${items.map((question, index) => renderSidebarQuestionLink(question, index)).join("")}
     </ul>
   `;
-
-  const renderSidebar = () => {
-    if (!sidebarContent) return;
-    const visibleQuestions = uniqueQuestionsById(state.visibleQuestions);
-    const scopeSummary = summarizePractice(visibleQuestions);
-    const allAttempts = Object.values(state.practiceCounts).reduce((sum, count) => sum + count, 0);
-    sidebarPracticeScopes = new Map();
-    sidebarScopeSequence = 0;
-
-    sidebarContent.innerHTML = `
-      <div class="sidebar-heading">
-        <p class="section-kicker">CURRENT QUESTIONS</p>
-        <h2>현재 화면 질문</h2>
-        <p class="sidebar-overview">
-          연습한 질문 <strong data-sidebar-practiced>${scopeSummary.practiced}</strong>/<span data-sidebar-total>${scopeSummary.total}</span>
-          · 총 답변 <strong data-sidebar-attempts>${scopeSummary.attempts}</strong>회
-        </p>
-      </div>
-      ${practiceStorageAvailable ? "" : `<p class="storage-warning" role="status"><strong>임시 저장 중</strong> 브라우저 저장을 사용할 수 없어 새로고침하면 횟수가 사라집니다.</p>`}
-      <div class="sidebar-mode-tabs" role="group" aria-label="질문 목록 분류 방식">
-        <button class="sidebar-mode-button ${state.sidebarMode === "category" ? "is-active" : ""}" type="button" data-sidebar-mode="category" aria-pressed="${state.sidebarMode === "category"}">카테고리별</button>
-        <button class="sidebar-mode-button ${state.sidebarMode === "question" ? "is-active" : ""}" type="button" data-sidebar-mode="question" aria-pressed="${state.sidebarMode === "question"}">질문별</button>
-      </div>
-      <div class="sidebar-scroll-area">
-        ${visibleQuestions.length
-          ? state.sidebarMode === "category"
-            ? renderCategorySidebar(visibleQuestions)
-            : renderQuestionSidebar(visibleQuestions)
-          : `<p class="sidebar-empty">현재 화면에 표시할 질문이 없습니다.</p>`}
-      </div>
-      <div class="sidebar-footer">
-        <p>전체 질문 누적 ${allAttempts}회</p>
-        <button class="reset-practice-button" type="button" data-practice-reset ${allAttempts === 0 ? "disabled" : ""}>모든 횟수 초기화</button>
-      </div>
-    `;
-
-    updateSidebarSearchResults();
-  };
 
   const updateSidebarSearchResults = () => {
     if (!sidebarContent || state.sidebarMode !== "question") return;
@@ -754,76 +851,52 @@
     if (result) result.textContent = `현재 ${visibleCount}문항`;
   };
 
-  const updateSidebarPracticeSummaries = () => {
+  const renderSidebar = () => {
     if (!sidebarContent) return;
-    const visibleSummary = summarizePractice(state.visibleQuestions);
-    const practiced = sidebarContent.querySelector("[data-sidebar-practiced]");
-    const total = sidebarContent.querySelector("[data-sidebar-total]");
-    const attempts = sidebarContent.querySelector("[data-sidebar-attempts]");
-    if (practiced) practiced.textContent = String(visibleSummary.practiced);
-    if (total) total.textContent = String(visibleSummary.total);
-    if (attempts) attempts.textContent = String(visibleSummary.attempts);
-
-    sidebarContent.querySelectorAll("[data-practice-summary-key]").forEach((element) => {
-      const ids = sidebarPracticeScopes.get(element.dataset.practiceSummaryKey) || [];
-      const scopedQuestions = ids.map((id) => questions.find((question) => question.id === id)).filter(Boolean);
-      element.textContent = practiceSummaryText(scopedQuestions);
-    });
-
+    const items = uniqueQuestionsById(state.visibleQuestions);
+    const completed = getCompletedCount();
     const allAttempts = Object.values(state.practiceCounts).reduce((sum, count) => sum + count, 0);
-    const footerText = sidebarContent.querySelector(".sidebar-footer p");
-    const resetButton = sidebarContent.querySelector("[data-practice-reset]");
-    if (footerText) footerText.textContent = `전체 질문 누적 ${allAttempts}회`;
-    if (resetButton) resetButton.disabled = allAttempts === 0;
+    sidebarContent.innerHTML = `
+      <div class="sidebar-heading">
+        <p class="section-kicker">QUESTION LIST</p>
+        <h2>질문 목록</h2>
+        <p class="sidebar-overview">완료 <strong>${completed}</strong>/${items.length} · 누적 답변 ${allAttempts}회</p>
+      </div>
+      ${practiceStorageAvailable && sessionStorageAvailable ? "" : `<p class="storage-warning" role="status"><strong>임시 저장 중</strong> 브라우저 저장을 사용할 수 없어 새로고침하면 진행 상태가 사라질 수 있습니다.</p>`}
+      <div class="sidebar-mode-tabs" role="group" aria-label="질문 목록 표시 방식">
+        <button class="sidebar-mode-button ${state.sidebarMode === "category" ? "is-active" : ""}" type="button" data-sidebar-mode="category" aria-pressed="${state.sidebarMode === "category"}">묶어서 보기</button>
+        <button class="sidebar-mode-button ${state.sidebarMode === "question" ? "is-active" : ""}" type="button" data-sidebar-mode="question" aria-pressed="${state.sidebarMode === "question"}">전체 펼치기</button>
+      </div>
+      <div class="sidebar-scroll-area">
+        ${items.length
+          ? state.sidebarMode === "category"
+            ? renderCategorySidebar(items)
+            : renderFlatSidebar(items)
+          : `<p class="sidebar-empty">현재 표시할 질문이 없습니다.</p>`}
+      </div>
+      <div class="sidebar-footer">
+        <p>질문별 횟수는 이 기기에 저장</p>
+        <button class="reset-practice-button" type="button" data-practice-reset ${allAttempts === 0 ? "disabled" : ""}>횟수 초기화</button>
+      </div>
+    `;
+    updateSidebarSearchResults();
+    window.requestAnimationFrame(() => {
+      sidebarContent.querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest" });
+    });
   };
 
-  const updateQuestionPracticeNodes = (questionId) => {
-    const count = getPracticeCount(questionId);
-    document.querySelectorAll("[data-practice-count]").forEach((element) => {
-      if (element.dataset.practiceCount === questionId) element.textContent = String(count);
+  const updateNavigation = () => {
+    navButtons.forEach((button) => {
+      const isActive = button.dataset.view === state.view;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
     });
-    document.querySelectorAll('[data-practice-action="decrement"]').forEach((button) => {
-      if (button.dataset.questionId === questionId) button.disabled = count === 0;
-    });
-    updateSidebarPracticeSummaries();
   };
 
-  const announcePracticeCount = (questionId) => {
-    if (!practiceStatus) return;
-    const question = questions.find((item) => item.id === questionId);
-    practiceStatus.textContent = `${question?.question || questionId}, 연습 ${getPracticeCount(questionId)}회`;
-  };
-
-  const changePracticeCount = (questionId, delta) => {
-    if (!validQuestionIds.has(questionId)) return;
-    const current = getPracticeCount(questionId);
-    const next = delta > 0
-      ? Math.min(Number.MAX_SAFE_INTEGER, current + 1)
-      : Math.max(0, current - 1);
-    if (next === current) return;
-
-    if (next > 0) state.practiceCounts[questionId] = next;
-    else delete state.practiceCounts[questionId];
-
-    const wasStorageAvailable = practiceStorageAvailable;
-    writePracticeCounts(state.practiceCounts);
-    updateQuestionPracticeNodes(questionId);
-    announcePracticeCount(questionId);
-    if (wasStorageAvailable && !practiceStorageAvailable) renderSidebar();
-  };
-
-  const resetPracticeCounts = () => {
-    state.practiceCounts = {};
-    writePracticeCounts(state.practiceCounts);
-    document.querySelectorAll("[data-practice-count]").forEach((element) => {
-      element.textContent = "0";
-    });
-    document.querySelectorAll('[data-practice-action="decrement"]').forEach((button) => {
-      button.disabled = true;
-    });
-    updateSidebarPracticeSummaries();
-    if (practiceStatus) practiceStatus.textContent = "모든 질문의 연습 횟수를 초기화했습니다.";
-    if (!practiceStorageAvailable) renderSidebar();
+  const render = () => {
+    updateNavigation();
+    renderMain();
+    renderSidebar();
   };
 
   const closeSidebar = ({ restoreFocus = true } = {}) => {
@@ -838,6 +911,10 @@
 
   const openSidebar = () => {
     if (!sidebar) return;
+    if (window.matchMedia("(min-width: 981px)").matches) {
+      (sidebar.querySelector('[aria-current="true"]') || sidebar.querySelector("button"))?.focus();
+      return;
+    }
     sidebarReturnFocus = document.activeElement;
     sidebar.classList.add("is-open");
     sidebarOpenButton?.setAttribute("aria-expanded", "true");
@@ -846,22 +923,100 @@
     window.requestAnimationFrame(() => sidebarCloseButton?.focus());
   };
 
-  const jumpToQuestion = (questionId) => {
-    const card = root.querySelector(`[data-question-card="${questionId}"]`);
-    if (!card) return;
-    closeSidebar({ restoreFocus: false });
-    document.querySelectorAll("[data-question-jump]").forEach((button) => {
-      button.classList.toggle("is-current", button.dataset.questionJump === questionId);
-    });
+  const focusActiveQuestion = () => {
     window.requestAnimationFrame(() => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-      card.focus({ preventScroll: true });
-      root.querySelectorAll(".is-jump-highlight").forEach((element) => element.classList.remove("is-jump-highlight"));
-      card.classList.add("is-jump-highlight");
-      window.clearTimeout(highlightTimer);
-      highlightTimer = window.setTimeout(() => card.classList.remove("is-jump-highlight"), 1600);
+      const card = root.querySelector("[data-question-card]");
+      card?.scrollIntoView({ behavior: "auto", block: "start" });
+      card?.focus({ preventScroll: true });
     });
+  };
+
+  const navigateQuestion = (questionId, historyMode = "push") => {
+    if (!state.session?.questionIds.includes(questionId)) return;
+    state.activeQuestionId = questionId;
+    state.session.currentQuestionId = questionId;
+    state.showSummary = false;
+    writeSession();
+    syncUrl(historyMode);
+    closeSidebar({ restoreFocus: false });
+    render();
+    focusActiveQuestion();
+  };
+
+  const changePracticeCount = (questionId, delta) => {
+    if (!validQuestionIds.has(questionId)) return false;
+    const current = getPracticeCount(questionId);
+    const next = delta > 0
+      ? Math.min(Number.MAX_SAFE_INTEGER, current + 1)
+      : Math.max(0, current - 1);
+    if (next === current) return false;
+    if (next > 0) state.practiceCounts[questionId] = next;
+    else delete state.practiceCounts[questionId];
+    writePracticeCounts(state.practiceCounts);
+    return true;
+  };
+
+  const announcePracticeCount = (questionId, prefix = "") => {
+    if (!practiceStatus) return;
+    const question = questionById.get(questionId);
+    practiceStatus.textContent = `${prefix} ${question?.question || questionId}, 누적 답변 ${getPracticeCount(questionId)}회`.trim();
+  };
+
+  const completeAndAdvance = () => {
+    if (!state.session || !state.activeQuestionId) return;
+    const questionId = state.activeQuestionId;
+    changePracticeCount(questionId, 1);
+    if (!state.session.completedQuestionIds.includes(questionId)) {
+      state.session.completedQuestionIds.push(questionId);
+    }
+    const index = getCurrentIndex();
+    const nextQuestionId = state.session.questionIds[index + 1];
+    writeSession();
+    announcePracticeCount(questionId, "답변 완료.");
+    if (nextQuestionId) {
+      navigateQuestion(nextQuestionId, "push");
+      return;
+    }
+    state.showSummary = true;
+    render();
+    window.requestAnimationFrame(() => root.querySelector("[data-session-summary]")?.focus());
+  };
+
+  const restartSession = () => {
+    if (!state.session?.questionIds.length) return;
+    const currentQuestionIds = new Set(state.session.questionIds);
+    state.session.completedQuestionIds = state.session.completedQuestionIds
+      .filter((id) => !currentQuestionIds.has(id));
+    state.session.startedAt = new Date().toISOString();
+    state.activeQuestionId = state.session.questionIds[0];
+    state.session.currentQuestionId = state.activeQuestionId;
+    state.showSummary = false;
+    writeSession();
+    syncUrl("push");
+    render();
+    focusActiveQuestion();
+  };
+
+  const resumeIncomplete = () => {
+    const incomplete = state.session?.questionIds.find((id) => !state.session.completedQuestionIds.includes(id));
+    if (incomplete) navigateQuestion(incomplete, "push");
+  };
+
+  const resetPracticeCounts = () => {
+    state.practiceCounts = {};
+    writePracticeCounts(state.practiceCounts);
+    if (practiceStatus) practiceStatus.textContent = "모든 질문의 누적 연습 횟수를 초기화했습니다.";
+    render();
+  };
+
+  const switchView = (view, historyMode = "push") => {
+    if (!VALID_VIEWS.has(view)) return;
+    let routineId = "";
+    if (view === "emphasis" || view === "difficulty") routineId = state.selectedRoutine[view];
+    if (view === "compact") routineId = routineData.compact?.id || "";
+    activateContext({ view, routineId }, "", historyMode);
+    render();
+    document.getElementById("workspace-title")?.focus?.({ preventScroll: true });
   };
 
   const trapSidebarFocus = (event) => {
@@ -885,36 +1040,77 @@
     }
   };
 
-  const updateNavigation = () => {
-    navButtons.forEach((button) => {
-      const isActive = button.dataset.view === state.view;
-      button.classList.toggle("is-active", isActive);
-      button.setAttribute("aria-pressed", String(isActive));
-    });
-  };
-
-  const render = () => {
-    updateNavigation();
-    if (state.view === "emphasis" || state.view === "difficulty") renderRoutineView(state.view);
-    else if (state.view === "compact") renderCompactView();
-    else if (state.view === "all") renderAllQuestions();
-    else if (state.view === "warnings") renderWarningsView();
-    renderSidebar();
-  };
-
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
       closeSidebar({ restoreFocus: false });
-      state.view = button.dataset.view;
-      render();
-      document.getElementById("main-content")?.focus({ preventScroll: true });
+      switchView(button.dataset.view);
     });
   });
 
   root.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-practice-action]");
-    if (!button || !root.contains(button)) return;
-    changePracticeCount(button.dataset.questionId, button.dataset.practiceAction === "increment" ? 1 : -1);
+    const routineButton = event.target.closest("[data-routine-id]");
+    if (routineButton) {
+      activateContext({ view: state.view, routineId: routineButton.dataset.routineId }, "", "push");
+      render();
+      focusActiveQuestion();
+      return;
+    }
+
+    const switchButton = event.target.closest("[data-switch-view]");
+    if (switchButton) {
+      switchView(switchButton.dataset.switchView);
+      return;
+    }
+
+    const practiceButton = event.target.closest("[data-practice-action]");
+    if (practiceButton?.dataset.practiceAction === "decrement") {
+      const questionId = practiceButton.dataset.questionId;
+      if (changePracticeCount(questionId, -1)) {
+        state.session.completedQuestionIds = state.session.completedQuestionIds.filter((id) => id !== questionId);
+        writeSession();
+        announcePracticeCount(questionId, "1회 되돌림.");
+        render();
+        focusActiveQuestion();
+      }
+      return;
+    }
+
+    const sessionButton = event.target.closest("[data-session-action]");
+    if (!sessionButton) return;
+    const action = sessionButton.dataset.sessionAction;
+    if (action === "list") openSidebar();
+    if (action === "previous") {
+      const previousId = state.session?.questionIds[getCurrentIndex() - 1];
+      if (previousId) navigateQuestion(previousId);
+    }
+    if (action === "complete") completeAndAdvance();
+    if (action === "restart") restartSession();
+    if (action === "resume-incomplete") resumeIncomplete();
+  });
+
+  root.addEventListener("input", (event) => {
+    const control = event.target.closest("[data-filter]");
+    if (!control || control.tagName !== "INPUT") return;
+    const selectionStart = control.selectionStart;
+    const selectionEnd = control.selectionEnd;
+    state.filters[control.dataset.filter] = control.value;
+    activateContext({ view: "all", routineId: "" }, "", "replace");
+    render();
+    const nextControl = root.querySelector(`[data-filter="${control.dataset.filter}"]`);
+    nextControl?.focus({ preventScroll: true });
+    if (nextControl?.setSelectionRange && selectionStart !== null && selectionEnd !== null) {
+      nextControl.setSelectionRange(selectionStart, selectionEnd);
+    }
+  });
+
+  root.addEventListener("change", (event) => {
+    const control = event.target.closest("select[data-filter]");
+    if (!control) return;
+    state.filtersExpanded = true;
+    state.filters[control.dataset.filter] = control.value;
+    activateContext({ view: "all", routineId: "" }, "", "replace");
+    render();
+    root.querySelector(`[data-filter="${control.dataset.filter}"]`)?.focus({ preventScroll: true });
   });
 
   sidebarContent?.addEventListener("click", (event) => {
@@ -925,13 +1121,11 @@
       sidebarContent.querySelector(`[data-sidebar-mode="${state.sidebarMode}"]`)?.focus();
       return;
     }
-
     const jumpButton = event.target.closest("[data-question-jump]");
     if (jumpButton) {
-      jumpToQuestion(jumpButton.dataset.questionJump);
+      navigateQuestion(jumpButton.dataset.questionJump);
       return;
     }
-
     const resetButton = event.target.closest("[data-practice-reset]");
     if (!resetButton || resetButton.disabled) return;
     if (resetDialog?.showModal) resetDialog.showModal();
@@ -954,18 +1148,36 @@
     if (event.matches) closeSidebar({ restoreFocus: false });
   });
 
+  window.addEventListener("popstate", () => {
+    const directState = readUrlState();
+    if (!directState) return;
+    activateContext(directState.context, directState.questionId, null, directState.filters);
+    render();
+    focusActiveQuestion();
+  });
+
   const duplicateIds = questions
     .map((question) => question.id)
     .filter((id, index, ids) => ids.indexOf(id) !== index);
-
   if (duplicateIds.length) {
     root.innerHTML = `<p class="notice notice-warning">중복 질문 ID가 발견되었습니다: ${escapeHtml(unique(duplicateIds).join(", "))}</p>`;
     return;
   }
 
   if (summary) {
-    summary.textContent = `질문 ${questions.length}개 · 경고 ${questions.filter(hasWarning).length}개 · 최신 이력서 v5_3 기준`;
+    summary.textContent = `질문 ${questions.length}개 · 확인 필요 ${questions.filter(hasWarning).length}개 · 최신 이력서 ${CATALOG_VERSION} 기준`;
   }
 
+  const storedSession = loadSession();
+  const directState = readUrlState();
+  if (directState) {
+    state.session = storedSession;
+    activateContext(directState.context, directState.questionId, null, directState.filters);
+  } else if (storedSession) {
+    applySession(storedSession);
+  } else {
+    activateContext({ view: "difficulty", routineId: state.selectedRoutine.difficulty }, "", null);
+  }
+  syncUrl("replace");
   render();
 })();

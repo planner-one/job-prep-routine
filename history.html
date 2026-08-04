@@ -2,11 +2,12 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="데일리·주간·로드맵 활동 기록과 최근 7일·30일 생산성 추이를 확인하는 페이지">
     <title>기록·분석</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
-    <link rel="stylesheet" href="./assets/routine.css?v=9">
+    <link rel="stylesheet" href="./assets/site-shell.css?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=11">
   </head>
   <body>
     <header class="app-topbar screen-only">
@@ -15,9 +16,10 @@
         <span>취업 준비 루틴 보드</span>
       </a>
       <nav aria-label="주요 이동">
-        <a href="./roadmap.html">로드맵</a>
+        <a href="./index.html">오늘</a>
         <a href="./weekly.html">주간</a>
-        <a href="./daily.html">데일리</a>
+        <a href="./interview/">면접</a>
+        <a href="./roadmap.html">로드맵</a>
         <a href="./history.html" aria-current="page">기록</a>
       </nav>
     </header>
@@ -48,27 +50,29 @@
             </div>
           </div>
 
-          <div class="history-kpi-grid" aria-live="polite">
-            <article class="history-kpi-card history-kpi-card--completion" data-history-kpi="completion">
+          <div class="history-kpi-grid page-primary" aria-live="polite">
+            <article class="history-kpi-card history-kpi-card--completion history-primary-kpi" data-history-kpi="completion">
               <span>평균 완료율</span>
               <strong id="history-kpi-completion">0%</strong>
             </article>
-            <article class="history-kpi-card" data-history-kpi="active">
-              <span>실행한 날</span>
-              <strong id="history-kpi-active">0일</strong>
-            </article>
-            <article class="history-kpi-card history-kpi-card--application" data-history-kpi="applications">
-              <span>지원 완료</span>
-              <strong id="history-kpi-applications">0개</strong>
-            </article>
-            <article class="history-kpi-card history-kpi-card--interview" data-history-kpi="interview">
-              <span>면접 실행일</span>
-              <strong id="history-kpi-interview">0일</strong>
-            </article>
-            <article class="history-kpi-card history-kpi-card--exercise" data-history-kpi="exercise">
-              <span>운동·러닝일</span>
-              <strong id="history-kpi-exercise">0일</strong>
-            </article>
+            <div class="history-supporting-kpis">
+              <article class="history-kpi-card" data-history-kpi="active">
+                <span>실행한 날</span>
+                <strong id="history-kpi-active">0일</strong>
+              </article>
+              <article class="history-kpi-card history-kpi-card--application" data-history-kpi="applications">
+                <span>지원 완료</span>
+                <strong id="history-kpi-applications">0개</strong>
+              </article>
+              <article class="history-kpi-card history-kpi-card--interview" data-history-kpi="interview">
+                <span>면접 실행일</span>
+                <strong id="history-kpi-interview">0일</strong>
+              </article>
+              <article class="history-kpi-card history-kpi-card--exercise" data-history-kpi="exercise">
+                <span>운동·러닝일</span>
+                <strong id="history-kpi-exercise">0일</strong>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -104,6 +108,14 @@
         </section>
       </main>
     </div>
+
+    <nav class="mobile-tabbar screen-only" aria-label="모바일 주요 이동">
+      <a href="./index.html">오늘</a>
+      <a href="./weekly.html">주간</a>
+      <a href="./interview/">면접</a>
+      <a href="./roadmap.html">로드맵</a>
+      <a href="./history.html" aria-current="page">기록</a>
+    </nav>
 
     <script type="module" src="./src/history-app.js"></script>
   </body>

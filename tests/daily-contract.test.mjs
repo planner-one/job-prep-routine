@@ -32,6 +32,22 @@ test('데일리형은 시간표와 지원 파이프라인의 두 열을 가진�
   assert.match(html, /id="application-pipeline"/);
 });
 
+test('날짜·진척·다음 일정과 시간표를 보조 실행 입력보다 먼저 제공한다', () => {
+  assert.match(html, /class="daily-today-overview page-primary"/);
+  assert.match(html, /id="daily-next-action"/);
+  assert.ok(html.indexOf('id="progress-track"') < html.indexOf('id="daily-next-action"'));
+  assert.ok(html.indexOf('id="daily-next-action"') < html.indexOf('id="daily-schedule"'));
+  assert.ok(html.indexOf('id="daily-schedule"') < html.indexOf('id="application-pipeline"'));
+});
+
+test('지원과 하루 마감은 펼쳐서 쓰고 PDF와 초기화는 더보기에 둔다', () => {
+  assert.match(html, /<details class="side-panel daily-disclosure" id="application-pipeline">/);
+  assert.match(html, /<details class="side-panel memo-panel daily-disclosure">/);
+  const more = html.match(/<details class="daily-low-frequency[\s\S]*?<\/details>/)?.[0] ?? '';
+  assert.match(more, /<summary>더보기<\/summary>/);
+  assert.match(more, /id="pdf-preview"[\s\S]*id="reset-today"/);
+});
+
 test('주간 계획을 데일리 체크 일정으로 연결하고 계획 편집은 주간 화면으로 보낸다', () => {
   assert.match(html, /id="daily-plan-source"/);
   assert.match(html, /id="daily-plan-mode"/);

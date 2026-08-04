@@ -481,11 +481,20 @@ test('데일리 실행 변경 시 주간 진척과 읽기 전용 행 상태를 �
       `(async () => {
         const weekKey = document.querySelector('#weekly-current-week').dateTime;
         const weeklyKey = 'job-prep-routine:weekly:' + weekKey;
-        const dailyKey = 'job-prep-routine:daily:' + weekKey;
         const weekly = JSON.parse(localStorage.getItem(weeklyKey));
-        const revision = weekly.days.mon.revision;
+        const selectedDay = document.querySelector('#weekday-tabs [data-day][aria-selected="true"]').dataset.day;
+        const dayIndex = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(selectedDay);
+        const selectedDate = new Date(weekKey + 'T12:00:00');
+        selectedDate.setDate(selectedDate.getDate() + dayIndex);
+        const selectedDateKey = [
+          selectedDate.getFullYear(),
+          String(selectedDate.getMonth() + 1).padStart(2, '0'),
+          String(selectedDate.getDate()).padStart(2, '0'),
+        ].join('-');
+        const dailyKey = 'job-prep-routine:daily:' + selectedDateKey;
+        const revision = weekly.days[selectedDay].revision;
         const { resolveDailyPlan } = await import('./src/daily-plan-core.js');
-        const planSnapshot = resolveDailyPlan(weekKey, weekly);
+        const planSnapshot = resolveDailyPlan(selectedDateKey, weekly);
         const read = () => ({
           applications: document.querySelector('#weekly-applications-value').textContent,
           ariaNow: document.querySelector('[data-weekly-progress="applications"] [role="progressbar"]').getAttribute('aria-valuenow'),

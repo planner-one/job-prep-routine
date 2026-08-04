@@ -21,30 +21,36 @@ test('기록·분석 페이지는 기간 선택, 요약, 그래프, 날짜별 �
   assert.match(historyHtml, /id="history-record-list"/);
   assert.match(historyHtml, /id="history-empty"/);
   assert.match(historyHtml, /src="\.\/src\/history-app\.js"/);
+  const periodSwitch = historyHtml.match(/<div class="history-period-switch screen-only"[^>]*id="history-period-switch"/)?.[0] ?? '';
+  assert.notEqual(periodSwitch, '');
+  assert.match(historyHtml, /class="history-kpi-card history-kpi-card--completion history-primary-kpi"/);
+  assert.match(historyHtml, /class="history-supporting-kpis"/);
 });
 
-test('루틴 내부 화면은 로드맵·주간·데일리·기록 네 이동만 제공한다', () => {
+test('루틴 내부 화면은 오늘·주간·면접·로드맵·기록 다섯 이동을 제공한다', () => {
   for (const html of [indexHtml, roadmapHtml, weeklyHtml, dailyHtml, historyHtml]) {
     const topbar = html.match(/<header class="app-topbar[\s\S]*?<\/header>/)?.[0] ?? '';
     const nav = topbar.match(/<nav aria-label="주요 이동">[\s\S]*?<\/nav>/)?.[0] ?? '';
     assert.match(topbar, /class="app-topbar-brand" href="\.\/index\.html"/);
     assert.match(topbar, />취업 준비 루틴 보드<\/span>/);
-    assert.equal((nav.match(/<a /g) ?? []).length, 4);
-    for (const pageName of ['roadmap', 'weekly', 'daily', 'history']) {
-      assert.match(nav, new RegExp(`href="\\./${pageName}\\.html"`));
-    }
+    assert.equal((nav.match(/<a /g) ?? []).length, 5);
+    assert.match(nav, /href="\.\/index\.html"[^>]*>오늘<\/a>/);
+    assert.match(nav, /href="\.\/weekly\.html"[^>]*>주간<\/a>/);
+    assert.match(nav, /href="\.\/interview\/"[^>]*>면접<\/a>/);
+    assert.match(nav, /href="\.\/roadmap\.html"[^>]*>로드맵<\/a>/);
+    assert.match(nav, /href="\.\/history\.html"[^>]*>기록<\/a>/);
     assert.doesNotMatch(nav, /contents|study-history|학습/);
   }
 });
 
-test('선택 홈은 배포 가능한 루틴 보드와 면접 대시보드 두 카드만 제공한다', () => {
-  const cards = indexHtml.match(/<nav class="home-board-grid"[\s\S]*?<\/nav>/)?.[0] ?? '';
-  assert.equal((cards.match(/class="home-board-card/g) ?? []).length, 2);
-  assert.match(cards, /href="\.\/roadmap\.html"/);
-  assert.match(cards, /href="\.\/interview\/"/);
-  assert.match(cards, /<strong>루틴 보드<\/strong>/);
-  assert.match(cards, /<strong>면접 대시보드<\/strong>/);
-  assert.doesNotMatch(cards, /href="http:\/\/127\.0\.0\.1:8787\/roadmap\.html"/);
+test('홈은 오늘 실행·면접 이어하기·주간 진척을 한 화면에서 제공한다', () => {
+  assert.match(indexHtml, /id="home-page"/);
+  assert.match(indexHtml, /id="home-next-schedule"/);
+  assert.match(indexHtml, /id="home-interview-action"/);
+  assert.match(indexHtml, /id="home-weekly-title"/);
+  assert.match(indexHtml, /href="\.\/daily\.html"/);
+  assert.match(indexHtml, /href="\.\/interview\/\?view=difficulty&amp;routine=implementation"/);
+  assert.doesNotMatch(indexHtml, /href="http:\/\/127\.0\.0\.1:8787/);
 });
 
 test('데일리와 주간 보드에서 기록·분석으로 바로 이동할 수 있다', () => {

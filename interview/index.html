@@ -2,46 +2,53 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta name="theme-color" content="#3182f6" />
     <title>면접 준비 대시보드 | 취업 준비 루틴 보드</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/dashboard.css?v=5" />
+    <link rel="stylesheet" href="../assets/site-shell.css?v=1" />
+    <link rel="stylesheet" href="assets/dashboard.css?v=7" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+    <header class="app-topbar screen-only">
+      <a class="app-topbar-brand" href="../index.html" aria-label="취업 준비 루틴 보드 홈">
+        <img src="assets/favicon.svg" alt="" width="28" height="28" />
+        <span>취업 준비 루틴 보드</span>
+      </a>
+      <nav aria-label="주요 이동">
+        <a href="../index.html">오늘</a>
+        <a href="../weekly.html">주간</a>
+        <a href="./" aria-current="page">면접</a>
+        <a href="../roadmap.html">로드맵</a>
+        <a href="../history.html">기록</a>
+      </nav>
+    </header>
     <div class="app-shell">
       <header class="hero">
-        <a class="routine-home-link" href="../index.html" aria-label="취업 준비 루틴 보드로 돌아가기">
-          <span aria-hidden="true">←</span>
-          루틴 보드
-        </a>
         <div class="hero-copy">
-          <p class="eyebrow">BACKEND INTERVIEW PREP</p>
-          <h1>근거로 시작하고,<br />꼬리질문까지 답하기</h1>
+          <p class="eyebrow">BACKEND INTERVIEW</p>
+          <h1>한 질문씩, 실제 답변처럼</h1>
           <p class="hero-description">
-            최신 v5_3 이력서를 기준으로 공통·인성과 기술질문을 함께 연습합니다.
-            확인된 구현과 일반론, 다시 확인할 주장을 분리했습니다.
+            핵심문장을 먼저 말하고 근거와 꼬리질문을 필요한 만큼 펼쳐보세요.
           </p>
         </div>
         <div class="hero-rule" aria-label="답변 원칙">
-          <span>핵심 답변 1문장</span>
-          <span>근거 1·2 각 1문장</span>
-          <span>1분 요약·키워드</span>
-          <span>난이도별 꼬리질문</span>
+          <span>핵심문장 먼저</span>
+          <span>완료하면 다음 질문</span>
         </div>
       </header>
 
       <nav class="view-nav" aria-label="대시보드 보기">
         <button class="nav-button is-active" type="button" data-view="emphasis" aria-pressed="true">
-          강조점별 루틴
+          강조점
         </button>
         <button class="nav-button" type="button" data-view="difficulty" aria-pressed="false">
-          난이도별 루틴
+          난이도
         </button>
         <button class="nav-button" type="button" data-view="compact" aria-pressed="false">
-          2시간 압축 복습
+          2시간 복습
         </button>
         <button class="nav-button" type="button" data-view="all" aria-pressed="false">
           전체 질문
@@ -84,6 +91,14 @@
       </footer>
     </div>
 
+    <nav class="mobile-tabbar screen-only" aria-label="모바일 주요 이동">
+      <a href="../index.html">오늘</a>
+      <a href="../weekly.html">주간</a>
+      <a href="./" aria-current="page">면접</a>
+      <a href="../roadmap.html">로드맵</a>
+      <a href="../history.html">기록</a>
+    </nav>
+
     <dialog id="practice-reset-dialog" class="reset-dialog" aria-labelledby="reset-dialog-title">
       <form method="dialog">
         <p class="section-kicker">PRACTICE HISTORY</p>
@@ -96,10 +111,10 @@
       </form>
     </dialog>
 
-    <script src="assets/data/behavioral.js?v=5" defer></script>
-    <script src="assets/data/feedshop.js?v=5" defer></script>
-    <script src="assets/data/architecture_cs.js?v=5" defer></script>
-    <script src="assets/routines.js?v=5" defer></script>
-    <script src="assets/dashboard.js?v=5" defer></script>
+    <script src="assets/data/behavioral.js?v=6" defer></script>
+    <script src="assets/data/feedshop.js?v=6" defer></script>
+    <script src="assets/data/architecture_cs.js?v=6" defer></script>
+    <script src="assets/routines.js?v=6" defer></script>
+    <script src="assets/dashboard.js?v=7" defer></script>
   </body>
 </html>

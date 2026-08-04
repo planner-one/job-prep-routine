@@ -2,10 +2,11 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>데일리 포커스 보드</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
-    <link rel="stylesheet" href="./assets/routine.css?v=9">
+    <link rel="stylesheet" href="./assets/site-shell.css?v=1">
+    <link rel="stylesheet" href="./assets/routine.css?v=11">
   </head>
   <body>
     <header class="app-topbar screen-only">
@@ -14,9 +15,10 @@
         <span>취업 준비 루틴 보드</span>
       </a>
       <nav aria-label="주요 이동">
-        <a href="./roadmap.html">로드맵</a>
+        <a href="./index.html" aria-current="page">오늘</a>
         <a href="./weekly.html">주간</a>
-        <a href="./daily.html" aria-current="page">데일리</a>
+        <a href="./interview/">면접</a>
+        <a href="./roadmap.html">로드맵</a>
         <a href="./history.html">기록</a>
       </nav>
     </header>
@@ -36,12 +38,15 @@
             </div>
             <div class="mode-bar screen-only">
               <a class="board-link" href="./history.html">기록·분석</a>
-              <button type="button" class="pdf-button" id="pdf-preview">PDF 미리보기</button>
             </div>
 
-            <div class="sub-actions screen-only">
-              <button type="button" class="reset-button" id="reset-today">현재 날짜 초기화</button>
-            </div>
+            <details class="daily-low-frequency screen-only">
+              <summary>더보기</summary>
+              <div class="daily-low-frequency-actions">
+                <button type="button" class="pdf-button" id="pdf-preview">PDF 미리보기</button>
+                <button type="button" class="reset-button" id="reset-today">현재 날짜 초기화</button>
+              </div>
+            </details>
           </div>
         </header>
 
@@ -50,23 +55,31 @@
           <button type="button" id="apply-daily-plan-update">변경 계획 반영</button>
         </div>
 
-        <section class="progress-card" aria-labelledby="progress-title">
-          <h2 id="progress-title">오늘 진척</h2>
-          <div
-            class="progress-track"
-            id="progress-track"
-            role="progressbar"
-            aria-valuemin="0"
-            aria-valuemax="1"
-            aria-valuenow="0"
-            aria-labelledby="progress-title progress-count"
-          >
-            <span class="progress-fill" id="progress-fill"></span>
+        <section class="daily-today-overview page-primary" aria-label="오늘 실행 요약">
+          <div class="progress-card" aria-labelledby="progress-title">
+            <h2 id="progress-title">오늘 진척</h2>
+            <div
+              class="progress-track"
+              id="progress-track"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="1"
+              aria-valuenow="0"
+              aria-labelledby="progress-title progress-count"
+            >
+              <span class="progress-fill" id="progress-fill"></span>
+            </div>
+            <p class="progress-count" id="progress-count" aria-live="polite">0 / 0 완료</p>
           </div>
-          <p class="progress-count" id="progress-count" aria-live="polite">0 / 0 완료</p>
+
+          <button type="button" class="daily-next-action" id="daily-next-action" aria-live="polite">
+            <span>다음 미완료 일정</span>
+            <strong id="daily-next-action-label">시간표를 불러오는 중입니다</strong>
+            <time id="daily-next-action-time">확인 중</time>
+          </button>
         </section>
 
-        <section class="focus-anchors" aria-label="오늘의 핵심 두 가지">
+        <section class="focus-anchors page-secondary" aria-label="오늘의 핵심 두 가지">
           <article class="focus-anchor focus-anchor--application">
             <h2>지원 3~4개</h2>
             <p>분석 → 자소서 조정 → 제출</p>
@@ -78,7 +91,7 @@
         </section>
 
         <div class="daily-layout">
-          <section class="schedule-column" aria-labelledby="schedule-title">
+          <section class="schedule-column page-primary" aria-labelledby="schedule-title">
             <div class="section-heading">
               <p class="section-kicker">시간 블록</p>
               <h2 id="schedule-title" tabindex="-1">고정 시간표</h2>
@@ -99,17 +112,18 @@
             <div id="daily-schedule"></div>
           </section>
 
-          <aside class="execution-column" aria-labelledby="execution-title">
+          <aside class="execution-column page-secondary" aria-labelledby="execution-title">
             <div class="section-heading">
               <p class="section-kicker">오늘의 실행</p>
               <h2 id="execution-title">오늘의 실행</h2>
             </div>
 
-            <section class="side-panel" id="application-pipeline" aria-labelledby="pipeline-title">
-              <div class="panel-heading">
+            <details class="side-panel daily-disclosure" id="application-pipeline">
+              <summary class="panel-heading">
                 <h3 id="pipeline-title">지원 파이프라인</h3>
                 <span id="pipeline-progress">지원 0개 · 0 / 12단계</span>
-              </div>
+              </summary>
+              <div class="daily-disclosure-content" aria-labelledby="pipeline-title">
 
               <article class="company-card" data-company-index="0">
                 <div class="company-head">
@@ -178,21 +192,32 @@
                 </div>
                 <label class="job-link-row screen-only">지원 공고 링크 <input type="url" data-field="link" aria-label="회사 4 지원 공고 링크" placeholder="https://" inputmode="url"></label>
               </article>
-            </section>
+              </div>
+            </details>
 
-            <section class="side-panel memo-panel" aria-labelledby="memo-title">
-              <h3 id="memo-title">하루 마감</h3>
-              <label for="implemented-today">오늘 구현한 것</label>
-              <textarea id="implemented-today" data-memo="implemented" rows="2"></textarea>
-              <label for="blocked-today">막힌 것</label>
-              <textarea id="blocked-today" data-memo="blocked" rows="2"></textarea>
-              <label for="first-action-tomorrow">내일 첫 행동</label>
-              <textarea id="first-action-tomorrow" data-memo="firstAction" rows="2"></textarea>
-            </section>
+            <details class="side-panel memo-panel daily-disclosure">
+              <summary><h3 id="memo-title">하루 마감</h3></summary>
+              <div class="daily-disclosure-content" aria-labelledby="memo-title">
+                <label for="implemented-today">오늘 구현한 것</label>
+                <textarea id="implemented-today" data-memo="implemented" rows="2"></textarea>
+                <label for="blocked-today">막힌 것</label>
+                <textarea id="blocked-today" data-memo="blocked" rows="2"></textarea>
+                <label for="first-action-tomorrow">내일 첫 행동</label>
+                <textarea id="first-action-tomorrow" data-memo="firstAction" rows="2"></textarea>
+              </div>
+            </details>
           </aside>
         </div>
       </main>
     </div>
+
+    <nav class="mobile-tabbar screen-only" aria-label="모바일 주요 이동">
+      <a href="./index.html" aria-current="page">오늘</a>
+      <a href="./weekly.html">주간</a>
+      <a href="./interview/">면접</a>
+      <a href="./roadmap.html">로드맵</a>
+      <a href="./history.html">기록</a>
+    </nav>
 
     <script type="module" src="./src/page-app.js"></script>
   </body>

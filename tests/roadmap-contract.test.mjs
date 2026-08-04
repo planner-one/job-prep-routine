@@ -41,6 +41,12 @@ test('로드맵은 네 카테고리와 러닝 시작 시각 선택을 제공한�
   assert.doesNotMatch(html, /type="checkbox"|type="radio"/);
 });
 
+test('일정 선택과 현재 시간표를 운영 원칙과 PDF보다 먼저 제공한다', () => {
+  assert.ok(html.indexOf('class="roadmap-view-selector') < html.indexOf('id="roadmap-reference-list"'));
+  assert.ok(html.indexOf('id="roadmap-reference-list"') < html.indexOf('class="focus-anchors roadmap-principles'));
+  assert.ok(html.indexOf('class="focus-anchors roadmap-principles') < html.indexOf('class="roadmap-secondary roadmap-download'));
+});
+
 test('모든 인터랙티브 요소는 밝은 분리 링과 진한 외곽 포커스 링을 사용한다', () => {
   for (const selector of [
     'a[href]:focus-visible',

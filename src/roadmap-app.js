@@ -1,4 +1,5 @@
 import { getSchedule } from './routine-data.js';
+import { loadUiPreferences, saveUiPreferences } from './ui-preferences.js';
 
 const PERIOD_LABELS = {
   morning: '오전',
@@ -117,14 +118,22 @@ function renderVariant(pageDocument, variant) {
   return section;
 }
 
-export function initRoadmapReference(pageDocument) {
+export function initRoadmapReference(pageDocument, storage = null) {
   const root = pageDocument.getElementById('roadmap-page');
   const list = pageDocument.getElementById('roadmap-reference-list');
   if (!root || !list) return null;
+  if (!storage) {
+    try {
+      storage = pageDocument.defaultView?.localStorage ?? null;
+    } catch {
+      storage = null;
+    }
+  }
+  const preferences = loadUiPreferences(storage);
   const variants = getRoadmapVariants();
   list.replaceChildren(...variants.map((variant) => renderVariant(pageDocument, variant)));
-  let activeCategory = 'workout';
-  let activeRunStart = '21';
+  let activeCategory = preferences.roadmap.category;
+  let activeRunStart = preferences.roadmap.runStart;
   const categoryButtons = [...pageDocument.querySelectorAll('[data-roadmap-category]')];
   const runButtons = [...pageDocument.querySelectorAll('[data-roadmap-run-start]')];
   const runPicker = pageDocument.getElementById('roadmap-run-time-picker');
@@ -146,11 +155,13 @@ export function initRoadmapReference(pageDocument) {
 
   function selectCategory(category) {
     activeCategory = ROADMAP_CATEGORIES.has(category) ? category : 'workout';
+    saveUiPreferences(storage, { roadmap: { category: activeCategory, runStart: activeRunStart } });
     updateView();
   }
 
   function selectRunStart(runStart) {
     activeRunStart = runStart === '22' ? '22' : '21';
+    saveUiPreferences(storage, { roadmap: { category: activeCategory, runStart: activeRunStart } });
     updateView();
   }
 

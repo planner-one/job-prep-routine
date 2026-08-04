@@ -10,6 +10,7 @@ import {
   logicalDateString,
   saveState,
   scheduleLogicalDayRollover,
+  storageKey,
 } from './routine-core.js';
 import {
   TASK_LIBRARY,
@@ -97,6 +98,11 @@ export function formatWeekRange(weekKey) {
 export function resolveWeeklyPageDateKeys(value = logicalDateString()) {
   const todayKey = value instanceof Date ? logicalDateString(value) : value;
   return { todayKey, weekKey: weekMondayKey(todayKey) };
+}
+
+export function weekdayIdForDate(value) {
+  const day = localDateFrom(value).getDay();
+  return WEEKDAYS[(day + 6) % 7].id;
 }
 
 function formatSelectedDate(weekKey, dayId) {
@@ -258,7 +264,16 @@ export function initWeeklyPage(pageDocument, storage, date = logicalDateString()
   if (!root) return null;
 
   const { todayKey, weekKey } = resolveWeeklyPageDateKeys(date);
+  let hasStoredWeek = false;
+  try {
+    const storedWeek = storage.getItem(storageKey(WEEKLY_PAGE_NAME, weekKey));
+    const parsedWeek = storedWeek ? JSON.parse(storedWeek) : null;
+    hasStoredWeek = Boolean(parsedWeek && typeof parsedWeek === 'object' && !Array.isArray(parsedWeek));
+  } catch {
+    hasStoredWeek = false;
+  }
   let state = normalizeWeeklyState(loadState(storage, WEEKLY_PAGE_NAME, weekKey, createDefaultWeeklyState()));
+  if (!hasStoredWeek) state.selectedDay = weekdayIdForDate(todayKey);
   let editingTime = false;
   let draggedItemId = null;
   const timeErrors = new Map();
