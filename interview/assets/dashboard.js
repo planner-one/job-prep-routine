@@ -96,6 +96,7 @@
       search: "",
       category: "all",
       project: "all",
+      difficulty: "all",
       evidence: "all",
       stage: "all",
     },
@@ -114,6 +115,58 @@
       .replaceAll("'", "&#039;");
 
   const unique = (items) => [...new Set(items.filter(Boolean))];
+
+  const toSingleSentence = (value, fallback = "내용을 준비 중입니다.") => {
+    const normalized = String(value || fallback).replace(/\s+/g, " ").trim();
+    const firstSentence = normalized.match(/^.*?(?:[.!?](?:["'”’)]*)(?=\s|$)|$)/u)?.[0];
+    return firstSentence?.trim() || normalized;
+  };
+
+  const difficultyProfiles = {
+    기초: {
+      label: "기초 꼬리질문",
+      guide: "역할·용어·실제 사용 위치를 짧고 정확하게 확인합니다.",
+      className: "is-foundation",
+    },
+    중급: {
+      label: "중급 꼬리질문",
+      guide: "선택 이유·구현 흐름·검증 기준을 연결해 설명합니다.",
+      className: "is-implementation",
+    },
+    심화: {
+      label: "심화 꼬리질문",
+      guide: "대안·한계·장애 상황과 트레이드오프까지 방어합니다.",
+      className: "is-advanced",
+    },
+    압박: {
+      label: "압박 꼬리질문",
+      guide: "반박과 미확인 주장을 구분하고 재설계 기준까지 답합니다.",
+      className: "is-pressure",
+    },
+  };
+
+  const getDifficultyProfile = (difficulty) => difficultyProfiles[difficulty] || {
+    label: "꼬리질문",
+    guide: "사실과 판단 근거를 구분해 답합니다.",
+    className: "",
+  };
+
+  const followupDifficultyByType = {
+    "사실 확인": "기초",
+    "선택 압박": "중급",
+    "장애·대안": "심화",
+  };
+
+  const getFollowupDifficultyProfile = (followup) => {
+    const difficulty = followup.difficulty || followupDifficultyByType[followup.type] || "중급";
+    return { difficulty, ...getDifficultyProfile(difficulty) };
+  };
+
+  const getMinuteSummaryLabels = (question) => {
+    if (question.category === "필수 CS") return ["정의·결론", "원리·근거", "적용·한계"];
+    if (question.category === "공통·인성") return ["입장·결론", "경험·행동", "결과·배움"];
+    return ["역할·결론", "문제·접근", "검증·결과"];
+  };
 
   const normalizePriority = (priority) => ({
     최우선: "핵심",
@@ -185,6 +238,14 @@
     const followups = question.followups || [];
     const keywords = answer.keywords || [];
     const sources = evidence.sources || [];
+    const difficulty = question.difficulty || "미분류";
+    const difficultyProfile = getDifficultyProfile(difficulty);
+    const minuteSummaryLabels = getMinuteSummaryLabels(question);
+    const conciseAnswer = {
+      conclusion: toSingleSentence(answer.conclusion, "답변 준비 중입니다."),
+      evidence1: toSingleSentence(answer.evidence1, "근거 확인이 필요합니다."),
+      evidence2: toSingleSentence(answer.evidence2, "근거 확인이 필요합니다."),
+    };
     const cardClasses = hasWarning(question) ? "question-card has-warning" : "question-card";
     const ordinal = options.ordinal ? `<span class="badge">Q${options.ordinal}</span>` : "";
     const practiceCount = getPracticeCount(question.id);
@@ -196,6 +257,7 @@
           <span class="badge badge-project">${escapeHtml(question.project || question.category)}</span>
           <span class="badge">${escapeHtml(question.topic)}</span>
           <span class="badge">${escapeHtml(normalizeStage(question.stage))}</span>
+          <span class="badge badge-difficulty ${difficultyProfile.className}">문항 난이도 · ${escapeHtml(difficulty)}</span>
           <span class="badge ${evidenceClass(evidence.status)}">${escapeHtml(evidence.status || "근거 미분류")}</span>
           ${question.minutes ? `<span class="badge">약 ${escapeHtml(question.minutes)}분</span>` : ""}
         </div>
@@ -223,33 +285,63 @@
         ${renderWarnings(question)}
         <div class="answer-grid">
           <div class="answer-block is-conclusion">
-            <p class="answer-label">두괄식 결론</p>
-            <p>${escapeHtml(answer.conclusion || "답변 준비 중")}</p>
+            <p class="answer-label">핵심 답변 · 1문장</p>
+            <p>${escapeHtml(conciseAnswer.conclusion)}</p>
           </div>
           <div class="answer-block">
-            <p class="answer-label">근거 1</p>
-            <p>${escapeHtml(answer.evidence1 || "근거 확인 필요")}</p>
+            <p class="answer-label">근거 1 · 1문장</p>
+            <p>${escapeHtml(conciseAnswer.evidence1)}</p>
           </div>
           <div class="answer-block">
-            <p class="answer-label">근거 2</p>
-            <p>${escapeHtml(answer.evidence2 || "근거 확인 필요")}</p>
+            <p class="answer-label">근거 2 · 1문장</p>
+            <p>${escapeHtml(conciseAnswer.evidence2)}</p>
           </div>
         </div>
         ${keywords.length ? `<ul class="keywords" aria-label="핵심 키워드">${keywords.map((keyword) => `<li>${escapeHtml(keyword)}</li>`).join("")}</ul>` : ""}
         ${answer.caution ? `<p class="caution"><strong>말할 때 주의:</strong> ${escapeHtml(answer.caution)}</p>` : ""}
-        <details>
-          <summary>꼬리질문과 방어 포인트 ${followups.length ? `(${followups.length})` : ""}</summary>
+        <details class="minute-summary">
+          <summary>1분 요약 말하기 순서</summary>
+          <ol class="minute-summary-list" aria-label="1분 요약 말하기 순서">
+            <li>
+              <span>${escapeHtml(minuteSummaryLabels[0])}</span>
+              <p>${escapeHtml(conciseAnswer.conclusion)}</p>
+            </li>
+            <li>
+              <span>${escapeHtml(minuteSummaryLabels[1])}</span>
+              <p>${escapeHtml(conciseAnswer.evidence1)}</p>
+            </li>
+            <li>
+              <span>${escapeHtml(minuteSummaryLabels[2])}</span>
+              <p>${escapeHtml(conciseAnswer.evidence2)}</p>
+            </li>
+            ${keywords.length ? `
+              <li>
+                <span>설명 확장</span>
+                <p>관련해서 ${escapeHtml(keywords.join(", "))}을 중심으로 설명드릴 수 있습니다.</p>
+              </li>
+            ` : ""}
+          </ol>
+        </details>
+        <details class="followup-details">
+          <summary>난이도별 꼬리질문 대비 ${followups.length ? `(${followups.length})` : ""}</summary>
+          <p class="followup-guide">기초는 사실 확인, 중급은 선택 이유, 심화는 장애·대안을 중심으로 답합니다.</p>
           ${followups.length ? `
             <ul class="followup-list">
-              ${followups.map((followup) => `
-                <li>
-                  <span class="followup-type">${escapeHtml(followup.type)}</span>
-                  <div>
-                    <p class="followup-question"><strong>${escapeHtml(followup.question)}</strong></p>
-                    <p class="followup-defense">${escapeHtml(followup.defense)}</p>
-                  </div>
-                </li>
-              `).join("")}
+              ${followups.map((followup) => {
+                const profile = getFollowupDifficultyProfile(followup);
+                return `
+                  <li>
+                    <div class="followup-meta">
+                      <span class="followup-difficulty ${profile.className}">${escapeHtml(profile.difficulty)}</span>
+                      <span class="followup-type">${escapeHtml(followup.type)}</span>
+                    </div>
+                    <div>
+                      <p class="followup-question"><strong>${escapeHtml(followup.question)}</strong></p>
+                      <p class="followup-defense">${escapeHtml(followup.defense)}</p>
+                    </div>
+                  </li>
+                `;
+              }).join("")}
             </ul>
           ` : `<p class="evidence-note">추가 꼬리질문을 준비 중입니다.</p>`}
         </details>
@@ -388,11 +480,12 @@
   `;
 
   const filterQuestions = () => {
-    const { search, category, project, evidence, stage } = state.filters;
+    const { search, category, project, difficulty, evidence, stage } = state.filters;
     const normalizedSearch = search.trim().toLocaleLowerCase("ko");
     return sortQuestions(questions.filter((question) => {
       if (category !== "all" && question.category !== category) return false;
       if (project !== "all" && question.project !== project) return false;
+      if (difficulty !== "all" && question.difficulty !== difficulty) return false;
       if (evidence !== "all" && question.evidence?.status !== evidence) return false;
       if (stage !== "all" && normalizeStage(question.stage) !== stage) return false;
       if (!normalizedSearch) return true;
@@ -400,6 +493,7 @@
         question.question,
         question.topic,
         question.project,
+        question.difficulty,
         question.answer?.conclusion,
         ...(question.answer?.keywords || []),
         ...(question.tags || []),
@@ -429,6 +523,7 @@
   const renderAllQuestions = () => {
     const categories = unique(questions.map((question) => question.category)).sort((a, b) => a.localeCompare(b, "ko"));
     const projects = unique(questions.map((question) => question.project)).sort((a, b) => a.localeCompare(b, "ko"));
+    const difficulties = unique(questions.map((question) => question.difficulty));
     const evidenceStatuses = unique(questions.map((question) => question.evidence?.status));
     const stages = unique(questions.map((question) => normalizeStage(question.stage))).sort((a, b) => stageOrder.indexOf(a) - stageOrder.indexOf(b));
     const filtered = filterQuestions();
@@ -448,6 +543,9 @@
           </label>
           <label>프로젝트
             <select data-filter="project">${optionMarkup(projects, state.filters.project, "전체 프로젝트")}</select>
+          </label>
+          <label>난이도
+            <select data-filter="difficulty">${optionMarkup(difficulties, state.filters.difficulty, "전체 난이도")}</select>
           </label>
           <label>근거 상태
             <select data-filter="evidence">${optionMarkup(evidenceStatuses, state.filters.evidence, "전체 상태")}</select>
