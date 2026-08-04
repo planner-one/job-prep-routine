@@ -84,9 +84,10 @@ button {
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(250px, 0.42fr);
-  gap: 2.5rem;
-  align-items: end;
-  padding: 2.6rem;
+  column-gap: 1.75rem;
+  row-gap: 1rem;
+  align-items: center;
+  padding: 1.75rem 2rem 2rem;
   border: 1px solid rgba(49, 130, 246, 0.12);
   background: linear-gradient(135deg, #ffffff 0%, #f7fbff 56%, #e8f3ff 100%);
   color: var(--ink);
@@ -99,13 +100,13 @@ button {
 .hero::after {
   content: "";
   position: absolute;
-  width: 18rem;
-  height: 18rem;
-  right: -7rem;
-  top: -8rem;
+  width: 14rem;
+  height: 14rem;
+  right: -5rem;
+  top: -6rem;
   border: 1px solid rgba(49, 130, 246, 0.18);
   border-radius: 50%;
-  box-shadow: 0 0 0 2.5rem rgba(49, 130, 246, 0.05), 0 0 0 5rem rgba(49, 130, 246, 0.025);
+  box-shadow: 0 0 0 2rem rgba(49, 130, 246, 0.05), 0 0 0 4rem rgba(49, 130, 246, 0.025);
 }
 
 .routine-home-link {
@@ -136,7 +137,7 @@ button {
 }
 
 .eyebrow {
-  margin: 0 0 1rem;
+  margin: 0 0 0.65rem;
   color: var(--teal);
   font-size: 0.75rem;
   font-weight: 700;
@@ -145,7 +146,7 @@ button {
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(2.1rem, 5vw, 4.25rem);
+  font-size: clamp(2.1rem, 4vw, 3.35rem);
   line-height: 1.08;
   letter-spacing: -0.055em;
   font-weight: 750;
@@ -153,24 +154,25 @@ button {
 
 .hero-description {
   max-width: 45rem;
-  margin: 1.25rem 0 0;
+  margin: 0.9rem 0 0;
   color: var(--ink-soft);
-  line-height: 1.75;
+  font-size: 0.95rem;
+  line-height: 1.65;
 }
 
 .hero-rule {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.5rem;
   position: relative;
   z-index: 1;
 }
 
 .hero-rule span {
-  padding: 0.78rem 0.9rem;
+  padding: 0.6rem 0.75rem;
   border-left: 3px solid var(--teal);
   background: rgba(255, 255, 255, 0.72);
   color: #4e5968;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .view-nav {
