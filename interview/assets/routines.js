@@ -69,7 +69,7 @@ window.INTERVIEW_ROUTINES = {
     {
       id: "implementation",
       title: "중급",
-      summary: "선택 이유와 실제 데이터 흐름, 트랜잭션·통신 경계를 말할 수 있는지 확인합니다.",
+      summary: "핵심문장으로 먼저 전달한 뒤 선택 이유, 실제 흐름, 강점과 약점을 근거로 연결합니다.",
       sections: [
         { title: "실전 시작·자기소개", minutes: 10, query: { topics: ["면접 시작", "자기소개"] }, limit: 3 },
         { title: "공통·인성", minutes: 15, query: { categories: ["공통·인성"], difficulties: ["중급"] }, limit: 5 },

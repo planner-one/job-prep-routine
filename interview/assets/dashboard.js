@@ -90,7 +90,7 @@
     view: "emphasis",
     selectedRoutine: {
       emphasis: routineData.emphasis?.[0]?.id || "",
-      difficulty: routineData.difficulty?.[0]?.id || "",
+      difficulty: routineData.difficulty?.[1]?.id || routineData.difficulty?.[0]?.id || "",
     },
     filters: {
       search: "",
@@ -229,6 +229,7 @@
   const renderQuestionCard = (question, options = {}) => {
     const answer = question.answer || {};
     const compact = answer.compact || {};
+    const coreLabel = answer.coreLevel ? `${answer.coreLevel} 핵심문장` : "핵심 답변";
     const evidence = question.evidence || {};
     const followups = question.followups || [];
     const keywords = answer.keywords || [];
@@ -285,7 +286,7 @@
         ${renderWarnings(question)}
         <div class="answer-grid">
           <div class="answer-block is-conclusion">
-            <p class="answer-label">핵심 답변 · 1문장</p>
+            <p class="answer-label">${escapeHtml(coreLabel)} · 1문장</p>
             <p>${escapeHtml(conciseAnswer.conclusion)}</p>
           </div>
           <div class="answer-block">
@@ -494,6 +495,8 @@
         question.topic,
         question.project,
         question.difficulty,
+        question.answer?.coreLevel,
+        question.answer?.compact?.conclusion,
         question.answer?.conclusion,
         ...(question.answer?.keywords || []),
         ...(question.tags || []),
