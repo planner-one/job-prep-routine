@@ -29,8 +29,11 @@ jobs:
       - name: 배포 파일 구성
         run: |
           mkdir -p _site/output/pdf
+          mkdir -p _site/interview
           cp ./*.html _site/
           cp -R ./assets ./src _site/
+          cp ./interview/index.html _site/interview/
+          cp -R ./interview/assets _site/interview/assets
           cp ./output/pdf/취업준비-운영-로드맵.pdf _site/output/pdf/
       - name: 정적 사이트 업로드
         uses: actions/upload-pages-artifact@v4

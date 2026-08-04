@@ -37,13 +37,13 @@ test('루틴 내부 화면은 로드맵·주간·데일리·기록 네 이동만
   }
 });
 
-test('선택 홈은 배포 가능한 루틴 보드와 로컬 학습 보드 두 카드만 제공한다', () => {
+test('선택 홈은 배포 가능한 루틴 보드와 면접 대시보드 두 카드만 제공한다', () => {
   const cards = indexHtml.match(/<nav class="home-board-grid"[\s\S]*?<\/nav>/)?.[0] ?? '';
   assert.equal((cards.match(/class="home-board-card/g) ?? []).length, 2);
   assert.match(cards, /href="\.\/roadmap\.html"/);
-  assert.match(cards, /href="http:\/\/127\.0\.0\.1:8788\/contents\.html"/);
+  assert.match(cards, /href="\.\/interview\/"/);
   assert.match(cards, /<strong>루틴 보드<\/strong>/);
-  assert.match(cards, /<strong>학습 보드<\/strong>/);
+  assert.match(cards, /<strong>면접 대시보드<\/strong>/);
   assert.doesNotMatch(cards, /href="http:\/\/127\.0\.0\.1:8787\/roadmap\.html"/);
 });
 
