@@ -83,7 +83,7 @@ html {
     display: inline;
   }
 
-  .app-topbar nav {
+  .app-topbar.screen-only > nav {
     display: none;
   }
 
