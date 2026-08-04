@@ -3,7 +3,7 @@
  *
  * Focus 스타일은 기존 선언을 덮어쓰는 구조이므로 import 순서를 바꾸지 마세요.
  */
-@import url("./styles/dashboard/01-base.css?v=8");
-@import url("./styles/dashboard/02-legacy-responsive-print.css?v=8");
-@import url("./styles/dashboard/03-focus.css?v=8");
-@import url("./styles/dashboard/04-focus-responsive-print.css?v=8");
+@import url("./styles/dashboard/01-base.css?v=9");
+@import url("./styles/dashboard/02-legacy-responsive-print.css?v=9");
+@import url("./styles/dashboard/03-focus.css?v=9");
+@import url("./styles/dashboard/04-focus-responsive-print.css?v=9");

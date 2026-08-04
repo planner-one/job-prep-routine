@@ -336,19 +336,19 @@
   }
 
   .roadmap-category-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-
-  .roadmap-category-tabs::-webkit-scrollbar {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    overflow: visible;
   }
 
   .roadmap-category-tabs button {
-    flex: 0 0 auto;
+    min-width: 0;
     min-height: 44px;
+    padding-inline: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
   }
 
   .roadmap-reference-list {
@@ -372,15 +372,25 @@
     position: sticky;
     top: 52px;
     z-index: 20;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
     margin: 0 -16px 10px;
     padding: 8px 16px;
+    overflow-x: visible;
     background: rgb(255 255 255 / 94%);
     backdrop-filter: blur(14px);
-    scrollbar-width: none;
   }
 
-  .weekday-tabs::-webkit-scrollbar {
-    display: none;
+  .weekday-tabs button {
+    min-width: 0;
+    gap: 3px;
+    padding-inline: 2px;
+    font-size: 0.72rem;
+  }
+
+  .weekday-tabs button span {
+    padding-inline: 3px;
+    font-size: 0.52rem;
   }
 
   .weekly-detail-card {

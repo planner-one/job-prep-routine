@@ -3,11 +3,11 @@
  *
  * 아래 순서는 기존 cascade 계약입니다. 화면 결과를 유지하려면 import 순서를 바꾸지 마세요.
  */
-@import url("./styles/routine/01-foundation-daily.css?v=12");
-@import url("./styles/routine/02-roadmap.css?v=12");
-@import url("./styles/routine/03-weekly.css?v=12");
-@import url("./styles/routine/04-history.css?v=12");
-@import url("./styles/routine/05-legacy-responsive.css?v=12");
-@import url("./styles/routine/06-today-hub.css?v=12");
-@import url("./styles/routine/07-hybrid-shell.css?v=12");
-@import url("./styles/routine/08-motion-print.css?v=12");
+@import url("./styles/routine/01-foundation-daily.css?v=13");
+@import url("./styles/routine/02-roadmap.css?v=13");
+@import url("./styles/routine/03-weekly.css?v=13");
+@import url("./styles/routine/04-history.css?v=13");
+@import url("./styles/routine/05-legacy-responsive.css?v=13");
+@import url("./styles/routine/06-today-hub.css?v=13");
+@import url("./styles/routine/07-hybrid-shell.css?v=13");
+@import url("./styles/routine/08-motion-print.css?v=13");
