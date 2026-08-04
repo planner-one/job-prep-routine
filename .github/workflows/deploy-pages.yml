@@ -1,0 +1,41 @@
+name: GitHub Pages 배포
+
+on:
+  push:
+    branches:
+      - codex/job-prep-routine
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v6
+      - name: GitHub Pages 설정
+        uses: actions/configure-pages@v5
+      - name: 배포 파일 구성
+        run: |
+          mkdir -p _site/output/pdf
+          cp ./*.html _site/
+          cp -R ./assets ./src _site/
+          cp ./output/pdf/취업준비-운영-로드맵.pdf _site/output/pdf/
+      - name: 정적 사이트 업로드
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: GitHub Pages 배포
+        id: deployment
+        uses: actions/deploy-pages@v4

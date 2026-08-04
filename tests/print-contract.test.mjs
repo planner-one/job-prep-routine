@@ -146,12 +146,12 @@ test('로드맵 PDF npm 명령은 기존 8787 origin을 사용한다', () => {
   );
 });
 
-test('한국어 선택 홈은 고정 포트의 두 보드로 이동한다', () => {
+test('한국어 선택 홈은 배포된 루틴 보드와 로컬 학습 보드로 이동한다', () => {
   assert.match(home, /<html\s+lang="ko">/);
   assert.equal((home.match(/class="home-board-card/g) ?? []).length, 2);
 
   for (const [href, label] of [
-    ['http://127.0.0.1:8787/roadmap.html', '루틴 보드'],
+    ['./roadmap.html', '루틴 보드'],
     ['http://127.0.0.1:8788/contents.html', '학습 보드'],
   ]) {
     assert.match(home, new RegExp(`href="${href.replaceAll('.', '\\.').replaceAll('/', '\\/')}`));
