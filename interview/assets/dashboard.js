@@ -116,12 +116,6 @@
 
   const unique = (items) => [...new Set(items.filter(Boolean))];
 
-  const toSingleSentence = (value, fallback = "내용을 준비 중입니다.") => {
-    const normalized = String(value || fallback).replace(/\s+/g, " ").trim();
-    const firstSentence = normalized.match(/^.*?(?:[.!?](?:["'”’)]*)(?=\s|$)|$)/u)?.[0];
-    return firstSentence?.trim() || normalized;
-  };
-
   const difficultyProfiles = {
     기초: {
       label: "기초 꼬리질문",
@@ -234,6 +228,7 @@
 
   const renderQuestionCard = (question, options = {}) => {
     const answer = question.answer || {};
+    const compact = answer.compact || {};
     const evidence = question.evidence || {};
     const followups = question.followups || [];
     const keywords = answer.keywords || [];
@@ -242,9 +237,14 @@
     const difficultyProfile = getDifficultyProfile(difficulty);
     const minuteSummaryLabels = getMinuteSummaryLabels(question);
     const conciseAnswer = {
-      conclusion: toSingleSentence(answer.conclusion, "답변 준비 중입니다."),
-      evidence1: toSingleSentence(answer.evidence1, "근거 확인이 필요합니다."),
-      evidence2: toSingleSentence(answer.evidence2, "근거 확인이 필요합니다."),
+      conclusion: compact.conclusion || answer.conclusion || "답변 준비 중입니다.",
+      evidence1: compact.evidence1 || answer.evidence1 || "근거 확인이 필요합니다.",
+      evidence2: compact.evidence2 || answer.evidence2 || "근거 확인이 필요합니다.",
+    };
+    const minuteSummaryAnswer = {
+      conclusion: answer.conclusion || conciseAnswer.conclusion,
+      evidence1: answer.evidence1 || conciseAnswer.evidence1,
+      evidence2: answer.evidence2 || conciseAnswer.evidence2,
     };
     const cardClasses = hasWarning(question) ? "question-card has-warning" : "question-card";
     const ordinal = options.ordinal ? `<span class="badge">Q${options.ordinal}</span>` : "";
@@ -304,15 +304,15 @@
           <ol class="minute-summary-list" aria-label="1분 요약 말하기 순서">
             <li>
               <span>${escapeHtml(minuteSummaryLabels[0])}</span>
-              <p>${escapeHtml(conciseAnswer.conclusion)}</p>
+              <p>${escapeHtml(minuteSummaryAnswer.conclusion)}</p>
             </li>
             <li>
               <span>${escapeHtml(minuteSummaryLabels[1])}</span>
-              <p>${escapeHtml(conciseAnswer.evidence1)}</p>
+              <p>${escapeHtml(minuteSummaryAnswer.evidence1)}</p>
             </li>
             <li>
               <span>${escapeHtml(minuteSummaryLabels[2])}</span>
-              <p>${escapeHtml(conciseAnswer.evidence2)}</p>
+              <p>${escapeHtml(minuteSummaryAnswer.evidence2)}</p>
             </li>
             ${keywords.length ? `
               <li>

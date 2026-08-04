@@ -17,6 +17,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-001', topic: 'Redis', stage: '실제 사용 위치', difficulty: '기초', priority: '핵심', minutes: 5,
     question: 'FeedShop에서 Redis를 어디에, 어떤 목적으로 사용했나요?',
     answer: {
+      compact: {
+        conclusion: 'FeedShop에서는 Redis를 이벤트 목록 캐시와 피드 투표 카운터에 각각 사용했습니다.',
+        evidence1: 'QueryDSL로 N+1을 줄인 뒤 캐시를 적용해 반복되는 DB 목록 조회 문제를 해결했습니다.',
+        evidence2: 'DB 유니크 제약과 Redis INCR의 책임을 분리해 중복 방지와 원자적 갱신을 확보했습니다.',
+      },
       conclusion: 'Redis는 이벤트 목록의 반복 조회를 줄이는 캐시와 피드 투표 수를 원자적으로 증가시키는 카운터, 두 가지 용도로 사용했습니다.',
       evidence1: '이벤트 목록은 QueryDSL로 N+1을 먼저 줄인 뒤 @Cacheable 기반 Redis 캐시를 적용해 재요청의 DB 조회를 분리했습니다.',
       evidence2: '투표는 DB 유니크 제약으로 중복 저장을 막고, 빈번한 카운터 갱신은 Redis INCR로 처리해 DB 카운터 락 경합과 책임을 분리했습니다.',
@@ -37,6 +42,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-002', topic: 'Redis', stage: '기초 개념', difficulty: '기초', priority: '핵심', minutes: 5,
     question: 'Redis와 INCR 명령은 무엇이며, 왜 동시 요청에서 유용한가요?',
     answer: {
+      compact: {
+        conclusion: 'Redis는 메모리 기반 키-값 저장소이며, INCR은 숫자를 원자적으로 증가시키는 명령입니다.',
+        evidence1: '읽기와 쓰기를 나누지 않고 한 명령으로 증가시켜 동시 요청의 갱신 손실을 해결했습니다.',
+        evidence2: 'DB에는 투표 유일성을, INCR에는 카운터 증가를 맡겨 정합성 기준을 확보했습니다.',
+      },
       conclusion: 'Redis는 메모리 중심의 키-값 데이터 저장소이고, INCR은 숫자 값을 서버에서 원자적으로 증가시키는 명령입니다.',
       evidence1: '여러 요청이 값을 읽고 더한 뒤 다시 쓰면 갱신 손실이 생길 수 있지만 INCR은 증가 연산을 한 명령으로 처리합니다.',
       evidence2: 'FeedShop에서는 투표 레코드의 유일성은 DB가 보장하고, 표시용 투표 수 증가는 INCR로 분리했습니다.',
@@ -55,6 +65,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-003', topic: 'Redis', stage: '선택 이유', difficulty: '중급', priority: '핵심', minutes: 6,
     question: '왜 중복 투표 방지와 투표 수 갱신을 하나의 수단으로 해결하지 않았나요?',
     answer: {
+      compact: {
+        conclusion: '중복 저장과 카운터 경합은 실패 기준이 달라 DB와 Redis로 책임을 분리했습니다.',
+        evidence1: 'DB 유니크 제약으로 사용자별 투표 기록의 최종 정합성을 확보했습니다.',
+        evidence2: 'Redis INCR로 카운터 갱신을 분리하고 DB COUNT를 원본으로 둬 복구 기준을 마련했습니다.',
+      },
       conclusion: '중복 저장과 카운터 경합은 실패 기준이 다른 문제라서 DB와 Redis에 책임을 나눴습니다.',
       evidence1: '사용자별 중복 투표는 최종 데이터 규칙이므로 (event_id, voter_id) 유니크 제약을 DB의 최종 방어선으로 뒀습니다.',
       evidence2: '빈번하게 변하는 투표 수는 Redis INCR로 갱신하고, 불일치가 생기면 DB 투표 레코드 수를 원본으로 복구하도록 설계했습니다.',
@@ -73,6 +88,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-004', topic: '캐시', stage: '선택 이유', difficulty: '중급', priority: '핵심', minutes: 6,
     question: '왜 Redis 캐시만 먼저 적용하지 않고 QueryDSL로 쿼리 구조부터 개선했나요?',
     answer: {
+      compact: {
+        conclusion: '캐시는 Cache Miss의 N+1을 해결하지 못하므로 쿼리 구조부터 개선했습니다.',
+        evidence1: 'leftJoin과 fetchJoin으로 연관 데이터의 반복 조회 문제를 해결했습니다.',
+        evidence2: '그다음 Redis를 적용해 재요청의 DB 접근을 없애고 반복 조회 성능을 확보했습니다.',
+      },
       conclusion: '캐시는 반복 조회 비용을 줄일 뿐 Cache Miss 때의 N+1 구조를 해결하지 못하므로 원인을 먼저 고쳤습니다.',
       evidence1: '기존 조회는 연관 데이터를 반복 조회하고 전체 결과를 메모리에서 필터링해 요청당 SQL이 42회 발생했습니다.',
       evidence2: 'leftJoin·fetchJoin으로 SQL을 2회까지 줄인 뒤 Redis를 적용해 Cache Hit 재요청의 SQL을 0회로 분리했습니다.',
@@ -91,6 +111,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-005', topic: '캐시', stage: '구현 흐름', difficulty: '중급', priority: '중요', minutes: 6,
     question: '이벤트 목록 캐시의 @Cacheable, TTL, @CacheEvict는 어떻게 동작했나요?',
     answer: {
+      compact: {
+        conclusion: '읽기는 @Cacheable로 재사용하고, 변경은 @CacheEvict로 제거하며 TTL을 안전망으로 뒀습니다.',
+        evidence1: '변경이 적고 조회가 잦은 이벤트 목록에 적용해 반복 조회 성능을 확보했습니다.',
+        evidence2: '변경 시 명시적으로 무효화하고 TTL을 안전망으로 둬 오래된 값의 노출 기간을 제한했습니다.',
+      },
       conclusion: '읽기 요청은 @Cacheable로 결과를 재사용하고, 변경 시 @CacheEvict로 오래된 값을 제거하며 TTL을 안전망으로 둔 구조입니다.',
       evidence1: '이력서에는 읽기 빈도가 높고 변경이 적은 이벤트 목록에 세 정책을 적용했다고 명시돼 있습니다.',
       evidence2: '다만 정확한 캐시 키, TTL 초 단위 값, 직렬화 방식과 모든 변경 경로의 eviction 적용 여부는 설정 코드 재확인이 필요합니다.',
@@ -109,6 +134,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-006', topic: '캐시', stage: '장애·한계', difficulty: '심화', priority: '핵심', minutes: 7,
     question: 'Redis 키 미스와 Redis 연결 장애는 각각 어떻게 처리되나요?',
     answer: {
+      compact: {
+        conclusion: '키 미스는 값 부재라 DB로 복구하지만, 연결 장애는 Redis 명령 자체가 실패하는 별도 상황입니다.',
+        evidence1: '키 미스 시 DB COUNT와 setIfAbsent로 카운터를 재구성해 복구 가능성을 확보했습니다.',
+        evidence2: '반면 연결 예외를 DB로 자동 전환하는 경로는 확인되지 않아 별도 장애 정책이 필요합니다.',
+      },
       conclusion: '키 미스는 애플리케이션이 Redis에 연결된 상태에서 값만 없는 경우이고, 연결 장애는 명령 자체가 실패하는 경우라 같은 폴백으로 보면 안 됩니다.',
       evidence1: '투표 카운터 코드에는 키가 없을 때 DB COUNT를 조회하고 setIfAbsent로 다시 채우는 경로가 확인됩니다.',
       evidence2: '반면 Redis 연결 예외를 잡아 DB로 자동 전환하는 경로는 확인되지 않았으므로 연결 장애까지 폴백된다고 답하면 안 됩니다.',
@@ -127,6 +157,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-007', topic: '투표 정합성', stage: '실제 사용 위치', difficulty: '기초', priority: '핵심', minutes: 5,
     question: 'FeedShop 투표 기능의 동시성 문제를 한 문장으로 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '동시 요청이 중복 검사를 함께 통과할 수 있는 TOCTOU 경쟁 조건이 핵심 문제였습니다.',
+        evidence1: 'existsBy만으로 저장 시점의 유일성을 보장할 수 없어 최종 방어를 DB 제약으로 옮겼습니다.',
+        evidence2: 'DB 유니크 제약으로 최종 저장 규칙을 강제해 투표 정합성을 확보했습니다.',
+      },
       conclusion: '중복 여부를 조회한 뒤 저장하는 사이에 같은 사용자의 동시 요청이 모두 검사를 통과할 수 있는 TOCTOU 문제였습니다.',
       evidence1: '기존에는 existsBy 조회만 있었고 DB 유니크 제약이 없어 조회 결과가 저장 시점까지 유효하다는 보장이 없었습니다.',
       evidence2: '그래서 최종 저장 규칙은 DB 유니크 제약으로 강제하고 카운터 갱신은 별도로 분리했습니다.',
@@ -145,6 +180,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-008', topic: '투표 정합성', stage: '기초 개념', difficulty: '기초', priority: '핵심', minutes: 5,
     question: 'DB 유니크 제약이 애플리케이션 중복 검사보다 강한 이유는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: 'DB 유니크 제약은 모든 쓰기가 거치는 저장 시점에 유일성 규칙을 원자적으로 강제합니다.',
+        evidence1: 'existsBy의 확인과 저장 사이에 다른 요청이 들어오는 경쟁 조건을 해결했습니다.',
+        evidence2: '(event_id, voter_id) 조합을 유일하게 만들어 다중 인스턴스의 중복 방지를 확보했습니다.',
+      },
       conclusion: '유니크 제약은 모든 쓰기가 통과하는 DB 저장 시점에 규칙을 원자적으로 강제하기 때문입니다.',
       evidence1: '애플리케이션의 existsBy는 확인과 저장이 두 단계라 그 사이에 다른 요청이 들어올 수 있습니다.',
       evidence2: 'FeedShop은 (event_id, voter_id) 조합을 유일하게 만들어 여러 인스턴스에서 동시에 저장해도 하나만 성공하도록 했습니다.',
@@ -163,6 +203,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-009', topic: '트랜잭션', stage: '구현 흐름', difficulty: '중급', priority: '핵심', minutes: 7,
     question: 'NOT_SUPPORTED와 REQUIRED를 사용한 투표 저장 흐름을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '외부 흐름은 NOT_SUPPORTED, 실제 저장과 flush는 별도 빈의 REQUIRED로 분리했습니다.',
+        evidence1: '유니크 위반 시 내부 저장 트랜잭션만 롤백되도록 해 예외 격리를 확보했습니다.',
+        evidence2: 'DB 저장 성공 뒤에만 INCR를 호출해 실패한 저장의 카운터 증가 문제를 해결했습니다.',
+      },
       conclusion: '외부 조정 흐름은 NOT_SUPPORTED로 트랜잭션 밖에 두고, 실제 저장·flush만 별도 빈의 REQUIRED 트랜잭션에서 끝내도록 분리했습니다.',
       evidence1: '유니크 제약 위반이 발생하면 내부 저장 트랜잭션만 롤백되고 예외 처리는 이미 실패 상태가 된 트랜잭션 밖에서 수행됩니다.',
       evidence2: '저장이 정상 완료된 뒤에만 외부 흐름에서 Redis INCR를 호출해 실패한 DB 쓰기와 카운터 증가가 함께 진행되지 않게 했습니다.',
@@ -181,6 +226,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-010', topic: '트랜잭션', stage: '검증 근거', difficulty: '심화', priority: '중요', minutes: 6,
     question: '유니크 제약 위반 뒤에도 다음 투표 저장이 정상이라는 것을 어떻게 확인했나요?',
     answer: {
+      compact: {
+        conclusion: '중복 저장 롤백 뒤 정상 투표를 다시 저장하는 통합 테스트로 확인했습니다.',
+        evidence1: '제약 위반을 내부 트랜잭션에 가둬 이후 정상 저장이 영향받지 않도록 격리했습니다.',
+        evidence2: '통합 테스트를 남겨 같은 문제가 다시 발생하지 않도록 회귀 방지 기준을 확보했습니다.',
+      },
       conclusion: '중복 저장으로 내부 트랜잭션이 롤백된 뒤 별도의 정상 저장을 수행하는 통합 테스트로 회귀를 확인했습니다.',
       evidence1: '테스트는 제약 위반이 전체 서비스 흐름의 영속성 컨텍스트나 다음 요청까지 오염시키지 않는지를 검증합니다.',
       evidence2: '현재 저장소에 해당 FeedVotePersistenceServiceIntegrationTest가 존재해 구조적 회귀 근거로 사용할 수 있습니다.',
@@ -199,6 +249,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-011', topic: 'Redis', stage: '선택 이유', difficulty: '중급', priority: '핵심', minutes: 6,
     question: '왜 DB 카운터 행을 갱신하지 않고 Redis INCR를 선택했나요?',
     answer: {
+      compact: {
+        conclusion: '같은 DB 카운터 행의 쓰기 경합을 분리하고 원자적으로 증가시키기 위해 INCR를 선택했습니다.',
+        evidence1: '투표 원본은 DB 유니크 레코드로 남겨 중복 방지와 재계산 기준을 확보했습니다.',
+        evidence2: 'Redis 카운터를 DB COUNT로 재계산 가능한 파생 값으로 둬 장애 후 복구 기준을 마련했습니다.',
+      },
       conclusion: '투표가 집중될 때 같은 DB 카운터 행의 쓰기 경합을 분리하고 원자적 증가를 간단히 처리하기 위해 INCR를 선택했습니다.',
       evidence1: '중복 투표의 최종 기록은 별도 행과 유니크 제약으로 DB에 남아 카운터를 다시 계산할 수 있습니다.',
       evidence2: '따라서 Redis 카운터는 빠르게 갱신하되 DB COUNT를 복구 기준으로 둘 수 있었습니다.',
@@ -217,6 +272,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-012', topic: '투표 정합성', stage: '구현 흐름', difficulty: '중급', priority: '핵심', minutes: 7,
     question: '정상 투표 요청에서 DB 저장과 Redis 카운터 갱신은 어떤 순서로 진행되나요?',
     answer: {
+      compact: {
+        conclusion: 'REQUIRED에서 DB 저장과 flush를 완료한 뒤 NOT_SUPPORTED 흐름에서 Redis INCR를 호출합니다.',
+        evidence1: '유니크 위반 시 내부 트랜잭션만 롤백해 실패한 투표가 카운터 증가로 이어지지 않게 했습니다.',
+        evidence2: '두 자원은 분리하되 DB를 최종 원본으로 둬 카운터 보정 기준을 확보했습니다.',
+      },
       conclusion: '별도 REQUIRED 트랜잭션에서 투표 저장과 flush가 정상 완료된 뒤 외부 NOT_SUPPORTED 흐름에서 Redis INCR를 호출합니다.',
       evidence1: 'DB 저장이 유니크 제약으로 실패하면 내부 트랜잭션이 롤백되고 정상 투표로 처리되지 않습니다.',
       evidence2: 'DB와 Redis가 하나의 트랜잭션은 아니므로 DB 성공 뒤 INCR 실패가 가능한 best-effort 구조이며 DB 기준 보정이 필요합니다.',
@@ -235,6 +295,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-013', topic: '투표 정합성', stage: '장애·한계', difficulty: '심화', priority: '핵심', minutes: 7,
     question: 'DB 저장과 Redis INCR가 분리되면 어떤 불일치가 생길 수 있나요?',
     answer: {
+      compact: {
+        conclusion: 'DB 저장 후 INCR가 실패하면 DB 기록보다 Redis 카운터가 작은 일시적 불일치가 생깁니다.',
+        evidence1: 'DB를 최종 원본으로 정해 불일치가 생겨도 Redis 카운터를 다시 맞출 기준을 마련했습니다.',
+        evidence2: '키 미스 폴백과 정기 보정으로 Redis 값을 다시 맞추는 복구 가능성을 확보했습니다.',
+      },
       conclusion: 'DB 저장 성공 후 INCR 실패나 프로세스 종료가 발생하면 DB 레코드 수보다 Redis 카운터가 작아지는 일시적 불일치가 생길 수 있습니다.',
       evidence1: '두 자원은 하나의 원자적 트랜잭션으로 묶이지 않았기 때문에 성공·실패 조합을 완전히 없애지 못합니다.',
       evidence2: '그래서 DB를 원본으로 정하고 키 미스 폴백과 정기 보정으로 Redis 값을 복구하는 방향을 사용했습니다.',
@@ -253,6 +318,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-014', topic: '투표 정합성', stage: '구현 흐름', difficulty: '중급', priority: '중요', minutes: 6,
     question: 'Redis 카운터 키가 없을 때 DB 원본으로 복구하는 흐름은 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: 'Redis 키가 없으면 DB 투표 수를 COUNT하고 setIfAbsent로 카운터를 다시 채웁니다.',
+        evidence1: 'DB 투표 기록을 원본으로 사용해 키 만료 뒤에도 카운터 복구 가능성을 확보했습니다.',
+        evidence2: 'setIfAbsent로 동시 복구 요청이 먼저 채워진 값을 다시 덮어쓰는 위험을 줄였습니다.',
+      },
       conclusion: '키가 없으면 DB의 투표 레코드를 COUNT해 기준값을 얻고 setIfAbsent로 Redis에 채우는 흐름입니다.',
       evidence1: 'DB COUNT는 최종 투표 레코드를 기준으로 하므로 Redis 재시작이나 키 만료 뒤 파생 카운터를 재구성할 수 있습니다.',
       evidence2: 'setIfAbsent는 동시에 여러 요청이 복구를 시도할 때 먼저 채운 값을 무조건 덮어쓰는 일을 줄입니다.',
@@ -271,6 +341,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-015', topic: '투표 정합성', stage: '구현 흐름', difficulty: '중급', priority: '중요', minutes: 6,
     question: 'Redis 카운터의 정기 보정은 언제, 어떤 기준으로 실행되나요?',
     answer: {
+      compact: {
+        conclusion: '매일 03시에 DB 투표 기록 수를 기준으로 Redis 카운터를 다시 맞춥니다.',
+        evidence1: 'Redis 값이 아닌 DB COUNT를 최종 기준으로 삼아 카운터 정합성을 확보했습니다.',
+        evidence2: '정기 보정으로 일시적 불일치를 회복하지만 보정 전 오차 노출과 DB COUNT 비용은 남습니다.',
+      },
       conclusion: '현재 코드에는 매일 03시에 DB 투표 레코드 수를 기준으로 Redis 카운터를 다시 맞추는 스케줄러가 있습니다.',
       evidence1: '보정 기준은 Redis 값이 아니라 DB의 실제 투표 기록 COUNT입니다.',
       evidence2: '이 방식은 일시적 불일치를 회복하지만 보정 전까지 잘못된 값이 보일 수 있고 대규모 데이터에서는 COUNT 비용도 고려해야 합니다.',
@@ -289,6 +364,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-016', topic: '투표 정합성', stage: '장애·한계', difficulty: '심화', priority: '중요', minutes: 7,
     question: 'DB 저장 후 Redis INCR가 실패하면 사용자 응답과 데이터는 어떻게 해야 하나요?',
     answer: {
+      compact: {
+        conclusion: 'DB 투표는 유지하고 INCR 실패를 관측해 재시도나 보정 대상으로 남겨야 합니다.',
+        evidence1: 'DB 투표 기록을 원본으로 남겨 실패한 Redis 카운터를 다시 계산할 기준을 마련했습니다.',
+        evidence2: '실제 응답 코드와 재시도·실패 기록 정책은 확인되지 않아 구현 사실로 답할 수 없습니다.',
+      },
       conclusion: 'DB 저장은 이미 최종 기록이므로 되돌리기보다 INCR 실패를 관측하고 재시도·보정 대상으로 남기는 편이 안전합니다.',
       evidence1: '현재 구조는 DB COUNT로 카운터를 복구할 수 있어 투표 자체를 잃지 않는 기준이 있습니다.',
       evidence2: '다만 실제 연결 예외의 응답 코드, 재시도 횟수와 실패 기록 저장 방식은 확인되지 않아 운영 정책으로 단정할 수 없습니다.',
@@ -307,6 +387,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-017', topic: '투표 정합성', stage: '대안·확장', difficulty: '심화', priority: '중요', minutes: 7,
     question: 'DB 원자 UPDATE, 비관적 락, Redisson 중 어떤 상황에서 선택을 바꾸겠나요?',
     answer: {
+      compact: {
+        conclusion: '충돌 빈도와 일관성 요구, 운영 복잡도에 따라 가장 단순한 방식을 선택하겠습니다.',
+        evidence1: '단순 카운터는 DB 원자 UPDATE, 충돌이 잦은 짧은 임계 구역은 비관적 락을 우선 검토합니다.',
+        evidence2: '분산 락은 여러 인스턴스의 복합 작업 직렬화가 필요할 때만 TTL·소유권·해제를 함께 관리하며 사용합니다.',
+      },
       conclusion: '데이터 규모, 충돌 빈도, 즉시 일관성 요구와 운영 복잡도를 기준으로 가장 단순하게 불변식을 지키는 방식을 선택하겠습니다.',
       evidence1: '규모가 작고 강한 일관성이 우선이면 DB 유니크와 원자 UPDATE가 단순하고, 충돌이 높고 임계 구역이 명확하면 DB 락을 검토할 수 있습니다.',
       evidence2: '여러 인스턴스의 복합 작업을 직렬화해야 할 때 Redisson 분산 락을 고려하지만 TTL·락 소유권·장애 시 해제 문제를 함께 관리해야 합니다.',
@@ -325,6 +410,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-018', topic: '성능 측정', stage: '검증 근거', difficulty: '심화', priority: '핵심', minutes: 7,
     question: '동시 사용자 최대 3,000명 테스트에서 무엇을 확인했나요?',
     answer: {
+      compact: {
+        conclusion: '최대 부하 구간에서도 요청 처리와 중복 방지, DB·Redis 카운터 일치를 확인했습니다.',
+        evidence1: 'HTTP 오류와 DB 중복 저장 없이 처리돼 동시 투표의 저장 정합성을 확보했습니다.',
+        evidence2: 'DB 레코드 수와 Redis 카운터를 비교해 테스트 구간의 카운터 일치성을 확보했습니다.',
+      },
       conclusion: 'nGrinder 결과에서 HTTP 오류와 DB 중복 저장 0건을 확인하고 DB 레코드 수와 Redis 카운터가 일치하는지 비교했습니다.',
       evidence1: '포트폴리오에는 500·1,000·3,000명 구간의 성공 요청과 처리량 화면이 남아 있습니다.',
       evidence2: '다만 원본 스크립트, 데이터셋, 실행 토폴로지와 같은 실행 직후 전체 DB·Redis 비교 출력은 별도 확보가 필요합니다.',
@@ -343,6 +433,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-019', topic: '성능 측정', stage: '장애·한계', difficulty: '심화', priority: '중요', minutes: 6,
     question: '부하 테스트 결과를 해석할 때 가장 큰 한계는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: '제한된 토폴로지의 가상 사용자 결과라 실제 운영 용량으로 일반화할 수 없습니다.',
+        evidence1: '보유 결과는 전후 상대 비교 근거로만 사용하고 테스트 조건 전체가 고정됐다고 단정하지 않습니다.',
+        evidence2: '절대 처리 용량과 사용자 효과는 운영 유사 환경에서 별도로 검증해야 합니다.',
+      },
       conclusion: '로컬 또는 제한된 토폴로지의 가상 사용자 결과이므로 실제 운영 트래픽과 인프라 확장 효과를 그대로 일반화할 수 없다는 점입니다.',
       evidence1: '성능 수치는 데이터 분포, 워밍업, 네트워크, DB·Redis 위치, 요청 시나리오에 따라 달라집니다.',
       evidence2: '따라서 전후 조건을 고정한 상대 비교 근거로 사용하고 절대 처리 용량이나 사용자 이탈 감소는 별도 검증 대상으로 둡니다.',
@@ -361,6 +456,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-020', topic: 'N+1', stage: '실제 사용 위치', difficulty: '기초', priority: '핵심', minutes: 5,
     question: 'FeedShop에서 N+1 문제는 어디서 발생했나요?',
     answer: {
+      compact: {
+        conclusion: '이벤트 목록의 eventDetail과 rewards를 항목마다 다시 조회하면서 N+1이 발생했습니다.',
+        evidence1: 'DB 조건 조회로 옮겨 전체 조회와 메모리 필터링 문제를 해결했습니다.',
+        evidence2: '필요한 연관 데이터를 fetch join으로 함께 조회해 반복 SQL 문제를 해결했습니다.',
+      },
       conclusion: '이벤트 목록을 조회한 뒤 eventDetail과 rewards 같은 연관 데이터를 항목마다 다시 조회하는 과정에서 발생했습니다.',
       evidence1: '전체 이벤트를 먼저 읽고 애플리케이션 메모리에서 필터링하는 구조까지 겹쳐 데이터가 늘수록 조회 비용이 커졌습니다.',
       evidence2: 'Scouter XLog에서 이벤트 목록 요청 한 번에 SQL 42회를 확인해 쿼리 구조를 우선 개선했습니다.',
@@ -379,6 +479,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-021', topic: 'QueryDSL', stage: '기초 개념', difficulty: '기초', priority: '핵심', minutes: 5,
     question: 'leftJoin과 fetchJoin의 역할 차이는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: 'leftJoin은 결과 조인을 만들고, fetchJoin은 연관 엔티티를 같은 조회에서 초기화합니다.',
+        evidence1: '단순 join은 연관관계를 초기화하지 않아 이후 접근 시 추가 쿼리가 발생할 수 있습니다.',
+        evidence2: 'FeedShop은 fetch join으로 필요한 연관 데이터를 함께 읽어 목록의 반복 쿼리를 줄였습니다.',
+      },
       conclusion: 'leftJoin은 조인 조건과 결과 형태를 만들고, fetchJoin은 JPA에게 연관 엔티티를 같은 조회에서 함께 초기화하라고 알립니다.',
       evidence1: '단순 join만으로는 엔티티 연관관계가 초기화되지 않아 이후 접근 시 추가 쿼리가 발생할 수 있습니다.',
       evidence2: 'FeedShop은 QueryDSL의 leftJoin().fetchJoin()으로 목록에 필요한 연관 데이터를 함께 조회했습니다.',
@@ -397,6 +502,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-022', topic: 'QueryDSL', stage: '구현 흐름', difficulty: '중급', priority: '중요', minutes: 6,
     question: 'fetch join과 페이징 count 쿼리는 어떻게 분리했나요?',
     answer: {
+      compact: {
+        conclusion: '콘텐츠는 fetch join으로 조회하고 전체 개수는 countDistinct 쿼리로 분리했습니다.',
+        evidence1: '목록 데이터와 개수 계산의 조인 목적을 나눠 불필요한 쿼리 복잡도 문제를 해결했습니다.',
+        evidence2: '이벤트 중복을 제거한 개수를 별도로 계산해 정확한 페이징 기준을 확보했습니다.',
+      },
       conclusion: '콘텐츠 조회는 필요한 연관 데이터를 fetch join하고, 전체 개수는 countDistinct 기반 별도 쿼리로 분리했습니다.',
       evidence1: '목록 데이터와 count는 필요한 컬럼과 조인 목적이 달라 하나의 복잡한 쿼리에 묶지 않았습니다.',
       evidence2: '이 구조로 목록 조회와 페이징 메타데이터를 각각 계산해 총 SQL을 2회로 줄였습니다.',
@@ -415,6 +525,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-023', topic: 'N+1', stage: '선택 이유', difficulty: '중급', priority: '중요', minutes: 5,
     question: '전체 조회 후 메모리 필터링을 DB 조건 조회로 바꾼 이유는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: '불필요한 데이터 전송과 메모리 후처리를 줄이기 위해 목록 조건을 DB로 옮겼습니다.',
+        evidence1: '이벤트 상태와 기간 조건을 QueryDSL에 반영해 전체 과조회 문제를 해결했습니다.',
+        evidence2: 'DB가 필요한 행만 반환하게 해 데이터 전송량과 애플리케이션 후처리를 줄였습니다.',
+      },
       conclusion: '애플리케이션이 사용하지 않을 데이터까지 읽고 필터링하면 DB 전송량과 메모리 사용이 함께 증가하므로 조건을 DB로 내렸습니다.',
       evidence1: 'DB는 인덱스와 실행 계획을 이용해 필요한 행을 고르는 데 최적화돼 있습니다.',
       evidence2: 'FeedShop에서는 이벤트 상태·기간 같은 목록 조건을 QueryDSL 쿼리에 반영해 조회량과 후처리를 줄였습니다.',
@@ -433,6 +548,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-024', topic: '캐시', stage: '검증 근거', difficulty: '중급', priority: '핵심', minutes: 6,
     question: 'Redis Cache Hit에서 SQL 0회를 어떻게 확인했나요?',
     answer: {
+      compact: {
+        conclusion: '동일 목록을 다시 요청하고 Scouter로 Cache Hit가 DB 조회를 우회하는지 확인했습니다.',
+        evidence1: 'QueryDSL 적용 단계와 캐시 재요청 단계를 분리해 DB 우회 근거를 확보했습니다.',
+        evidence2: 'Cache Hit에서는 목록 SQL이 사라졌지만 Redis 지연과 역직렬화 비용은 남습니다.',
+      },
       conclusion: '동일 이벤트 목록을 다시 요청한 뒤 Scouter에서 해당 요청의 SQL Count가 0인지 확인했습니다.',
       evidence1: '1차 QueryDSL 개선 화면은 SQL 2회, Redis 적용 후 재요청 화면은 SQL 0회로 단계가 구분돼 있습니다.',
       evidence2: '이 결과는 캐시 재요청 경로가 DB 목록 조회를 우회했다는 근거지만 Redis 자체 지연이나 직렬화 비용까지 0이라는 뜻은 아닙니다.',
@@ -451,6 +571,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-025', topic: '성능 측정', stage: '검증 근거', difficulty: '심화', priority: '핵심', minutes: 7,
     question: '응답시간 6,818ms에서 638ms, TPS 138에서 438 개선을 어떻게 설명하겠습니까?',
     answer: {
+      compact: {
+        conclusion: '동시 1,000 VUser에서 응답시간은 6,818→638ms, TPS는 138.7→438.3으로 개선됐습니다.',
+        evidence1: 'QueryDSL로 쿼리 구조를 개선해 Cache Miss에서도 반복 SQL 병목을 해결했습니다.',
+        evidence2: 'Redis Cache Hit로 재요청의 DB 접근을 없애 최종 응답 처리 성능을 확보했습니다.',
+      },
       conclusion: '동시 가상 사용자 1,000명 조건에서 쿼리 구조 개선과 Redis 캐시 적용 전후를 비교한 결과입니다.',
       evidence1: '평균 응답시간은 약 91% 줄었고 TPS는 138.7에서 438.3으로 약 216% 증가한 nGrinder 화면이 있습니다.',
       evidence2: '중간 단계인 fetch join 적용 후에는 4,191ms였고, 최종 638ms에는 QueryDSL과 Cache Hit 효과가 함께 포함됩니다.',
@@ -469,6 +594,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-026', topic: '성능 측정', stage: '기초 개념', difficulty: '기초', priority: '중요', minutes: 5,
     question: 'nGrinder와 Scouter는 각각 무엇을 확인하는 데 사용했나요?',
     answer: {
+      compact: {
+        conclusion: 'nGrinder는 부하 결과를, Scouter는 요청 내부 SQL 호출과 실행 흐름을 확인하는 데 썼습니다.',
+        evidence1: 'nGrinder로 응답시간과 처리량, 오류를 비교해 성능 개선 근거를 확보했습니다.',
+        evidence2: 'Scouter로 반복 SQL 감소와 Cache Hit의 DB 우회를 확인해 병목 해결 근거를 확보했습니다.',
+      },
       conclusion: 'nGrinder는 동시 요청을 만들어 응답시간·TPS·오류를 측정하고, Scouter는 요청 내부의 SQL 호출 수와 실행 흐름을 확인하는 데 사용했습니다.',
       evidence1: 'nGrinder로 100·1,000명 조회 비교와 최대 3,000명 투표 부하 결과를 확인했습니다.',
       evidence2: 'Scouter XLog로 이벤트 목록 요청의 SQL이 42회에서 2회, Cache Hit에서 0회가 된 단계를 확인했습니다.',
@@ -487,6 +617,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-027', topic: '캐시', stage: '선택 이유', difficulty: '중급', priority: '중요', minutes: 5,
     question: 'Cloud Run 수평 확장 환경에서 로컬 캐시가 아니라 Redis를 선택한 이유는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: '여러 Cloud Run 인스턴스가 같은 캐시를 공유하도록 로컬 캐시 대신 Redis를 선택했습니다.',
+        evidence1: '인스턴스마다 값과 만료가 달라질 수 있는 로컬 캐시의 구조적 불일치 위험을 피했습니다.',
+        evidence2: '캐시 데이터와 무효화 정책을 중앙에서 공유해 일관된 조회 기준을 확보했습니다.',
+      },
       conclusion: '인스턴스마다 서로 다른 로컬 캐시를 갖는 대신 모든 인스턴스가 같은 캐시를 참조하도록 하기 위해 공유 Redis를 선택했습니다.',
       evidence1: '로컬 캐시는 빠르고 단순하지만 인스턴스별 값과 만료 시점이 달라 무효화와 히트율이 분산될 수 있습니다.',
       evidence2: 'Redis는 네트워크 비용과 별도 장애 지점이 생기지만 캐시 데이터와 정책을 중앙에서 공유할 수 있습니다.',
@@ -505,6 +640,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-028', topic: 'CI/CD', stage: '구현 흐름', difficulty: '중급', priority: '중요', minutes: 6,
     question: 'FeedShop의 GitHub Actions CI/CD 흐름을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'main 변경을 검증한 뒤 Docker 이미지를 GCR에 올리고 Cloud Run에 배포했습니다.',
+        evidence1: '테스트와 Jacoco, SonarCloud 분석을 CI에 묶어 배포 전 품질 확인 기준을 확보했습니다.',
+        evidence2: '이미지 빌드부터 배포와 헬스체크까지 자동화해 반복 가능한 배포 흐름을 확보했습니다.',
+      },
       conclusion: 'main 브랜치 변경을 기준으로 테스트와 품질 검증을 수행하고, Docker 이미지를 만들어 GCR에 올린 뒤 Cloud Run에 배포하는 흐름입니다.',
       evidence1: 'CI 워크플로에는 테스트·Jacoco·SonarCloud 정적 분석 단계가 확인됩니다.',
       evidence2: '배포 워크플로에는 이미지 빌드, GCR push, Cloud Run 배포와 헬스체크 구성이 확인됩니다.',
@@ -523,6 +663,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-029', topic: 'CI/CD', stage: '검증 근거', difficulty: '중급', priority: '중요', minutes: 6,
     question: 'SonarCloud와 테스트 커버리지를 어떻게 품질 판단에 사용했나요?',
     answer: {
+      compact: {
+        conclusion: 'Jacoco 커버리지와 SonarCloud 품질 지표를 테스트 결과와 함께 판단 기준으로 사용했습니다.',
+        evidence1: '테스트 결과와 도메인별 커버리지를 기록해 변경 검증의 가시성을 확보했습니다.',
+        evidence2: '커버리지 수치와 별도로 정합성·트랜잭션 핵심 시나리오의 검증 여부를 판단했습니다.',
+      },
       conclusion: '테스트 성공 여부만 보지 않고 Jacoco 커버리지와 SonarCloud의 Reliability·Coverage·인지 복잡도 결과를 함께 확인했습니다.',
       evidence1: '포트폴리오에는 전체 테스트 1,351건 실패 0건과 Feed 55.3%, Event 58.4% 커버리지 수치가 기록돼 있습니다.',
       evidence2: '다만 커버리지는 테스트 품질 자체가 아니므로 핵심 정합성·트랜잭션 시나리오가 실제로 검증되는지를 별도로 봐야 합니다.',
@@ -541,6 +686,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-030', topic: 'CI/CD', stage: '기초 개념', difficulty: '기초', priority: '중요', minutes: 5,
     question: 'Docker와 Cloud Run을 이용한 배포 흐름에서 각각의 역할은 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: 'Docker는 실행 환경을 이미지로 묶고, Cloud Run은 그 이미지를 관리형 환경에서 실행합니다.',
+        evidence1: 'Dockerfile로 동일한 애플리케이션 이미지를 만들어 반복 가능한 배포 기준을 확보했습니다.',
+        evidence2: 'GCR 이미지 배포와 Actuator 헬스체크를 연결해 서비스 상태 확인 흐름을 확보했습니다.',
+      },
       conclusion: 'Docker는 애플리케이션과 실행 환경을 이미지로 묶고, Cloud Run은 그 컨테이너 이미지를 요청 기반으로 실행하는 관리형 플랫폼입니다.',
       evidence1: 'FeedShop은 Dockerfile로 이미지를 빌드해 GCR에 push하고 Cloud Run 서비스에 배포했습니다.',
       evidence2: '배포 후 Actuator 헬스체크로 서비스 상태를 확인하도록 구성했습니다.',
@@ -559,6 +709,11 @@ window.INTERVIEW_DATA.feedshop = [
     id: 'FS-031', topic: '협업', stage: '경험', difficulty: '중급', priority: '중요', minutes: 6,
     question: '부팀장으로 JIRA 가이드라인과 Slack 연동을 만든 이유와 효과는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: '작업 기준과 진행 상황을 팀이 함께 보게 해 우선순위 조율 비용을 줄이려고 만들었습니다.',
+        evidence1: 'JIRA 티켓 작성 기준과 주간 스프린트를 운영해 작업 정의의 일관성을 확보했습니다.',
+        evidence2: 'JIRA-Slack 알림으로 티켓과 커밋 흐름을 공유해 진행 상황의 가시성을 확보했습니다.',
+      },
       conclusion: '누가 무엇을 왜 하고 있는지 팀이 같은 기준으로 볼 수 있게 해 우선순위 조율과 진행 상황 공유 비용을 줄이려는 목적이었습니다.',
       evidence1: '주간 스프린트와 백로그 우선순위를 운영하고 JIRA 티켓 작성 기준을 문서화했습니다.',
       evidence2: 'JIRA-Slack 알림을 연결해 티켓과 커밋 흐름을 팀 채널에서 추적할 수 있게 했습니다.',

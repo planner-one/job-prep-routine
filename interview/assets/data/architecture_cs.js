@@ -5,6 +5,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-001', category: '이력서 기술', project: '3M', topic: '인증 구조 사용 위치', stage: '1. 실제 사용 위치', difficulty: '기초', priority: '최우선', minutes: 5,
     question: '3M 프로젝트에서 Auth, User, Gateway를 각각 어디에 사용했나요?',
     answer: {
+      compact: {
+        conclusion: 'Auth는 인증, User는 사용자 관리, Gateway는 토큰 검증과 컨텍스트 전달을 담당했습니다.',
+        evidence1: '서비스별 변경 이유를 분리해 인증 정책 변경이 사용자 관리까지 번지는 결합을 줄였습니다.',
+        evidence2: 'Gateway 검증 결과를 AOP 권한 확인으로 이어 반복 검사 없이 일관된 접근 제어를 확보했습니다.'
+      },
       conclusion: 'Auth는 로그인·회원가입·JWT 발급, User는 사용자 정보·역할 관리, Gateway는 요청의 JWT 검증과 사용자 컨텍스트 전달을 맡도록 책임을 나눴습니다.',
       evidence1: 'Gateway가 JWT의 userId와 role을 검증한 뒤 X-User-* 헤더로 내부 서비스에 전달하고, 서비스에서는 AOP로 역할 권한을 확인했습니다.',
       evidence2: '매 요청마다 User를 조회하는 구조를 피하면서 인증 정책 변경이 User 배포까지 번지는 결합도와 장애 전파 범위를 줄이는 것이 목적이었습니다.',
@@ -22,6 +27,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-002', category: '이력서 기술', project: '3M', topic: '서비스 책임 분리', stage: '3. 선택 이유', difficulty: '중급', priority: '최우선', minutes: 6,
     question: 'Auth와 User를 왜 분리했고, 어떤 기준으로 경계를 정했나요?',
     answer: {
+      compact: {
+        conclusion: 'Auth와 User는 기능 수가 아니라 서로 다른 변경 이유를 기준으로 분리했습니다.',
+        evidence1: '인증 정책과 사용자·역할 정책의 배포 경계를 나눠 변경 영향 범위를 줄였습니다.',
+        evidence2: 'Auth에서 User만 조회하는 단방향 Feign 호출로 순환 의존 없는 구조를 확보했습니다.'
+      },
       conclusion: '기능 개수가 아니라 변경 이유를 기준으로 Auth와 User의 경계를 나눴습니다.',
       evidence1: 'Auth는 로그인과 토큰 정책이 바뀔 때 영향을 받고, User는 사용자 정보와 역할 정책이 바뀔 때 영향을 받기 때문에 함께 두면 인증 변경이 User 배포로 확산됐습니다.',
       evidence2: '분리 후 Auth가 필요한 사용자 정보는 Feign으로 User를 단방향 조회하게 해 반대 방향 의존과 순환 참조를 만들지 않도록 했습니다.',
@@ -39,6 +49,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-003', category: '이력서 기술', project: '3M', topic: 'Access·Refresh Token', stage: '2. 기초 개념', difficulty: '기초', priority: '최우선', minutes: 5,
     question: 'Access Token과 Refresh Token의 역할 차이를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'Access Token은 API 접근을 증명하고 Refresh Token은 Access Token 재발급에 사용합니다.',
+        evidence1: '짧은 Access Token으로 탈취 노출을 줄이고 Refresh Token으로 재로그인 부담을 완화합니다.',
+        evidence2: '3M에서는 두 토큰을 발급해 접근 권한 증명과 재발급의 책임을 분리했습니다.'
+      },
       conclusion: 'Access Token은 짧은 수명으로 API 접근 권한을 증명하고, Refresh Token은 Access Token을 다시 발급받기 위한 자격 증명입니다.',
       evidence1: 'Access Token의 수명을 짧게 두면 탈취 시 노출 시간을 줄일 수 있지만 자주 로그인해야 하므로 Refresh Token으로 사용자 경험을 보완합니다.',
       evidence2: '3M에서는 두 토큰을 발급했지만 만료 시간, Refresh Token 저장·회전·폐기 방식은 실제 설정을 확인한 뒤 답해야 합니다.',
@@ -56,6 +71,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-004', category: '이력서 기술', project: '3M', topic: 'JWT 클레임 선택', stage: '3. 선택 이유', difficulty: '중급', priority: '최우선', minutes: 6,
     question: '왜 JWT에 userId와 role을 넣어 권한 판단에 사용했나요?',
     answer: {
+      compact: {
+        conclusion: '매 요청마다 User를 조회하지 않고 일반 권한을 판단하려고 JWT에 userId와 role을 넣었습니다.',
+        evidence1: 'Gateway에서 서명된 클레임을 검증해 User 호출 비용과 장애 의존을 줄였습니다.',
+        evidence2: '역할 변경 반영 지연을 감수하는 대신 일반 요청 경로의 독립성을 확보했습니다.'
+      },
       conclusion: '매 요청마다 User 서비스를 조회하지 않고도 일반 권한을 판단해 호출 비용과 User 장애 전파를 줄이기 위해서였습니다.',
       evidence1: 'Gateway 로컬 캐시는 무효화와 인스턴스 간 불일치 관리가 필요하고, 요청별 User 조회는 최신 역할을 얻는 대신 네트워크 호출과 장애 의존을 늘립니다.',
       evidence2: '서명된 JWT의 userId·role을 Gateway가 검증해 전달하는 방식을 선택했지만, 역할 변경이 토큰 만료 전까지 늦게 반영되는 한계를 감수했습니다.',
@@ -73,6 +93,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-005', category: '이력서 기술', project: '3M', topic: 'Gateway 인증 흐름', stage: '4. 구현 흐름', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'Gateway의 JWT 검증부터 AOP 권한 확인까지 실제 흐름을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'Gateway가 JWT를 검증해 사용자 정보를 전달하면 서비스 AOP가 메서드 권한을 확인합니다.',
+        evidence1: 'Gateway에서 서명과 만료를 검증해 위조되거나 만료된 토큰의 진입을 차단했습니다.',
+        evidence2: '서비스 AOP가 역할 어노테이션을 공통 처리해 권한 검사의 중복을 제거했습니다.'
+      },
       conclusion: 'Gateway가 토큰의 서명·만료를 검증하고 사용자 식별자와 역할을 X-User-* 헤더로 내려주면, 서비스의 AOP가 해당 컨텍스트로 메서드 권한을 확인하는 흐름입니다.',
       evidence1: '인증이 필요한 요청은 Gateway 필터를 통과하고, 검증된 userId·role이 내부 요청 헤더에 실립니다.',
       evidence2: '도메인 서비스에서는 @RequiresMasterRole 같은 어노테이션과 Aspect로 권한 로직을 공통 처리해 컨트롤러·서비스마다 같은 검사를 반복하지 않았습니다.',
@@ -90,6 +115,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-006', category: '이력서 기술', project: '3M', topic: 'X-User 헤더 신뢰 경계', stage: '6. 장애·한계', difficulty: '심화', priority: '최우선', minutes: 7,
     question: '클라이언트가 X-User-* 헤더를 위조하면 어떻게 막아야 하나요?',
     answer: {
+      compact: {
+        conclusion: '외부 X-User-*를 제거하고 내부 서비스는 신뢰된 Gateway 요청만 받도록 막아야 합니다.',
+        evidence1: 'Gateway 검증 결과로 헤더를 다시 생성해야 클라이언트의 위조 값을 신뢰하지 않을 수 있습니다.',
+        evidence2: '3M의 헤더 제거와 내부 접근 제한은 확인되지 않아 필요한 보완책으로만 구분하겠습니다.'
+      },
       conclusion: '도메인 서비스가 X-User-* 헤더를 신뢰하려면 반드시 신뢰된 Gateway만 그 헤더를 만들 수 있는 네트워크·애플리케이션 경계가 필요합니다.',
       evidence1: 'Gateway는 외부 요청에 이미 들어온 동일 헤더를 제거하거나 덮어쓰고, JWT 검증 결과로 새 값을 생성해야 합니다.',
       evidence2: '내부 서비스 직접 접근을 막고 필요하면 서비스 간 인증을 추가해야 하지만, 3M에서 이 방어가 모두 구현됐는지는 코드와 배포 구성을 확인해야 합니다.',
@@ -107,6 +137,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-007', category: '이력서 기술', project: '3M', topic: 'AOP 권한 처리', stage: '4. 구현 흐름', difficulty: '중급', priority: '높음', minutes: 6,
     question: '역할 권한 검사를 AOP로 구현한 이유와 한계는 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: '반복되는 역할 검사를 메서드 본문에서 분리하려고 AOP를 사용했지만 프록시 적용 범위에 한계가 있습니다.',
+        evidence1: '어노테이션 기반 Aspect로 역할 검사 중복을 제거하고 정책 위치를 한곳에 모았습니다.',
+        evidence2: '프록시 우회와 어노테이션 누락 가능성은 테스트와 기본 거부 정책으로 보완해야 합니다.'
+      },
       conclusion: '반복되는 역할 검사를 메서드 본문에서 분리하고 어노테이션으로 정책 의도를 드러내기 위해 AOP를 사용했습니다.',
       evidence1: '@RequiresMasterRole 같은 어노테이션이 붙은 진입점에서 Aspect가 사용자 역할을 확인해 권한 로직을 통합했습니다.',
       evidence2: '다만 Spring 프록시가 가로채는 호출에만 적용되고 어노테이션 누락·self-invocation·프록시 외 객체에는 적용되지 않을 수 있어 테스트와 기본 거부 정책이 중요합니다.',
@@ -124,6 +159,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-008', category: '이력서 기술', project: '3M', topic: 'Feign 호출 방향', stage: '4. 구현 흐름', difficulty: '중급', priority: '높음', minutes: 6,
     question: 'Auth와 User 사이의 Feign 호출 방향과 데이터 흐름은 어떻게 됐나요?',
     answer: {
+      compact: {
+        conclusion: 'Auth가 필요한 사용자 정보를 User에서 조회하는 단방향 Feign 호출로 구성했습니다.',
+        evidence1: 'User가 Auth 구현을 참조하지 않게 해 소스 수준의 순환 의존을 제거했습니다.',
+        evidence2: '서비스 간 데이터는 Feign DTO 계약으로 분리해 구현 클래스의 직접 결합을 줄였습니다.'
+      },
       conclusion: 'Auth가 필요한 사용자 정보를 User에서 조회하는 Auth→User 단방향 Feign 호출로 제한했습니다.',
       evidence1: 'UserService가 Auth 구현 클래스를 import하지 않게 해 User→Auth 방향의 소스 결합을 제거했고, 서비스 간 전달은 Feign DTO 계약으로 분리했습니다.',
       evidence2: '이 구조는 순환 의존을 피하지만 로그인·발급 경로가 User 응답에 의존할 수 있으므로 타임아웃과 실패 정책이 필요합니다.',
@@ -141,6 +181,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-009', category: '이력서 기술', project: '3M', topic: '토큰 권한 최신성·폐기', stage: '6. 장애·한계', difficulty: '심화', priority: '최우선', minutes: 7,
     question: '사용자 role이 바뀌거나 계정이 정지되면 기존 JWT 권한은 어떻게 되나요?',
     answer: {
+      compact: {
+        conclusion: '기존 JWT는 만료 전까지 이전 role을 유지해 권한 변경이나 계정 정지가 즉시 반영되지 않을 수 있습니다.',
+        evidence1: '3M은 일반 요청의 User 조회를 줄여 호출 비용과 장애 의존을 낮췄습니다.',
+        evidence2: '즉시 반영이 필요하면 짧은 만료나 토큰 버전·블랙리스트를 추가해야 하며 3M 적용 여부는 확인되지 않았습니다.'
+      },
       conclusion: '상태를 서버에서 조회하지 않는 JWT는 만료 전까지 예전 role이 남을 수 있어 즉시 반영이 필요한 정책과 충돌합니다.',
       evidence1: '3M은 일반 요청의 User 조회를 줄이는 대신 역할 최신성 지연을 받아들인 선택이므로, 짧은 Access Token 만료와 재발급 시 최신 role 반영이 기본 완화책입니다.',
       evidence2: '즉시 폐기가 필요하면 토큰 버전·블랙리스트·중요 작업의 실시간 User 확인을 추가할 수 있지만 3M 구현 여부는 확인되지 않았습니다.',
@@ -158,6 +203,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-010', category: '이력서 기술', project: '3M', topic: '서비스 장애 전파', stage: '6. 장애·한계', difficulty: '심화', priority: '최우선', minutes: 7,
     question: '요청별 User 조회가 왜 장애 전파 위험을 높이나요?',
     answer: {
+      compact: {
+        conclusion: '모든 요청이 User 응답을 기다리면 User의 지연과 오류가 다른 서비스의 실패로 확대되기 때문입니다.',
+        evidence1: '동기 호출의 타임아웃과 재시도가 누적되면 User 장애가 권한 경로 전체로 전파됩니다.',
+        evidence2: '3M은 일반 권한을 JWT에서 판단해 요청별 User 의존을 줄이고 서비스 경로의 독립성을 확보했습니다.'
+      },
       conclusion: '모든 요청이 동기적으로 User 응답을 기다리면 User의 지연·오류가 원래 정상인 서비스의 지연과 실패로 확대되기 때문입니다.',
       evidence1: '호출 단계가 늘면 타임아웃 누적, 스레드·커넥션 대기, 재시도 증폭이 생길 수 있고 User 장애가 권한이 필요한 전체 경로로 번집니다.',
       evidence2: '3M은 일반 권한을 JWT 클레임으로 판단해 이 호출을 줄였지만 상세 사용자 정보가 필요한 경로의 장애 의존은 남습니다.',
@@ -175,6 +225,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-011', category: '이력서 기술', project: '3M', topic: 'CBO 측정', stage: '5. 검증 근거', difficulty: '심화', priority: '최우선', minutes: 7,
     question: 'UserService→Auth 결합도 CBO 0건은 어떻게 측정했고 무엇을 의미하나요?',
     answer: {
+      compact: {
+        conclusion: 'CBO 0건은 import 정적 분석에서 UserService가 Auth 클래스를 직접 참조하지 않았다는 뜻입니다.',
+        evidence1: '반대 방향 import와 순환 참조가 없음을 확인해 소스 수준의 단방향 의존을 확보했습니다.',
+        evidence2: '런타임 호출과 계약·배포 결합은 포함하지 않아 시스템 전체가 무결합이라는 뜻은 아닙니다.'
+      },
       conclusion: '당시 CBO 0건은 소스 import 정적 분석에서 UserService가 Auth 외부 클래스를 직접 참조하지 않는다는 뜻입니다.',
       evidence1: 'Auth→User는 Feign DTO 중심의 단방향 참조로 남기고 반대 방향 import와 순환 의존이 없는지 확인했습니다.',
       evidence2: '다만 import 기반 수치는 런타임 호출, 데이터 계약, 배포·운영 결합까지 측정하지 않으므로 시스템 전체가 무결합이라는 뜻은 아닙니다.',
@@ -192,6 +247,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-012', category: '이력서 기술', project: '3M', topic: '권한 통합 테스트', stage: '5. 검증 근거', difficulty: '심화', priority: '최우선', minutes: 7,
     question: '3M 인증 구조를 어떤 테스트로 검증했나요?',
     answer: {
+      compact: {
+        conclusion: 'Gateway 검증부터 AOP 권한 확인까지 역할별 허용·거부 시나리오를 통합 테스트했습니다.',
+        evidence1: 'MASTER·HUB_MANAGER·미인증 요청을 확인해 인증 구성 요소 연결의 일관성을 확보했습니다.',
+        evidence2: '현재 재실행 가능성은 확인되지 않아 당시 보고서에 기록된 검증 범위로 한정하겠습니다.'
+      },
       conclusion: '당시 테스트 보고서 기준으로 Gateway JWT 검증, X-User-* 전달, AOP 권한 체크를 연결해 MASTER·HUB_MANAGER·미인증 응답 시나리오를 확인했습니다.',
       evidence1: '구조가 분리됐다는 사실만 보지 않고 역할별 허용·거부 응답이 요청 전체에서 일관되는지 검증하려 한 테스트입니다.',
       evidence2: '다만 현재 저장소에서 같은 통합 테스트가 즉시 재실행되는지와 환경 의존성은 확인되지 않아 당시 보고서 결과로 범위를 한정해야 합니다.',
@@ -209,6 +269,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-013', category: '이력서 기술', project: '3M', topic: 'Docker Compose·Eureka', stage: '1. 실제 사용 위치', difficulty: '중급', priority: '높음', minutes: 6,
     question: '3M에서 Docker Compose와 Eureka를 어디에 사용했나요?',
     answer: {
+      compact: {
+        conclusion: 'Docker Compose는 통합 실행에, Eureka는 서비스 이름 기반 발견에 사용했습니다.',
+        evidence1: '서비스를 Eureka에 등록해 고정 주소 의존을 줄이고 이름 기반 호출 구조를 확보했습니다.',
+        evidence2: 'Compose로 의존 인프라와 서비스를 함께 기동해 통합 실행 환경을 재현했습니다.'
+      },
       conclusion: 'Docker Compose로 Gateway·Eureka·마이크로서비스·PostgreSQL·Redis·Zipkin의 실행 환경을 묶고, Eureka로 서비스 이름 기반 발견 구조를 구성했습니다.',
       evidence1: '각 서비스가 기동 시 Eureka에 등록돼 고정 주소 의존을 줄였고 Actuator 헬스체크로 기동 상태를 확인했습니다.',
       evidence2: '다만 Compose는 해당 프로젝트의 통합 실행 환경이며, Kubernetes 수준의 운영 오케스트레이션이나 고가용성을 구현했다는 뜻은 아닙니다.',
@@ -226,6 +291,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-014', category: '이력서 기술', project: 'FlexiRoute', topic: 'UUID 도메인 참조', stage: '1. 실제 사용 위치', difficulty: '기초', priority: '높음', minutes: 5,
     question: 'FlexiRoute에서 UUID를 어디에, 왜 사용했나요?',
     answer: {
+      compact: {
+        conclusion: '도메인 간 Entity를 직접 참조하지 않고 대상을 식별하는 UUID만 보관했습니다.',
+        evidence1: 'Entity 직접 참조를 식별자 참조로 바꿔 도메인 간 컴파일 타임 결합을 줄였습니다.',
+        evidence2: '실제 데이터는 HTTP로 조회해 객체 그래프의 직접 결합을 줄였지만 참조 무결성 책임은 남았습니다.'
+      },
       conclusion: '다른 도메인의 Entity 객체를 직접 참조하지 않고 식별자인 UUID만 보관해 컴파일 타임 결합을 줄이는 데 사용했습니다.',
       evidence1: '가게·리뷰·카테고리 같은 도메인 사이에서 필요한 대상은 UUID로 가리키고 실제 데이터가 필요할 때 HTTP 호출로 조회했습니다.',
       evidence2: '이 방식은 객체 그래프의 직접 결합은 줄이지만 참조 무결성, 추가 네트워크 호출, 대상 삭제 처리 같은 책임이 새로 생깁니다.',
@@ -243,6 +313,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-015', category: '이력서 기술', project: 'FlexiRoute', topic: '레이어드 아키텍처·DIP', stage: '2. 기초 개념', difficulty: '중급', priority: '높음', minutes: 6,
     question: '레이어드 아키텍처와 DIP를 FlexiRoute 구조에 연결해 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '레이어드는 책임을 나누고 DIP는 핵심 정책이 구체 구현에 직접 의존하지 않게 하는 원칙입니다.',
+        evidence1: 'FlexiRoute는 도메인 책임을 레이어로 나누고 외부 조회를 HTTP 경계로 분리했습니다.',
+        evidence2: 'WebClient 구현까지 DIP로 역전했는지는 확인되지 않아 레이어 분리 수준으로만 설명하겠습니다.'
+      },
       conclusion: '레이어드 아키텍처는 표현·응용·도메인·인프라 책임을 나누고, DIP는 핵심 정책이 구체적인 HTTP 클라이언트나 DB 구현에 직접 의존하지 않게 하는 원칙입니다.',
       evidence1: 'FlexiRoute에서는 가게·리뷰·카테고리 도메인을 레이어로 나누고 외부 조회 경계를 HTTP 통신으로 분리한 것으로 정리돼 있습니다.',
       evidence2: '다만 포트·어댑터 인터페이스까지 두어 WebClient 구현을 역전했는지는 공개 코드가 없어 확인이 필요합니다.',
@@ -260,6 +335,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-016', category: '이력서 기술', project: 'FlexiRoute', topic: 'Feign과 WebClient 선택', stage: '3. 선택 이유', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'Feign 대신 WebClient를 선택한 이유를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '요청·응답과 오류 흐름을 코드에서 명시적으로 제어하려고 WebClient를 선택했습니다.',
+        evidence1: 'WebClient는 요청 조합과 상태별 처리를 코드에 드러내 외부 통신 흐름을 직접 제어하는 목적에 맞았습니다.',
+        evidence2: '.block() 위치는 확인되지 않아 논블로킹 성능이 아니라 흐름 제어를 선택 근거로 삼았습니다.'
+      },
       conclusion: '당시에는 선언형 인터페이스의 구현 편의성보다 요청·응답과 오류 흐름을 코드에서 명시적으로 제어하려는 목적에 WebClient를 선택했습니다.',
       evidence1: 'Feign은 인터페이스 선언과 Spring Cloud 통합이 간결하고, WebClient는 요청 조합과 응답 상태별 처리를 세밀하게 구성하기 쉽다는 차이가 있습니다.',
       evidence2: '다만 당시 코드가 .block()으로 동기 대기했다면 논블로킹 처리량 이점을 얻었다고 말할 수 없고, 현재 요구라면 복잡도와 팀 경험까지 포함해 다시 비교해야 합니다.',
@@ -277,6 +357,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-017', category: '이력서 기술', project: 'FlexiRoute', topic: 'WebClient block', stage: '4. 구현 흐름', difficulty: '심화', priority: '최우선', minutes: 7,
     question: 'WebClient에서 .block()을 사용했다면 실제 요청은 논블로킹인가요?',
     answer: {
+      compact: {
+        conclusion: '.block()을 호출한 스레드는 응답을 기다리므로 해당 호출 경계는 블로킹입니다.',
+        evidence1: '내부 비동기 I/O와 무관하게 호출자가 Mono를 기다리면 애플리케이션 흐름은 멈춥니다.',
+        evidence2: 'FlexiRoute는 호출 위치를 확인해야 하므로 논블로킹 성능을 확보했다고 주장하지 않겠습니다.'
+      },
       conclusion: '.block()을 호출한 스레드는 결과가 올 때까지 대기하므로 해당 경계의 사용 방식은 동기·블로킹입니다.',
       evidence1: 'WebClient 내부가 Reactor Netty 기반 비동기 I/O를 사용해도 호출자가 Mono를 block하면 애플리케이션 흐름은 응답을 기다립니다.',
       evidence2: 'FlexiRoute의 기존 정리에는 .block() 사용 가능성이 있어 비동기 성능을 성과로 말하지 않고, 정확한 호출 위치와 실행 스레드를 코드로 확인해야 합니다.',
@@ -294,6 +379,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-018', category: '이력서 기술', project: 'FlexiRoute', topic: 'Timeout·Retry·오류 처리', stage: '6. 장애·한계', difficulty: '심화', priority: '최우선', minutes: 7,
     question: 'WebClient 호출의 timeout, retry, 오류 처리는 어떻게 했나요?',
     answer: {
+      compact: {
+        conclusion: '현재 근거로는 FlexiRoute에 timeout·retry·상태별 오류 처리를 구현했다고 답할 수 없습니다.',
+        evidence1: '4xx와 재시도 가능한 5xx·네트워크 오류를 분리해야 실패 처리 기준을 명확히 할 수 있습니다.',
+        evidence2: '멱등성과 backoff 없는 재시도는 부하를 키우므로 확인 전에는 개선안으로만 설명하겠습니다.'
+      },
       conclusion: '현재 확인된 자료만으로는 FlexiRoute의 timeout·retry·상태 코드별 오류 처리를 구현했다고 답할 수 없습니다.',
       evidence1: '외부 HTTP 호출에는 연결·응답 timeout을 명시하고, 4xx는 요청 오류, 5xx·네트워크 오류는 재시도 가능성을 별도로 판단해야 합니다.',
       evidence2: '재시도는 멱등성과 backoff·횟수 제한 없이 사용하면 부하를 증폭시키므로 실제 코드가 없다면 개선안으로만 설명하겠습니다.',
@@ -311,6 +401,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-019', category: '이력서 기술', project: 'FlexiRoute', topic: '서비스 호출 확장', stage: '7. 대안·확장', difficulty: '심화', priority: '높음', minutes: 7,
     question: '호출 대상 서비스 장애가 반복되면 FlexiRoute 통신 구조를 어떻게 확장하겠나요?',
     answer: {
+      compact: {
+        conclusion: 'timeout과 관측을 먼저 세우고 빠른 실패·제한된 재시도·비동기 분리를 단계적으로 적용하겠습니다.',
+        evidence1: '동기 필수 조회는 빠른 실패와 제한된 폴백으로 사용자 영향 범위를 줄이겠습니다.',
+        evidence2: '후처리 가능한 작업만 이벤트로 분리해 즉시 응답 경로와 장애 전파 경계를 개선하겠습니다.'
+      },
       conclusion: '먼저 timeout과 관측을 명확히 하고, 호출의 필수성에 따라 빠른 실패·제한된 재시도·Circuit Breaker·비동기 이벤트를 단계적으로 검토하겠습니다.',
       evidence1: '즉시 응답에 꼭 필요한 조회는 동기 호출을 유지하되 장애 예산과 폴백 가능 데이터를 정하고, 후처리 가능 작업은 이벤트로 분리할 수 있습니다.',
       evidence2: 'Circuit Breaker나 메시징은 운영 복잡도를 늘리므로 장애 빈도와 사용자 영향을 측정한 뒤 도입해야 하며 FlexiRoute 구현 성과는 아닙니다.',
@@ -328,6 +423,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-020', category: '필수 CS', project: '공통', topic: 'JDK·JRE·JVM', stage: '2. 기초 개념', difficulty: '기초', priority: '최우선', minutes: 5,
     question: 'JDK, JRE, JVM의 차이와 Java 코드 실행 과정을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'JVM은 바이트코드 실행기, JRE는 실행 환경, JDK는 컴파일러까지 포함한 개발 도구입니다.',
+        evidence1: 'Java 소스는 javac로 바이트코드가 되고 ClassLoader를 거쳐 JVM에서 실행됩니다.',
+        evidence2: 'JIT는 반복 코드를 네이티브 코드로 바꾸지만 워밍업 전에는 최적화 효과가 제한됩니다.'
+      },
       conclusion: 'JVM은 바이트코드를 실행하는 가상 머신, JRE는 실행에 필요한 JVM과 라이브러리, JDK는 여기에 컴파일러와 개발 도구를 더한 개발 환경입니다.',
       evidence1: 'javac가 소스 코드를 바이트코드로 컴파일하고, ClassLoader가 클래스를 적재·검증한 뒤 JVM이 인터프리터와 JIT 컴파일을 통해 실행합니다.',
       evidence2: 'JIT는 반복 실행되는 코드를 네이티브 코드로 최적화하지만 워밍업과 런타임 프로파일에 따라 성능이 달라질 수 있습니다.',
@@ -345,6 +445,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-021', category: '필수 CS', project: '공통', topic: 'JVM 메모리·GC', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'JVM 메모리 영역과 GC가 동작하는 이유를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'JVM은 실행 데이터를 영역별로 나누고 GC는 도달할 수 없는 Heap 객체를 회수합니다.',
+        evidence1: 'Stack은 호출 프레임을 스레드별로 관리하고 Heap은 객체를 여러 스레드가 공유합니다.',
+        evidence2: 'GC는 Root 도달 가능성으로 생존 객체를 판별하며 세부 방식은 선택한 수집기에 따라 달라집니다.'
+      },
       conclusion: 'JVM은 스레드별 Stack과 공유 Heap·Metaspace 등으로 메모리를 나누고, GC는 더 이상 도달할 수 없는 Heap 객체를 회수합니다.',
       evidence1: 'Stack에는 호출 프레임과 지역 변수가 쌓이고 Heap에는 객체가 주로 저장되며, GC는 GC Root에서의 도달 가능성을 기준으로 생존 객체를 판별합니다.',
       evidence2: '세대 가설을 활용하는 수집기는 짧게 사는 객체와 오래 사는 객체를 다르게 처리하지만 구체 영역과 알고리즘은 선택한 GC에 따라 달라집니다.',
@@ -362,6 +467,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-022', category: '필수 CS', project: '공통', topic: '프로세스·스레드', stage: '2. 기초 개념', difficulty: '기초', priority: '최우선', minutes: 5,
     question: '프로세스와 스레드의 차이를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '프로세스는 독립 주소 공간의 실행 단위이고 스레드는 그 안에서 자원을 공유하는 실행 흐름입니다.',
+        evidence1: '스레드는 Heap을 공유해 통신이 가볍지만 경쟁 조건과 동기화 문제가 생길 수 있습니다.',
+        evidence2: '프로세스는 격리가 강해 오류 전파를 줄이는 대신 IPC와 메모리 비용이 더 큽니다.'
+      },
       conclusion: '프로세스는 독립된 주소 공간과 자원을 가진 실행 단위이고, 스레드는 한 프로세스 안에서 Heap 같은 자원을 공유하며 실행되는 흐름입니다.',
       evidence1: '스레드는 생성·전환과 데이터 공유가 비교적 가볍지만 공유 상태의 경쟁 조건과 동기화 문제가 생길 수 있습니다.',
       evidence2: '프로세스는 격리가 강해 한 프로세스 오류의 전파를 줄이지만 IPC와 메모리 비용이 더 큽니다.',
@@ -379,6 +489,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-023', category: '필수 CS', project: '공통', topic: '동기·비동기·Blocking', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 6,
     question: '동기·비동기와 Blocking·Non-blocking의 차이를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '동기·비동기는 완료 처리 주체, Blocking·Non-blocking은 호출 흐름의 대기 여부를 구분합니다.',
+        evidence1: '동기는 호출자가 완료 순서를 책임지고 비동기는 콜백·Future 등으로 완료를 통지받습니다.',
+        evidence2: 'Non-blocking API도 결과를 기다리면 Blocking이 되므로 전체 호출 흐름으로 판단해야 합니다.'
+      },
       conclusion: '동기·비동기는 결과 완료를 누가 이어서 처리하는지의 관점이고, Blocking·Non-blocking은 호출한 제어 흐름이 결과를 기다리며 멈추는지의 관점입니다.',
       evidence1: '동기 호출은 호출자가 결과 순서를 책임지고, 비동기는 콜백·Future·이벤트로 완료를 통지받을 수 있습니다.',
       evidence2: 'Non-blocking API도 마지막에 .block()으로 기다리면 호출 경계는 Blocking이 되므로 라이브러리 이름이 아니라 전체 흐름을 봐야 합니다.',
@@ -396,6 +511,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-024', category: '필수 CS', project: '공통', topic: 'HTTP·TCP', stage: '2. 기초 개념', difficulty: '기초', priority: '최우선', minutes: 6,
     question: 'HTTP와 TCP의 관계를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'HTTP는 요청·응답 의미를 정의하고 TCP는 이를 전달할 신뢰성 있는 바이트 스트림을 제공합니다.',
+        evidence1: 'TCP는 순서·재전송·흐름 제어를 맡고 HTTP는 메서드·상태 코드·헤더를 정의합니다.',
+        evidence2: 'HTTP/3는 UDP 기반 QUIC를 사용하므로 HTTP가 항상 TCP 위에서 동작하는 것은 아닙니다.'
+      },
       conclusion: 'HTTP는 요청·응답의 의미와 형식을 정하는 애플리케이션 계층 프로토콜이고, HTTP/1.1과 HTTP/2는 일반적으로 신뢰성 있는 바이트 스트림을 제공하는 TCP 위에서 동작합니다.',
       evidence1: 'TCP는 연결 설정, 순서 보장, 재전송, 흐름·혼잡 제어를 담당하고 HTTP는 메서드·상태 코드·헤더·본문을 정의합니다.',
       evidence2: '다만 HTTP/3는 UDP 기반 QUIC 위에서 동작하므로 HTTP가 항상 TCP만 사용한다고 말하면 틀립니다.',
@@ -413,6 +533,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-025', category: '필수 CS', project: '공통', topic: 'Spring IoC·DI', stage: '2. 기초 개념', difficulty: '기초', priority: '최우선', minutes: 6,
     question: 'Spring의 IoC와 DI를 설명하고 왜 사용하는지 말해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'IoC는 객체 제어를 컨테이너가 맡는 것이고 DI는 필요한 의존성을 외부에서 주입하는 방식입니다.',
+        evidence1: '구현체 생성을 사용처에서 분리해 교체와 테스트 대역 주입이 쉬운 구조를 확보합니다.',
+        evidence2: '생성자 주입은 필수 의존성을 명확히 하고 객체를 불변 상태로 유지하기 쉽게 합니다.'
+      },
       conclusion: 'IoC는 객체 생성과 생명주기 제어를 컨테이너가 맡는 것이고, DI는 객체가 필요한 의존성을 외부에서 주입받는 구현 방식입니다.',
       evidence1: '구현체 생성을 사용하는 클래스에서 분리하면 객체 교체와 테스트 대역 주입이 쉬워지고 구성 책임을 한곳에 모을 수 있습니다.',
       evidence2: '생성자 주입은 필수 의존성을 명확히 하고 불변 필드로 둘 수 있어 기본 선택으로 설명할 수 있습니다.',
@@ -430,6 +555,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-026', category: '필수 CS', project: '공통', topic: 'Bean Scope', stage: '2. 기초 개념', difficulty: '중급', priority: '높음', minutes: 5,
     question: 'Spring Bean의 기본 Scope와 상태 관리 시 주의점을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'Spring Bean의 기본 Scope는 컨테이너 안에서 인스턴스 하나를 공유하는 singleton입니다.',
+        evidence1: '여러 요청이 같은 Bean을 사용하므로 가변 필드를 두면 경쟁 조건이 생길 수 있습니다.',
+        evidence2: '요청 데이터는 지역 변수나 요청 Scope에 두고 서비스 Bean은 stateless하게 유지해야 합니다.'
+      },
       conclusion: 'Spring Bean의 기본 Scope는 컨테이너당 하나의 인스턴스를 공유하는 singleton입니다.',
       evidence1: '여러 요청 스레드가 같은 인스턴스를 사용할 수 있으므로 singleton Bean에 요청별 가변 상태를 필드로 두면 경쟁 조건이 생길 수 있습니다.',
       evidence2: '요청 데이터는 지역 변수나 요청 Scope에 두고, 서비스 Bean은 가능한 stateless하게 설계하는 것이 안전합니다.',
@@ -447,6 +577,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-027', category: '필수 CS', project: '공통', topic: 'Spring Proxy·AOP', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 6,
     question: 'Spring AOP가 프록시로 동작한다는 의미를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'Spring AOP는 대상 앞의 프록시가 외부 호출을 가로채 Advice를 실행한 뒤 위임합니다.',
+        evidence1: 'JDK 또는 클래스 기반 프록시로 트랜잭션과 권한 검사 같은 횡단 관심사를 분리합니다.',
+        evidence2: 'self-invocation과 final·private 메서드는 프록시 적용 범위에서 벗어날 수 있습니다.'
+      },
       conclusion: 'Spring은 대상 객체 앞에 프록시를 두고 외부 호출을 가로채 Advice를 실행한 뒤 실제 메서드로 위임합니다.',
       evidence1: '인터페이스 기반 JDK 동적 프록시 또는 클래스 기반 프록시가 사용될 수 있고, @Transactional과 역할 검사 같은 횡단 관심사를 적용합니다.',
       evidence2: '같은 객체 내부의 self-invocation은 프록시를 거치지 않을 수 있고 final·private 메서드 등은 적용 제약을 확인해야 합니다.',
@@ -464,6 +599,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-028', category: '필수 CS', project: '공통', topic: '@Transactional 프록시', stage: '4. 구현 흐름', difficulty: '중급', priority: '최우선', minutes: 7,
     question: '@Transactional은 어떻게 동작하고 적용되지 않는 대표 상황은 무엇인가요?',
     answer: {
+      compact: {
+        conclusion: '프록시가 트랜잭션을 시작하고 정상 종료 시 commit하며 지정된 rollback 대상 예외가 발생하면 rollback합니다.',
+        evidence1: '같은 객체 내부 호출은 프록시를 거치지 않아 새 트랜잭션 설정이 적용되지 않을 수 있습니다.',
+        evidence2: '긴 트랜잭션은 락과 커넥션 점유를 늘리므로 실제 일관성 경계만 포함해야 합니다.'
+      },
       conclusion: '@Transactional 메서드를 프록시가 가로채 TransactionManager로 트랜잭션을 시작하고 정상 종료 시 commit, 지정된 예외 시 rollback합니다.',
       evidence1: '기본 프록시 방식에서는 외부에서 프록시를 거치는 호출이어야 하므로 같은 객체 내부 호출은 새 트랜잭션 설정이 적용되지 않을 수 있습니다.',
       evidence2: 'rollback 기본 규칙, propagation, isolation은 실제 요구에 맞춰 확인해야 하며 트랜잭션을 길게 잡으면 락과 커넥션 점유가 늘어납니다.',
@@ -481,6 +621,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-029', category: '필수 CS', project: '공통', topic: 'JPA 영속성 컨텍스트', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'JPA 영속성 컨텍스트의 역할과 엔티티 생명주기를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: '영속성 컨텍스트는 엔티티를 식별자별로 관리하며 변경 감지와 쓰기 지연을 제공하는 작업 공간입니다.',
+        evidence1: '엔티티는 네 상태를 거치며 같은 영속성 컨텍스트에서는 동일 식별자의 객체 정체성을 보장합니다.',
+        evidence2: 'flush는 SQL을 DB에 반영할 뿐 commit이 아니므로 rollback되면 변경도 취소됩니다.'
+      },
       conclusion: '영속성 컨텍스트는 EntityManager가 엔티티를 식별자 기준으로 관리하는 1차 캐시이자 변경 감지·쓰기 지연의 작업 공간입니다.',
       evidence1: '엔티티는 비영속, 영속, 준영속, 삭제 상태를 거치며 같은 컨텍스트에서 같은 식별자를 조회하면 동일 인스턴스 정체성을 보장합니다.',
       evidence2: 'flush는 변경 SQL을 DB에 반영하지만 트랜잭션 commit과 같지 않고, rollback되면 반영 결과도 취소됩니다.',
@@ -498,6 +643,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-030', category: '필수 CS', project: '공통', topic: 'LAZY Proxy', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 6,
     question: 'JPA LAZY 로딩과 프록시가 어떻게 동작하나요?',
     answer: {
+      compact: {
+        conclusion: 'LAZY 로딩은 연관 객체 대신 프록시를 두고 실제 접근 시점에 SQL로 초기화합니다.',
+        evidence1: '불필요한 즉시 조회를 피할 수 있지만 반복 접근하면 N+1 쿼리가 발생할 수 있습니다.',
+        evidence2: '영속성 컨텍스트가 닫힌 뒤 미초기화 프록시에 접근하면 LazyInitializationException이 발생합니다.'
+      },
       conclusion: 'LAZY 연관관계는 실제 연관 엔티티 대신 프록시나 지연 컬렉션을 두고 접근 시점에 SQL을 실행해 초기화합니다.',
       evidence1: '필요하지 않은 연관 데이터를 즉시 읽지 않는 장점이 있지만 반복문에서 접근하면 N+1 쿼리가 발생할 수 있습니다.',
       evidence2: '영속성 컨텍스트가 닫힌 뒤 초기화되지 않은 연관관계에 접근하면 LazyInitializationException이 발생할 수 있어 조회 시 필요한 데이터 범위를 설계해야 합니다.',
@@ -515,6 +665,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-031', category: '필수 CS', project: 'FeedShop', topic: 'N+1', stage: '4. 구현 흐름', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'N+1 문제는 무엇이고 FeedShop에서는 어떻게 접근했나요?',
     answer: {
+      compact: {
+        conclusion: 'N+1은 목록 뒤 연관 쿼리가 반복되는 문제이며 FeedShop은 fetch join으로 해결했습니다.',
+        evidence1: 'QueryDSL로 조회 구조를 바꿔 캐시가 없어도 반복 쿼리 병목을 제거했습니다.',
+        evidence2: '그 뒤 이벤트 목록만 Redis에 캐시해 원본 조회 최적화와 응답 속도 개선을 함께 확보했습니다.'
+      },
       conclusion: 'N+1은 목록 1회 조회 뒤 각 행의 연관 데이터를 가져오느라 N번의 추가 쿼리가 반복되는 문제입니다.',
       evidence1: 'FeedShop은 캐시부터 덮지 않고 QueryDSL leftJoin·fetchJoin으로 조회 구조를 먼저 바꿔 요청당 SQL을 42회에서 2회로 줄였습니다.',
       evidence2: '그 뒤 읽기 빈도가 높고 변경이 적은 이벤트 목록에 Redis 캐시를 적용해 Cache Miss에서도 쿼리 병목이 남지 않게 했습니다.',
@@ -532,6 +687,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-032', category: '필수 CS', project: '공통', topic: '트랜잭션 격리 수준', stage: '2. 기초 개념', difficulty: '심화', priority: '최우선', minutes: 7,
     question: '트랜잭션 격리 수준과 대표 이상 현상을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'READ UNCOMMITTED부터 SERIALIZABLE로 갈수록 이상 현상은 줄지만 동시성 비용이 커질 수 있습니다.',
+        evidence1: 'Dirty read는 미커밋 값, non-repeatable read는 같은 행의 값 변화, phantom read는 결과 행 변화를 읽습니다.',
+        evidence2: '같은 격리 수준도 DB의 MVCC와 락 구현에 따라 실제 동작이 달라질 수 있습니다.'
+      },
       conclusion: '격리 수준은 동시에 실행되는 트랜잭션이 서로의 변경을 어느 정도 보게 할지 정하는 기준이며 높을수록 이상 현상을 줄이는 대신 동시성 비용이 커질 수 있습니다.',
       evidence1: 'READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE 순으로 설명하며 dirty read, non-repeatable read, phantom read를 연결합니다.',
       evidence2: '실제 동작은 DB의 MVCC와 락 구현에 따라 달라지므로 MySQL과 PostgreSQL의 같은 이름이 모든 면에서 동일하다고 가정하면 안 됩니다.',
@@ -549,6 +709,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-033', category: '필수 CS', project: '공통', topic: '낙관·비관·분산 락', stage: '7. 대안·확장', difficulty: '심화', priority: '최우선', minutes: 8,
     question: '낙관적 락, 비관적 락, 분산 락을 언제 선택하나요?',
     answer: {
+      compact: {
+        conclusion: '충돌 빈도와 재시도 가능성, 임계 구역 범위, 단일 DB 여부를 기준으로 락을 선택합니다.',
+        evidence1: '낙관적 락은 충돌이 적을 때, 비관적 락은 충돌이 잦고 트랜잭션이 짧을 때 적합합니다.',
+        evidence2: '분산 락은 여러 인스턴스를 조정하지만 DB 제약이나 원자 연산으로 충분한지 먼저 확인해야 합니다.'
+      },
       conclusion: '충돌 빈도, 임계 구역 범위, 재시도 가능성, 단일 DB 여부를 기준으로 선택합니다.',
       evidence1: '낙관적 락은 version 충돌을 감지해 재시도하고 충돌이 적을 때 유리하며, 비관적 락은 DB 행을 먼저 잠가 충돌이 잦고 짧은 트랜잭션에 사용할 수 있습니다.',
       evidence2: '분산 락은 여러 인스턴스의 임계 구역을 조정하지만 만료·소유권·장애 복구 복잡도가 있어 DB 유니크 제약이나 원자 연산으로 충분한지 먼저 봐야 합니다.',
@@ -566,6 +731,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-034', category: '필수 CS', project: '공통', topic: 'B+Tree 인덱스', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'DB 인덱스가 B+Tree를 사용하는 이유와 쓰기 비용을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'B+Tree는 균형 잡힌 높이와 정렬된 leaf로 단건 탐색과 범위 조회를 효율화합니다.',
+        evidence1: '루트부터 leaf까지 제한된 페이지를 읽고 연결된 leaf로 범위를 순차 탐색합니다.',
+        evidence2: '쓰기마다 인덱스 갱신과 page split 비용이 생기므로 실제 조회 조건에 필요한 만큼만 둬야 합니다.'
+      },
       conclusion: 'B+Tree 계열은 균형 잡힌 높이로 탐색 비용을 낮추고 정렬된 leaf를 통해 범위 조회를 효율적으로 처리하기 때문에 범용 DB 인덱스에 적합합니다.',
       evidence1: '검색은 루트에서 leaf까지 제한된 페이지 접근으로 수행되고 leaf의 정렬·연결 구조가 범위 스캔과 ORDER BY에 유리합니다.',
       evidence2: '대신 INSERT·UPDATE·DELETE마다 인덱스도 갱신되고 page split과 추가 저장 공간이 생기므로 조회 조건에 필요한 인덱스만 둬야 합니다.',
@@ -583,6 +753,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-035', category: '필수 CS', project: '공통', topic: 'Redis 기초·자료구조', stage: '2. 기초 개념', difficulty: '기초', priority: '최우선', minutes: 7,
     question: 'Redis는 무엇이고 어떤 자료구조를 언제 사용하나요?',
     answer: {
+      compact: {
+        conclusion: 'Redis는 메모리 중심 key-value 저장소로 캐시·카운터·세션 같은 저지연 작업에 사용합니다.',
+        evidence1: 'String은 값·카운터, Hash는 필드 묶음, List는 순서 큐, Set은 중복 제거, Sorted Set은 순위에 적합합니다.',
+        evidence2: 'FeedShop은 목록 캐시와 INCR 카운터의 책임을 나눠 조회와 집계 경계를 분리했습니다.'
+      },
       conclusion: 'Redis는 메모리 중심의 key-value 데이터 저장소로 낮은 지연과 원자 명령을 활용해 캐시, 카운터, 세션 등에 사용합니다.',
       evidence1: 'String은 캐시·카운터, Hash는 필드 묶음, List는 순서 큐, Set은 중복 없는 집합, Sorted Set은 점수 기반 순위에 적합합니다.',
       evidence2: 'FeedShop에서는 이벤트 목록 캐시와 투표 카운터 INCR처럼 목적을 분리했으며, 메모리 비용·만료·원본 데이터와의 일관성을 함께 설계해야 합니다.',
@@ -600,6 +775,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-036', category: '필수 CS', project: '공통', topic: 'Redis 영속성', stage: '6. 장애·한계', difficulty: '심화', priority: '높음', minutes: 7,
     question: 'Redis의 RDB와 AOF 영속화 방식과 데이터 유실 가능성을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'RDB는 시점별 스냅샷, AOF는 쓰기 명령 로그로 복구하며 유실 범위와 비용이 다릅니다.',
+        evidence1: 'RDB는 마지막 스냅샷 이후 변경을 잃을 수 있고 AOF는 fsync 정책에 따라 유실 구간과 I/O 비용이 달라집니다.',
+        evidence2: '두 방식 모두 무손실을 보장하지 않으므로 중요한 데이터는 원본 저장소와 복구 기준이 필요합니다.'
+      },
       conclusion: 'RDB는 특정 시점의 스냅샷을 저장하고, AOF는 쓰기 명령 로그를 기록해 재실행하는 방식이라 복구 속도·파일 크기·유실 허용 범위가 다릅니다.',
       evidence1: 'RDB는 백업과 빠른 재시작에 유리하지만 마지막 스냅샷 이후 데이터가 사라질 수 있고, AOF는 fsync 정책에 따라 유실 구간을 줄이는 대신 I/O와 파일 관리 비용이 생깁니다.',
       evidence2: '복제와 영속성을 사용해도 최근 쓰기 유실 가능성이 0이 되는 것은 아니므로 FeedShop처럼 DB를 원본으로 둔 설계가 중요합니다.',
@@ -617,6 +797,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-037', category: '필수 CS', project: '공통', topic: 'Redis Sentinel·Cluster', stage: '7. 대안·확장', difficulty: '심화', priority: '높음', minutes: 8,
     question: 'Redis Sentinel과 Cluster의 목적과 차이를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'Sentinel은 장애 감지와 승격, Cluster는 데이터 샤딩을 통한 수평 확장이 목적입니다.',
+        evidence1: 'Sentinel은 샤딩하지 않으며 failover 중단과 비동기 복제에 따른 유실 가능성이 있습니다.',
+        evidence2: 'Cluster는 hash slot으로 분산하므로 다중 키 연산 제약과 더 큰 운영 복잡도를 감수합니다.'
+      },
       conclusion: 'Sentinel은 주로 단일 primary와 replica 구성의 장애 감지·자동 승격을 제공하고, Cluster는 데이터를 여러 master에 분산해 용량과 처리량을 수평 확장합니다.',
       evidence1: 'Sentinel은 샤딩을 제공하지 않으며 failover 동안 짧은 중단과 비동기 복제에 따른 최근 쓰기 유실 가능성이 있습니다.',
       evidence2: 'Cluster는 hash slot으로 키를 분산하므로 여러 키 연산은 같은 slot 제약을 고려해야 하고 운영 복잡도가 커집니다.',
@@ -634,6 +819,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-038', category: '필수 CS', project: '3M', topic: 'JWT 보안 원리', stage: '2. 기초 개념', difficulty: '중급', priority: '최우선', minutes: 7,
     question: 'JWT는 어떻게 위변조를 검증하고, 암호화와 무엇이 다른가요?',
     answer: {
+      compact: {
+        conclusion: '서명 JWT는 signature로 위변조를 검증하지만 Base64URL payload의 내용을 숨기지는 않습니다.',
+        evidence1: '서버는 허용 알고리즘과 키로 서명을 검증하고 exp·iss·aud 같은 클레임도 확인해야 합니다.',
+        evidence2: '민감 정보는 payload에서 제외하고 기밀성이 필요하면 TLS나 별도 암호화를 사용해야 합니다.'
+      },
       conclusion: '일반적인 서명 JWT는 header와 payload를 signature로 검증해 변경 여부와 발급 주체를 확인하지만 payload를 숨기지는 않습니다.',
       evidence1: '서버는 허용한 알고리즘과 키로 서명을 검증하고 exp·iss·aud 같은 클레임도 정책에 맞게 확인해야 합니다.',
       evidence2: '민감 정보는 payload에 넣지 않으며 기밀성이 필요하면 TLS와 별도의 암호화 방식이 필요합니다.',
@@ -651,6 +841,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-039', category: '필수 CS', project: '공통', topic: 'Docker·VM', stage: '2. 기초 개념', difficulty: '기초', priority: '높음', minutes: 6,
     question: 'Docker 컨테이너와 가상 머신의 차이를 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'VM은 Guest OS를 포함하고 컨테이너는 호스트 커널을 공유하며 프로세스를 격리합니다.',
+        evidence1: '컨테이너는 이미지로 실행 환경을 재현하고 빠르게 시작하지만 호스트 커널에 의존합니다.',
+        evidence2: 'FeedShop은 Docker 이미지로 배포하고 3M은 Compose로 통합 실행 환경을 구성했습니다.'
+      },
       conclusion: '가상 머신은 하이퍼바이저 위에 각자 Guest OS를 포함하고, 컨테이너는 호스트 커널을 공유하면서 namespace와 cgroup으로 프로세스를 격리합니다.',
       evidence1: '컨테이너는 이미지 기반으로 실행 환경을 재현하고 시작이 가벼운 장점이 있지만 VM보다 격리 경계가 다르고 호스트 커널 의존이 있습니다.',
       evidence2: '프로젝트에서는 FeedShop 배포 이미지와 3M Compose 통합 환경에 Docker를 사용했지만 컨테이너 자체가 배포 무중단이나 고가용성을 보장하지는 않습니다.',
@@ -668,6 +863,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-040', category: '필수 CS', project: 'FeedShop', topic: 'CI·CD', stage: '4. 구현 흐름', difficulty: '중급', priority: '높음', minutes: 6,
     question: 'CI와 CD의 차이와 FeedShop 파이프라인에서 맡은 역할을 설명해 주세요.',
     answer: {
+      compact: {
+        conclusion: 'CI는 변경 검증을 자동화하고 CD는 검증된 결과물을 배포 가능한 상태나 실제 환경으로 전달합니다.',
+        evidence1: 'GitHub Actions와 SonarCloud로 빌드·품질 검증을 묶어 변경 검증 흐름을 자동화했습니다.',
+        evidence2: 'Docker 이미지를 Cloud Run에 전달하도록 구성해 검증 결과와 배포 경로의 일관성을 확보했습니다.'
+      },
       conclusion: 'CI는 변경을 자주 통합하며 빌드·테스트·품질 검사를 자동화하는 과정이고, CD는 검증된 결과물을 배포 가능한 상태로 만들거나 실제 환경에 배포하는 과정입니다.',
       evidence1: 'FeedShop에서 GitHub Actions 기반 CI/CD와 SonarCloud 코드 품질 검증 파이프라인을 구축하고 Docker 이미지로 Cloud Run 배포 흐름을 구성했습니다.',
       evidence2: '다만 정확한 trigger, 승인 단계, rollback, 무중단 방식은 워크플로 파일에서 확인된 범위만 답해야 합니다.',
@@ -685,6 +885,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-041', category: '필수 CS', project: '학습 경험', topic: 'Kafka Choreography', stage: '2. 기초 개념', difficulty: '심화', priority: '보통', minutes: 7,
     question: '분산 트랜잭션에서 Choreography 방식은 무엇이고 Orchestration과 어떻게 다른가요?',
     answer: {
+      compact: {
+        conclusion: 'Choreography는 서비스가 이벤트로 자율 협력하고 Orchestration은 중앙 조정자가 흐름을 지시합니다.',
+        evidence1: 'Choreography는 중앙 결합을 줄이지만 전체 흐름 추적과 실패 보상이 복잡해질 수 있습니다.',
+        evidence2: 'Orchestration은 흐름과 상태를 한곳에서 보기 쉽지만 중앙 조정자 의존과 병목 위험이 생깁니다.'
+      },
       conclusion: 'Choreography는 각 서비스가 이벤트를 발행·구독해 다음 동작을 자율적으로 이어가고, Orchestration은 중앙 조정자가 단계와 보상을 지시하는 방식입니다.',
       evidence1: 'Choreography는 중앙 결합을 줄이고 확장하기 쉽지만 전체 흐름 추적과 순환 이벤트·실패 보상이 복잡해질 수 있습니다.',
       evidence2: 'Orchestration은 흐름과 상태를 한곳에서 보기 쉽지만 조정자 의존과 병목 위험이 생깁니다. 본인은 교육 과정에서 Choreography 기반 분산 트랜잭션을 발표했습니다.',
@@ -702,6 +907,11 @@ window.INTERVIEW_DATA.architectureCs = [
     id: 'AC-042', category: '필수 CS', project: '학습 경험', topic: 'Outbox·DLQ', stage: '7. 대안·확장', difficulty: '심화', priority: '보통', minutes: 8,
     question: 'DB 저장과 Kafka 발행의 원자성 문제를 Outbox와 DLQ로 어떻게 보완하나요?',
     answer: {
+      compact: {
+        conclusion: 'Outbox는 DB 변경과 이벤트 기록을 같은 트랜잭션에 저장하고 DLQ는 반복 실패 메시지를 격리합니다.',
+        evidence1: '별도 relay가 Outbox를 발행하므로 eventId 기반 멱등 처리와 재시도 관측이 필요합니다.',
+        evidence2: 'DLQ는 자동 복구가 아니므로 원인을 수정한 뒤 순서·보존 정책에 맞춰 재처리해야 합니다.'
+      },
       conclusion: 'Outbox는 비즈니스 데이터와 발행할 이벤트를 같은 DB 트랜잭션에 저장해 DB commit과 이벤트 기록 사이의 간극을 줄이고, 별도 relay가 브로커로 전달하는 패턴입니다.',
       evidence1: 'relay의 중복 발행 가능성 때문에 eventId 기반 멱등 소비가 필요하고, 전송 상태·재시도·오래된 레코드 정리와 지연 관측을 운영해야 합니다.',
       evidence2: 'DLQ는 반복 실패 메시지를 격리해 정상 흐름을 보호하지만 자동 복구가 아니며 원인 수정, 재처리 순서, 개인정보와 보존 정책이 필요합니다.',
