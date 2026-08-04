@@ -1,0 +1,489 @@
+/* 하이브리드 공용 컴포넌트와 최신 모바일 레이아웃 */
+.daily-next-action,
+.home-today-card,
+.home-interview-card {
+  border: 1px solid #c9ddf8;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff 0%, var(--blue-soft) 100%);
+  box-shadow: 0 10px 28px rgb(49 130 246 / 8%);
+}
+
+.daily-next-action {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.daily-low-frequency,
+.daily-disclosure,
+.weekly-settings,
+.roadmap-download {
+  margin: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.daily-low-frequency > summary,
+.daily-disclosure > summary,
+.weekly-settings > summary,
+.roadmap-download > summary {
+  min-height: 44px;
+  padding: 11px 14px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.daily-low-frequency > :not(summary),
+.daily-disclosure > :not(summary),
+.weekly-settings > :not(summary),
+.roadmap-download > :not(summary) {
+  margin-right: 14px;
+  margin-left: 14px;
+}
+
+.daily-low-frequency > :last-child,
+.daily-disclosure > :last-child,
+.weekly-settings > :last-child,
+.roadmap-download > :last-child {
+  margin-bottom: 14px;
+}
+
+.history-primary-kpi {
+  min-width: 0;
+}
+
+.history-supporting-kpis {
+  display: grid;
+  grid-column: span 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.daily-next-action {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.daily-next-action span,
+.daily-next-action strong,
+.daily-next-action time {
+  display: block;
+}
+
+.daily-next-action span,
+.daily-next-action time {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.daily-next-action strong {
+  color: var(--navy);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.daily-disclosure.side-panel {
+  padding: 0;
+}
+
+.daily-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  list-style-position: inside;
+}
+
+.daily-disclosure-content {
+  padding-bottom: 2px;
+}
+
+.weekly-setting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 18px 14px;
+}
+
+.weekly-setting-actions button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.roadmap-secondary:not(details) {
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  body {
+    background: var(--white);
+  }
+
+  .app-shell,
+  .roadmap-shell,
+  .weekly-shell,
+  .history-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .home-page-shell {
+    width: 100%;
+    margin: 0;
+  }
+
+  .home-main {
+    padding: 18px 14px 28px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .home-intro {
+    margin-bottom: 14px;
+  }
+
+  .home-intro h1 {
+    font-size: clamp(1.55rem, 7vw, 2rem);
+  }
+
+  .home-focus-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .home-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .home-card h2 {
+    font-size: 1rem;
+  }
+
+  .home-progress-track {
+    margin-top: 12px;
+  }
+
+  .home-next-action {
+    margin-top: 11px;
+    padding: 10px;
+  }
+
+  .home-primary-action {
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .home-weekly-card {
+    margin-top: 10px;
+  }
+
+  .home-weekly-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 11px !important;
+  }
+
+  .home-weekly-metrics > div {
+    padding: 9px 6px;
+    text-align: center;
+  }
+
+  .home-weekly-metrics dt {
+    font-size: 0.64rem;
+  }
+
+  .home-weekly-metrics dd {
+    font-size: 0.86rem;
+  }
+
+  .home-quick-links {
+    margin-top: 10px;
+  }
+
+  .home-quick-links a {
+    min-height: 64px;
+    padding: 11px;
+  }
+
+  .daily-paper,
+  .roadmap-paper,
+  .weekly-paper,
+  .history-paper {
+    padding: 20px 16px 30px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .daily-header,
+  .roadmap-header,
+  .weekly-header,
+  .history-header {
+    margin-bottom: 14px;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .title-block h1 {
+    font-size: clamp(1.55rem, 7vw, 2rem);
+    line-height: 1.15;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  button,
+  .board-link,
+  .pdf-button {
+    min-height: 44px;
+  }
+
+  .header-actions {
+    width: 100%;
+    min-width: 0;
+    margin-top: 10px;
+  }
+
+  .daily-header .mode-bar {
+    display: none;
+  }
+
+  .daily-plan-source {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 52px;
+    padding: 10px 12px;
+  }
+
+  .daily-plan-source > div {
+    align-items: flex-start;
+  }
+
+  .progress-card {
+    grid-template-columns: auto minmax(80px, 1fr) auto;
+    gap: 9px;
+    margin-bottom: 12px;
+    padding: 11px 12px;
+  }
+
+  .focus-anchors {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .focus-anchors::-webkit-scrollbar {
+    display: none;
+  }
+
+  .focus-anchor {
+    min-width: min(72vw, 250px);
+    min-height: 68px;
+    padding: 11px 12px;
+  }
+
+  .daily-layout {
+    gap: 16px;
+  }
+
+  .schedule-period,
+  .side-panel {
+    border-radius: 14px;
+  }
+
+  .schedule-item {
+    min-height: 48px;
+  }
+
+  .daily-low-frequency,
+  .daily-disclosure,
+  .weekly-settings,
+  .roadmap-download {
+    margin-bottom: 12px;
+  }
+
+  .roadmap-view-selector {
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .roadmap-selector-heading > p,
+  .roadmap-selector-heading .eyebrow {
+    display: none;
+  }
+
+  .roadmap-category-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .roadmap-category-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .roadmap-category-tabs button {
+    flex: 0 0 auto;
+    min-height: 44px;
+  }
+
+  .roadmap-reference-list {
+    gap: 16px;
+  }
+
+  .roadmap-mode-section {
+    border-radius: 16px;
+  }
+
+  .roadmap-reference-row {
+    min-height: 48px;
+  }
+
+  .weekly-primary-flow {
+    display: grid;
+    gap: 12px;
+  }
+
+  .weekday-tabs {
+    position: sticky;
+    top: 52px;
+    z-index: 20;
+    margin: 0 -16px 10px;
+    padding: 8px 16px;
+    background: rgb(255 255 255 / 94%);
+    backdrop-filter: blur(14px);
+    scrollbar-width: none;
+  }
+
+  .weekday-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .weekly-detail-card {
+    border-radius: 16px;
+  }
+
+  .weekly-detail-header {
+    padding: 13px 14px;
+  }
+
+  .weekly-planner {
+    padding: 12px;
+  }
+
+  .weekly-planner-actions,
+  .plan-move-actions {
+    flex-wrap: wrap;
+  }
+
+  .weekly-planner-actions button,
+  .weekly-add-panel button,
+  .plan-move-actions button,
+  .plan-time-editor button,
+  .plan-drag {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .weekly-progress-grid {
+    grid-template-columns: repeat(3, minmax(175px, 1fr));
+    margin-top: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .weekly-progress-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .weekly-progress-card {
+    min-height: 112px;
+    padding: 12px;
+  }
+
+  .history-period-switch {
+    display: inline-flex;
+    width: 100%;
+  }
+
+  .history-period-switch button {
+    flex: 1 1 0;
+    min-height: 44px;
+  }
+
+  .history-primary-kpi {
+    grid-column: 1 / -1;
+  }
+
+  .history-supporting-kpis {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .history-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-kpi-card {
+    min-height: 82px;
+    padding: 12px;
+  }
+
+  .history-kpi-card--completion {
+    grid-column: 1 / -1;
+  }
+
+  .history-chart:not([data-period="30"]) {
+    width: 100%;
+    min-width: 0;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .history-chart-day {
+    grid-template-rows: 18px 110px 18px 22px;
+  }
+
+  .history-chart-track {
+    height: 110px;
+  }
+
+  .history-activity-marker {
+    min-width: 14px;
+    height: 14px;
+    padding-inline: 2px;
+    font-size: 0.46rem;
+  }
+
+  .history-record-summary {
+    min-height: 60px;
+    padding: 12px;
+  }
+}

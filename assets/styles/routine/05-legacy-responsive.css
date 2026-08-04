@@ -1,0 +1,247 @@
+/* 기존 데스크톱·태블릿 반응형 보정: 뒤의 최신 모바일 규칙보다 먼저 유지 */
+@media (max-width: 1050px) {
+  .weekly-progress-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .weekly-progress-card {
+    min-height: 126px;
+  }
+
+  .history-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    width: min(100% - 24px, 720px);
+    margin: 12px auto;
+  }
+
+  .daily-paper {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .daily-header {
+    display: block;
+  }
+
+  .header-actions {
+    justify-items: start;
+    margin-top: 15px;
+  }
+
+  .daily-plan-source {
+    justify-content: space-between;
+  }
+
+  .daily-plan-source > div {
+    justify-content: flex-start;
+  }
+
+  .mode-bar,
+  .sub-actions,
+  .run-picker {
+    justify-content: flex-start;
+  }
+
+  .daily-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .roadmap-shell {
+    width: min(100% - 24px, 820px);
+  }
+
+  .roadmap-header {
+    display: block;
+  }
+
+  .roadmap-actions {
+    justify-content: flex-start;
+    margin-top: 15px;
+  }
+
+  .weekly-shell {
+    width: min(100% - 24px, 820px);
+  }
+
+  .weekly-header {
+    display: flex;
+  }
+
+  .history-shell {
+    width: min(100% - 24px, 820px);
+  }
+
+  .history-header {
+    display: flex;
+  }
+}
+
+@media (max-width: 760px) {
+  .weekly-header {
+    display: block;
+  }
+
+  .weekly-actions {
+    justify-content: flex-start;
+    margin-top: 14px;
+  }
+
+  .history-header,
+  .history-section-heading,
+  .history-record-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .history-actions {
+    justify-content: flex-start;
+  }
+
+  .history-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-record-metrics {
+    justify-content: flex-start;
+  }
+
+  .history-record-body {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 720px) {
+  .weekly-planner {
+    padding: 12px;
+  }
+
+  .weekly-planner-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .weekly-library-groups,
+  .weekly-custom-form {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-plan-row,
+  .weekly-plan-row.is-fixed {
+    grid-template-columns: 2rem minmax(6.5rem, auto) minmax(0, 1fr) auto;
+    gap: .55rem;
+    padding: .7rem .75rem;
+  }
+
+  .weekly-plan-row.is-fixed {
+    grid-template-columns: minmax(6.5rem, auto) minmax(0, 1fr) auto;
+  }
+
+  .weekly-plan-state {
+    grid-column: -2;
+  }
+
+  .plan-move-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-end;
+  }
+
+  .plan-time-editor {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 580px) {
+  .focus-anchors,
+  .progress-card {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-card {
+    gap: 7px;
+  }
+
+  .schedule-item {
+    grid-template-columns: 22px 100px minmax(0, 1fr);
+    padding-inline: 9px;
+  }
+
+  .daily-plan-source,
+  .daily-plan-source > div,
+  .daily-plan-update {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .roadmap-paper {
+    padding: 18px;
+  }
+
+  .roadmap-view-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .roadmap-selector-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .roadmap-mode-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .category-filters {
+    justify-content: flex-start;
+  }
+
+  .roadmap-reference-period {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .roadmap-reference-row {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .roadmap-category {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .weekly-paper {
+    padding: 18px;
+  }
+
+  .weekly-progress-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-progress-card {
+    min-height: 0;
+  }
+
+  .weekly-detail-header,
+  .weekly-detail-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .history-paper {
+    padding: 18px;
+  }
+
+  .history-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .history-trend-panel {
+    padding: 14px;
+  }
+}

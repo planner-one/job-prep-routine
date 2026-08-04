@@ -1,5 +1,12 @@
 export const MODES = ['workout', 'normal', 'running', 'maintenance'];
 
+export const MODE_LABELS = Object.freeze({
+  workout: '운동일',
+  normal: '비운동일',
+  running: '러닝일',
+  maintenance: '핵심 유지일',
+});
+
 export const TASK_LIBRARY = [
   { id: 'scan', label: '일정·공고 확인', category: 'career', durationMinutes: 30 },
   { id: 'job-analysis', label: '공고 분석', category: 'career', durationMinutes: 60 },

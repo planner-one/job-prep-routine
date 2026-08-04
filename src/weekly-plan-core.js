@@ -1,4 +1,6 @@
+import { isLegacyLearningId, isLegacyLearningItem } from './legacy-learning.js';
 import { TASK_LIBRARY, getSchedule } from './routine-data.js';
+import { localDateString, parseLocalDateKey } from './routine-core.js';
 
 export { TASK_LIBRARY } from './routine-data.js';
 
@@ -23,17 +25,6 @@ const ANCHOR_IDS = ['breakfast', 'lunch', 'dinner', 'sleep'];
 const ALLOWED_MODES = new Set(Object.keys(DAY_START));
 const ALLOWED_CATEGORIES = new Set(['career', 'exercise']);
 const LIBRARY_BY_ID = new Map(TASK_LIBRARY.map((item) => [item.id, item]));
-const LEGACY_LEARNING_IDS = new Set([
-  'learning',
-  'maintenance-learning',
-  'maintenance-planning',
-  'Spring',
-  'Redis',
-  'Java',
-  '프로젝트 적용',
-  'CS',
-  '코딩테스트',
-]);
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -57,17 +48,7 @@ function validMinute(value) {
   return Number.isInteger(value) && value >= 0 && value <= 1440;
 }
 
-function isLegacyLearningId(value) {
-  return typeof value === 'string' && (value.startsWith('learning:') || LEGACY_LEARNING_IDS.has(value));
-}
-
-function isLegacyLearningItem(value) {
-  return isObject(value) && (
-    value.category === 'learning'
-    || value.sourceTaskId === 'learning'
-    || isLegacyLearningId(value.id)
-  );
-}
+const isLegacyPlanItem = (value) => isLegacyLearningItem(value) || value?.sourceTaskId === 'learning';
 
 function withoutLegacyLearningKeys(value) {
   const source = isObject(value) ? value : {};
@@ -245,7 +226,7 @@ export function createDefaultWeeklyState() {
 
 function normalizeItem(candidate) {
   if (!isObject(candidate) || typeof candidate.id !== 'string' || !candidate.id.trim()) return null;
-  if (isLegacyLearningItem(candidate)) return null;
+  if (isLegacyPlanItem(candidate)) return null;
   if (typeof candidate.label !== 'string' || !candidate.label.trim()) return null;
   if (!ALLOWED_CATEGORIES.has(candidate.category)) return null;
   if (!Number.isInteger(candidate.durationMinutes) || candidate.durationMinutes <= 0 || candidate.durationMinutes > 1440) return null;
@@ -333,19 +314,11 @@ function localDateFrom(value) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
   }
   if (typeof value === 'string') {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (match) {
-      const [, year, month, day] = match.map(Number);
-      const date = new Date(year, month - 1, day, 12);
-      if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) return date;
-    }
+    const date = parseLocalDateKey(value);
+    if (date) return date;
   }
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
-}
-
-function localDateString(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export function weekMondayKey(value = new Date()) {

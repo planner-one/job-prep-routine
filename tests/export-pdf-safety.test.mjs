@@ -15,8 +15,17 @@ const CANONICAL_NAME = '취업준비-운영-로드맵.pdf';
 const SOURCE_PATHS = [
   'roadmap.html',
   'assets/routine.css',
+  'assets/styles/routine/01-foundation-daily.css',
+  'assets/styles/routine/02-roadmap.css',
+  'assets/styles/routine/03-weekly.css',
+  'assets/styles/routine/04-history.css',
+  'assets/styles/routine/05-legacy-responsive.css',
+  'assets/styles/routine/06-today-hub.css',
+  'assets/styles/routine/07-hybrid-shell.css',
+  'assets/styles/routine/08-motion-print.css',
   'src/roadmap-app.js',
   'src/routine-data.js',
+  'src/ui-preferences.js',
 ];
 
 async function startSourceServer({ mismatchPath, failurePath }) {
@@ -110,7 +119,10 @@ test('8787 HTTP 실패 시 Chrome을 실행하지 않고 canonical PDF를 보존
     { failurePath: 'src/roadmap-app.js' },
     /source 요청 실패: src\/roadmap-app\.js/,
   );
-  assert.deepEqual(requests, ['roadmap.html', 'assets/routine.css', 'src/roadmap-app.js']);
+  assert.deepEqual(
+    requests,
+    SOURCE_PATHS.slice(0, SOURCE_PATHS.indexOf('src/roadmap-app.js') + 1),
+  );
 });
 
 test('validator 실패 시 canonical PDF를 보존하고 임시 파일을 정리한 뒤 mv를 실행하지 않는다', async () => {

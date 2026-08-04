@@ -9,12 +9,28 @@ TARGET="${3:-all}"
 PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 SOURCE_TMP_DIR=""
 TEMP_PDF=""
+ROADMAP_SOURCE_PATHS="
+roadmap.html
+assets/routine.css
+assets/styles/routine/01-foundation-daily.css
+assets/styles/routine/02-roadmap.css
+assets/styles/routine/03-weekly.css
+assets/styles/routine/04-history.css
+assets/styles/routine/05-legacy-responsive.css
+assets/styles/routine/06-today-hub.css
+assets/styles/routine/07-hybrid-shell.css
+assets/styles/routine/08-motion-print.css
+src/roadmap-app.js
+src/routine-data.js
+src/ui-preferences.js
+"
 
 cleanup() {
   if [ -n "$TEMP_PDF" ]; then rm -f "$TEMP_PDF"; fi
   if [ -n "$SOURCE_TMP_DIR" ]; then
-    rm -f "$SOURCE_TMP_DIR/roadmap.html" "$SOURCE_TMP_DIR/routine.css" \
-      "$SOURCE_TMP_DIR/roadmap-app.js" "$SOURCE_TMP_DIR/routine-data.js"
+    for path in $ROADMAP_SOURCE_PATHS; do
+      rm -f "$SOURCE_TMP_DIR/${path##*/}"
+    done
     rmdir "$SOURCE_TMP_DIR" 2>/dev/null || true
   fi
 }
@@ -31,7 +47,7 @@ mkdir -p "$OUT_DIR"
 
 verify_roadmap_sources() {
   SOURCE_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/roadmap-pdf-source.XXXXXX")
-  for path in roadmap.html assets/routine.css src/roadmap-app.js src/routine-data.js; do
+  for path in $ROADMAP_SOURCE_PATHS; do
     downloaded="$SOURCE_TMP_DIR/${path##*/}"
     if ! curl -fsS "$BASE_URL/$path" -o "$downloaded"; then
       echo "source 요청 실패: $path" >&2

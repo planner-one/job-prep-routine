@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { readCssBundle } from './helpers/read-css-bundle.mjs';
 
-const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'utf8').catch(() => '');
+const css = await readCssBundle(new URL('../assets/routine.css', import.meta.url));
 const home = await readFile(new URL('../index.html', import.meta.url), 'utf8').catch(() => '');
 const exportScript = await readFile(new URL('../scripts/export-pdfs.sh', import.meta.url), 'utf8').catch(() => '');
 const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');

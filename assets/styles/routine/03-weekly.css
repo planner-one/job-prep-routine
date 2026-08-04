@@ -1,0 +1,578 @@
+/* 주간 계획 화면 */
+.weekly-shell {
+  width: min(1240px, calc(100% - 40px));
+}
+
+.weekly-paper {
+  padding: 32px;
+}
+
+.weekly-header {
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.weekly-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.weekly-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.weekly-progress-card {
+  min-width: 0;
+  min-height: 144px;
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.weekly-progress-card h3,
+.weekly-progress-card p,
+.weekly-progress-card dl,
+.weekly-progress-card dd,
+.weekly-progress-card dt {
+  margin: 0;
+}
+
+.weekly-progress-card--application {
+  border-color: #f0d8b6;
+  background: var(--orange-soft);
+}
+
+.weekly-progress-card--preparation {
+  border-color: #ead7e2;
+  background: #fff5fa;
+}
+
+.weekly-progress-card--exercise {
+  border-color: #ddd5ee;
+  background: var(--violet-soft);
+}
+
+.weekly-progress-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.weekly-progress-heading h3 {
+  margin-top: 2px;
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.weekly-progress-heading strong {
+  color: var(--navy);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.weekly-progress-card > p {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.weekly-goal-track {
+  height: 7px;
+  overflow: hidden;
+  margin-top: 16px;
+  border-radius: 999px;
+  background: rgb(216 131 24 / 16%);
+}
+
+.weekly-goal-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--orange);
+  transition: width 180ms ease;
+}
+
+.weekly-inline-metrics {
+  display: grid;
+  gap: 6px;
+  margin-top: 13px !important;
+}
+
+.weekly-inline-metrics > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.weekly-inline-metrics dt {
+  overflow: hidden;
+  color: #596b7e;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weekly-inline-metrics dd {
+  color: #334a65;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.weekday-tabs {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(68px, 1fr));
+  gap: 7px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.weekday-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  border: 1px solid #d7e0ea;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #53667c;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.weekday-tabs button span {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e9eef4;
+  color: #6b7b8e;
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+.weekday-tabs button[data-day-role="maintenance"] {
+  border-color: #efd59c;
+  background: #fffbef;
+  color: #805610;
+}
+
+.weekday-tabs button[data-day-role="maintenance"] span {
+  background: #f8e9bd;
+  color: #805610;
+}
+
+.weekday-tabs button[aria-selected="true"] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+  box-shadow: 0 8px 20px rgb(23 55 94 / 16%);
+}
+
+.weekday-tabs button[aria-selected="true"] span {
+  background: rgb(255 255 255 / 16%);
+  color: var(--white);
+}
+
+.weekday-tabs button[aria-selected="true"][data-day-role="maintenance"] {
+  border-color: #9d6815;
+  background: #9d6815;
+}
+
+.weekly-detail-card {
+  overflow: hidden;
+  border: 1px solid #dbe3ec;
+  border-radius: 18px;
+  background: #fcfdff;
+}
+
+.weekly-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 19px;
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
+}
+
+.weekly-detail-header h2,
+.weekly-detail-header p {
+  margin: 0;
+}
+
+.weekly-detail-header h2 {
+  margin-top: 2px;
+  color: var(--navy);
+  font-size: 1.16rem;
+  letter-spacing: -0.025em;
+}
+
+.weekly-selected-date {
+  margin-top: 3px !important;
+  color: var(--muted);
+  font-size: 0.73rem;
+}
+
+.maintenance-button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #e3c787;
+  border-radius: 999px;
+  background: #fffbef;
+  color: #805610;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.maintenance-button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.weekly-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #f7f9fc;
+}
+
+.weekly-mode-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.weekly-mode-buttons button {
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid #d4deea;
+  border-radius: 999px;
+  background: var(--white);
+  color: #52647a;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.weekly-mode-buttons button[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.weekly-planner {
+  padding: 18px;
+}
+
+.weekly-planner-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.weekly-planner-header h3,
+.weekly-planner-header p,
+.weekly-add-panel h4,
+.weekly-add-panel h5,
+.weekly-unscheduled h4,
+.weekly-unscheduled p {
+  margin: 0;
+}
+
+.weekly-planner-header h3 {
+  margin-top: 3px;
+  color: var(--navy);
+  font-size: 1.08rem;
+}
+
+.weekly-planner-actions,
+.plan-move-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weekly-planner-actions button,
+.weekly-add-panel button,
+.plan-move-actions button,
+.plan-time-editor button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #d4deea;
+  border-radius: 10px;
+  background: var(--white);
+  color: #455b73;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.weekly-planner-actions button[aria-expanded="true"],
+.weekly-planner-actions button[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.weekly-add-panel {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #cad7e6;
+  border-radius: 16px;
+  background: var(--paper-soft);
+}
+
+.weekly-add-panel > h4,
+.weekly-custom-form h4 {
+  color: var(--navy);
+  font-size: 0.9rem;
+}
+
+.weekly-library-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.weekly-library-groups section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.weekly-library-groups h5 {
+  margin-bottom: 8px;
+  color: #4d6177;
+  font-size: 0.76rem;
+}
+
+.weekly-library-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weekly-library-choices button {
+  min-height: 31px;
+  padding: 5px 8px;
+  font-size: 0.69rem;
+}
+
+.weekly-custom-form {
+  display: grid;
+  grid-template-columns: 1fr minmax(120px, .4fr) minmax(130px, .4fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #d5deea;
+}
+
+.weekly-custom-form h4 {
+  grid-column: 1 / -1;
+}
+
+.weekly-custom-form label,
+.plan-time-editor label {
+  display: grid;
+  gap: 4px;
+  color: #52647a;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.weekly-custom-form input,
+.weekly-custom-form select,
+.plan-time-editor input {
+  min-width: 0;
+  height: 36px;
+  padding: 6px 8px;
+  border: 1px solid #ccd7e4;
+  border-radius: 9px;
+  background: var(--white);
+}
+
+.weekly-plan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.weekly-plan-row {
+  display: grid;
+  grid-template-columns: 2.25rem 7.5rem 1fr auto auto;
+  align-items: center;
+  min-height: 4.25rem;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-top: 1px solid var(--line);
+  background: var(--white);
+  break-inside: avoid;
+}
+
+.weekly-plan-row:first-child {
+  border-top: 0;
+}
+
+.weekly-plan-row[data-category="career"] {
+  box-shadow: inset 4px 0 0 #9fc2ea;
+}
+
+.weekly-plan-row[data-category="exercise"] {
+  box-shadow: inset 4px 0 0 #c6b3e6;
+}
+
+.weekly-plan-row.is-fixed {
+  background: var(--paper-soft);
+  grid-template-columns: 7.5rem 1fr auto;
+  box-shadow: inset 4px 0 0 #e4bd70;
+}
+
+.weekly-plan-row.is-dragging {
+  background: #edf5ff;
+  opacity: .7;
+}
+
+.plan-drag {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  touch-action: none;
+  border: 1px solid #d4deea;
+  border-radius: 9px;
+  background: var(--white);
+  color: #61748a;
+  font-weight: 900;
+}
+
+.weekly-plan-time {
+  color: #40536a;
+  font-size: .95rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.weekly-plan-label {
+  min-width: 0;
+  font-size: 1.06rem;
+  font-weight: 700;
+}
+
+.weekly-plan-state {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #53677d;
+  font-size: .68rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.is-fixed .weekly-plan-state {
+  background: #fff2d6;
+  color: #81580f;
+}
+
+.weekly-plan-row[data-execution-state="complete"] .weekly-plan-state {
+  background: #e5f5eb;
+  color: #176b45;
+}
+
+.weekly-plan-row[data-execution-state="missing"] .weekly-plan-state {
+  background: #f1f3f5;
+  color: #69798a;
+}
+
+.weekly-plan-row[data-execution-state="plan-update"] .weekly-plan-state {
+  background: #fff0df;
+  color: #8f5310;
+}
+
+.plan-move-actions button {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 4px 7px;
+}
+
+.plan-move-actions .plan-remove {
+  color: #9a3f3f;
+}
+
+.plan-time-editor {
+  display: grid;
+  grid-column: 2 / -1;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) auto auto;
+  align-items: end;
+  gap: 8px;
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px dashed #ccd7e4;
+}
+
+.plan-time-error {
+  grid-column: 1 / -1;
+  min-height: 1.2em;
+  margin: 0;
+  color: #a33d3d;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.plan-time-error:empty {
+  display: none;
+}
+
+.weekly-unscheduled {
+  margin-top: 1rem;
+  border: 1px solid #d97706;
+  border-radius: 18px;
+  padding: 1rem;
+  background: #fff8eb;
+}
+
+.weekly-unscheduled h4 {
+  color: #86520d;
+  font-size: .95rem;
+}
+
+.weekly-unscheduled > p {
+  margin-top: 3px;
+  color: #8a6024;
+  font-size: .76rem;
+}
+
+.weekly-unscheduled ol {
+  margin-top: 10px;
+}
+
+.weekly-unscheduled .weekly-plan-row {
+  border-color: #edcf9c;
+}
+
+.weekly-unscheduled .weekly-plan-time,
+.weekly-unscheduled .weekly-plan-state {
+  color: #965e13;
+}

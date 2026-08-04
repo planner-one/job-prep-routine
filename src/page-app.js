@@ -1,4 +1,5 @@
-import { MODES, PLATFORMS } from './routine-data.js';
+import { isLegacyLearningId, isLegacyLearningItem } from './legacy-learning.js';
+import { MODE_LABELS, MODES, PLATFORMS } from './routine-data.js';
 import {
   applyUpdatedPlan,
   hasExecutionInput,
@@ -33,23 +34,6 @@ const PERIODS = [
   { id: 'night', label: '밤', description: '정리와 회복' },
 ];
 const SCHEDULE_CATEGORIES = new Set(['all', 'exercise', 'career', 'meal']);
-const LEGACY_LEARNING_IDS = new Set([
-  'learning',
-  'maintenance-learning',
-  'maintenance-planning',
-  'Spring',
-  'Redis',
-  'Java',
-  '프로젝트 적용',
-  'CS',
-  '코딩테스트',
-]);
-const MODE_LABELS = {
-  workout: '운동일',
-  normal: '비운동일',
-  running: '러닝일',
-  maintenance: '핵심 유지일',
-};
 
 const emptyCompany = () => ({
   name: '',
@@ -75,14 +59,6 @@ const createDefaultState = () => ({
 });
 
 const stringValue = (value) => (typeof value === 'string' ? value : '');
-
-function isLegacyLearningId(id) {
-  return typeof id === 'string' && (LEGACY_LEARNING_IDS.has(id) || id.startsWith('learning:'));
-}
-
-function isLegacyLearningItem(item) {
-  return item?.category === 'learning' || isLegacyLearningId(item?.id);
-}
 
 function routineScheduleItems(items) {
   return (Array.isArray(items) ? items : []).filter((item) => !isLegacyLearningItem(item));

@@ -1,5 +1,12 @@
 import { MODES, TASK_LIBRARY, getSchedule } from './routine-data.js';
-import { calculateDailyProgress, countPipelineProgress, localDateString, storageKey } from './routine-core.js';
+import { isLegacyLearningItem } from './legacy-learning.js';
+import {
+  calculateDailyProgress,
+  countPipelineProgress,
+  localDateString,
+  parseLocalDateKey,
+  storageKey,
+} from './routine-core.js';
 
 const WEEKDAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const EXECUTION_TASKS = ['activity', 'review', 'interview', 'mealRest'];
@@ -20,62 +27,26 @@ const MAINTENANCE_TASKS = [
   'nextWeek',
   'rest',
 ];
-const LEGACY_LEARNING_IDS = new Set([
-  'learning',
-  'maintenance-learning',
-  'maintenance-planning',
-  'Spring',
-  'Redis',
-  'Java',
-  '프로젝트 적용',
-  'CS',
-  '코딩테스트',
-]);
-
 function objectValue(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
-function isLegacyLearningId(value) {
-  return typeof value === 'string' && (value.startsWith('learning:') || LEGACY_LEARNING_IDS.has(value));
-}
-
-function isLegacyLearningItem(value) {
-  const item = objectValue(value);
-  return item.category === 'learning' || isLegacyLearningId(item.id);
-}
-
-function parseDateKey(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? '');
-  if (!match) return null;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(year, month - 1, day, 12);
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-  return date;
-}
-
 function addDays(dateKey, amount) {
-  const date = parseDateKey(dateKey);
+  const date = parseLocalDateKey(dateKey);
   if (!date) return dateKey;
   date.setDate(date.getDate() + amount);
   return localDateString(date);
 }
 
 function weekMondayKey(dateKey) {
-  const date = parseDateKey(dateKey);
+  const date = parseLocalDateKey(dateKey);
   if (!date) return dateKey;
   date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
   return localDateString(date);
 }
 
 function weekdayId(dateKey) {
-  const date = parseDateKey(dateKey);
+  const date = parseLocalDateKey(dateKey);
   return date ? WEEKDAY_IDS[date.getDay()] : 'mon';
 }
 
@@ -411,7 +382,7 @@ function storedDateKeys(storage) {
     const match = /^job-prep-routine:(daily|roadmap|weekly):(\d{4}-\d{2}-\d{2})$/.exec(key ?? '');
     if (!match) continue;
     const [, page, date] = match;
-    if (!parseDateKey(date)) continue;
+    if (!parseLocalDateKey(date)) continue;
     if (page === 'weekly') {
       for (let day = 0; day < 7; day += 1) dates.add(addDays(date, day));
     } else {

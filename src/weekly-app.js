@@ -8,12 +8,14 @@ import {
   loadState,
   localDateString,
   logicalDateString,
+  parseLocalDateKey,
   saveState,
   scheduleLogicalDayRollover,
   storageKey,
 } from './routine-core.js';
 import {
   TASK_LIBRARY,
+  WEEKDAYS,
   addCustomPlanItem,
   addLibraryPlanItem,
   changeDayMode,
@@ -26,28 +28,19 @@ import {
   resetWeeklyPlans,
   updatePlanItemTime,
   weekMondayKey,
+  weekdayIdForDate,
 } from './weekly-plan-core.js';
+import { MODE_LABELS } from './routine-data.js';
 
 export {
   createDefaultWeeklyState,
   formatMinuteRange,
   normalizeWeeklyState,
   weekMondayKey,
+  weekdayIdForDate,
 };
 
 const WEEKLY_PAGE_NAME = 'weekly';
-const WEEKDAYS = [
-  { id: 'mon', label: '월요일' }, { id: 'tue', label: '화요일' },
-  { id: 'wed', label: '수요일' }, { id: 'thu', label: '목요일' },
-  { id: 'fri', label: '금요일' }, { id: 'sat', label: '토요일' },
-  { id: 'sun', label: '일요일' },
-];
-const MODE_LABELS = {
-  workout: '운동일',
-  normal: '비운동일',
-  running: '러닝일',
-  maintenance: '핵심 유지일',
-};
 const MODE_BADGES = { workout: '운동', normal: '실행', running: '러닝', maintenance: '유지' };
 const validDays = new Set(WEEKDAYS.map(({ id }) => id));
 const LIBRARY_GROUPS = [
@@ -65,12 +58,8 @@ function localDateFrom(value) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12);
   }
   if (typeof value === 'string') {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (match) {
-      const [, year, month, day] = match.map(Number);
-      const result = new Date(year, month - 1, day, 12);
-      if (result.getFullYear() === year && result.getMonth() === month - 1 && result.getDate() === day) return result;
-    }
+    const date = parseLocalDateKey(value);
+    if (date) return date;
   }
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
@@ -98,11 +87,6 @@ export function formatWeekRange(weekKey) {
 export function resolveWeeklyPageDateKeys(value = logicalDateString()) {
   const todayKey = value instanceof Date ? logicalDateString(value) : value;
   return { todayKey, weekKey: weekMondayKey(todayKey) };
-}
-
-export function weekdayIdForDate(value) {
-  const day = localDateFrom(value).getDay();
-  return WEEKDAYS[(day + 6) % 7].id;
 }
 
 function formatSelectedDate(weekKey, dayId) {

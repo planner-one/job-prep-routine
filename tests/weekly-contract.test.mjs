@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { readCssBundle } from './helpers/read-css-bundle.mjs';
 
 const html = await readFile(new URL('../weekly.html', import.meta.url), 'utf8').catch(() => '');
-const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'utf8').catch(() => '');
+const css = await readCssBundle(new URL('../assets/routine.css', import.meta.url));
 
 function blockAfter(source, marker) {
   const markerIndex = source.indexOf(marker);

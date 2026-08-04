@@ -1,21 +1,5 @@
+import { isLegacyLearningItem } from './legacy-learning.js';
 import { MODES, getSchedule } from './routine-data.js';
-
-const LEGACY_LEARNING_IDS = new Set([
-  'learning',
-  'maintenance-learning',
-  'maintenance-planning',
-  'Spring',
-  'Redis',
-  'Java',
-  '프로젝트 적용',
-  'CS',
-  '코딩테스트',
-]);
-
-function isLegacyLearningItem(item) {
-  return item?.category === 'learning'
-    || (typeof item?.id === 'string' && (item.id.startsWith('learning:') || LEGACY_LEARNING_IDS.has(item.id)));
-}
 
 export const storageKey = (page, date) => `job-prep-routine:${page}:${date}`;
 
@@ -24,6 +8,18 @@ export function localDateString(now = new Date()) {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+export function parseLocalDateKey(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? '');
+  if (!match) return null;
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  return date.getFullYear() === year
+    && date.getMonth() === month - 1
+    && date.getDate() === day
+    ? date
+    : null;
 }
 
 export function logicalDateString(now = new Date(), cutoffHour = 2) {

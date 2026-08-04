@@ -5,16 +5,11 @@ import {
 } from './history-core.js';
 import {
   logicalDateString,
+  parseLocalDateKey,
   scheduleLogicalDayRollover,
 } from './routine-core.js';
+import { MODE_LABELS } from './routine-data.js';
 import { loadUiPreferences, saveUiPreferences } from './ui-preferences.js';
-
-const MODE_LABELS = {
-  workout: '운동일',
-  normal: '비운동일',
-  running: '러닝일',
-  maintenance: '핵심 유지일',
-};
 
 const WEEKLY_CHECK_LABELS = {
   activity: '운동·회복 완료',
@@ -35,29 +30,14 @@ const COMPLETION_SOURCE_LABELS = {
 
 const WEEKDAY_LABELS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
-function parseDateKey(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? '');
-  if (!match) return null;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(year, month - 1, day, 12);
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-  return date;
-}
-
 export function formatHistoryDate(value) {
-  const date = parseDateKey(value);
+  const date = parseLocalDateKey(value);
   if (!date) return value;
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAY_LABELS[date.getDay()]}`;
 }
 
 function formatShortDate(value) {
-  const date = parseDateKey(value);
+  const date = parseLocalDateKey(value);
   if (!date) return value;
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }

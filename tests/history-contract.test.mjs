@@ -1,13 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { readCssBundle } from './helpers/read-css-bundle.mjs';
 
 const historyHtml = await readFile(new URL('../history.html', import.meta.url), 'utf8').catch(() => '');
 const indexHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8').catch(() => '');
 const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
 const dailyHtml = await readFile(new URL('../daily.html', import.meta.url), 'utf8').catch(() => '');
 const weeklyHtml = await readFile(new URL('../weekly.html', import.meta.url), 'utf8').catch(() => '');
-const css = await readFile(new URL('../assets/routine.css', import.meta.url), 'utf8').catch(() => '');
+const css = await readCssBundle(new URL('../assets/routine.css', import.meta.url));
 const historyApp = await readFile(new URL('../src/history-app.js', import.meta.url), 'utf8').catch(() => '');
 
 test('기록·분석 페이지는 기간 선택, 요약, 그래프, 날짜별 상세를 한 화면에 둔다', () => {

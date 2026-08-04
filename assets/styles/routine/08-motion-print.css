@@ -1,0 +1,469 @@
+/* 모션 접근성과 인쇄 */
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill,
+  .history-chart-bar {
+    transition: none;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 9mm;
+}
+
+@media print {
+  html,
+  body {
+    background: var(--white);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .app-shell {
+    width: auto;
+    margin: 0;
+  }
+
+  .daily-paper {
+    min-height: 278mm;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+    box-shadow: none;
+  }
+
+  #daily-page,
+  #weekly-page {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .screen-only,
+  .job-link-row {
+    display: none !important;
+  }
+
+  .daily-disclosure > summary {
+    display: none !important;
+  }
+
+  .daily-disclosure > .daily-disclosure-content {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .weekly-planner-actions,
+  .weekly-add-panel,
+  .plan-drag,
+  .plan-move-actions,
+  .plan-time-editor,
+  .plan-remove,
+  .weekly-unscheduled button {
+    display: none !important;
+  }
+
+  .weekly-plan-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .weekly-plan-row:not(.is-fixed) {
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  #roadmap-page [data-roadmap-variant] {
+    display: block !important;
+  }
+
+  .company-head input,
+  .company-head select,
+  .memo-panel textarea {
+    border-color: #b5c2d1;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ink);
+  }
+
+  .company-head select {
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 5px;
+  }
+
+  .memo-panel textarea {
+    overflow: visible;
+    resize: none;
+  }
+
+  .daily-layout {
+    grid-template-columns: 1.32fr 0.68fr;
+    gap: 10px;
+  }
+
+  #daily-page .daily-header {
+    margin-bottom: 11px;
+  }
+
+  #daily-page .progress-card {
+    gap: 10px;
+    margin-bottom: 9px;
+    padding: 8px 12px;
+  }
+
+  #daily-page .focus-anchors {
+    margin-bottom: 12px;
+  }
+
+  #daily-page .focus-anchor {
+    min-height: 68px;
+    padding: 9px 11px;
+  }
+
+  #daily-page .section-heading {
+    margin-bottom: 6px;
+  }
+
+  #daily-page .schedule-period {
+    margin-bottom: 7px;
+    border-radius: 12px;
+  }
+
+  #daily-page .period-heading {
+    padding: 5px 10px;
+  }
+
+  #daily-page .schedule-item {
+    grid-template-columns: 21px 106px minmax(0, 1fr);
+    min-height: 34px;
+    padding: 4px 10px;
+  }
+
+  #daily-page .schedule-item input {
+    width: 15px;
+    height: 15px;
+  }
+
+  #daily-page #daily-schedule [data-schedule-row][hidden] {
+    display: grid !important;
+  }
+
+  #daily-page #daily-schedule .schedule-period[hidden] {
+    display: block !important;
+  }
+
+  #daily-page .side-panel {
+    margin-bottom: 7px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  #daily-page .company-card {
+    padding: 6px 0;
+  }
+
+  #daily-page .company-card:first-of-type {
+    margin-top: 5px;
+  }
+
+  #daily-page .company-head input,
+  #daily-page .company-head select {
+    padding-block: 3px;
+  }
+
+  #daily-page .pipeline-steps {
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  #daily-page .pipeline-steps label {
+    padding: 3px 6px;
+  }
+
+  #daily-page .memo-panel > h3 {
+    margin-bottom: 7px;
+  }
+
+  #daily-page .memo-panel label {
+    margin-top: 5px;
+  }
+
+  #daily-page .memo-panel textarea {
+    height: 34px;
+    padding-block: 3px;
+  }
+
+  .roadmap-paper {
+    padding: 0;
+  }
+
+  .roadmap-header {
+    padding-bottom: 8px;
+  }
+
+  .roadmap-principles {
+    margin-bottom: 8px;
+  }
+
+  .roadmap-principles .focus-anchor {
+    min-height: 82px;
+    padding: 9px 10px 9px 34px;
+  }
+
+  .roadmap-reference-list {
+    display: block;
+  }
+
+  .principle-number {
+    top: 12px;
+    left: 12px;
+  }
+
+  .roadmap-mode-section {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    break-after: page;
+    break-inside: avoid;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  .roadmap-print-page-heading {
+    position: relative;
+    display: block;
+    min-height: 23mm;
+    margin-bottom: 7mm;
+    padding-bottom: 4mm;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .roadmap-print-page-heading > div:first-child {
+    max-width: 58%;
+  }
+
+  .roadmap-print-page-heading > div:last-child {
+    position: absolute;
+    top: 0;
+    right: 0;
+    max-width: 40%;
+    text-align: right;
+  }
+
+  .roadmap-print-page-heading > div:last-child strong,
+  .roadmap-print-page-heading > div:last-child span {
+    display: block;
+  }
+
+  .roadmap-print-page-heading > div:last-child span {
+    margin-top: 1.5mm;
+  }
+
+  .roadmap-mode-heading {
+    display: none !important;
+  }
+
+  .roadmap-print-principles {
+    display: block !important;
+    margin-bottom: 5mm;
+    font-size: 0;
+  }
+
+  .roadmap-print-principles .focus-anchor {
+    position: relative;
+    display: inline-block;
+    width: calc(50% - 1.5mm);
+    min-height: 25mm;
+    padding: 4mm 4mm 3mm 11mm;
+    vertical-align: top;
+    font-size: 1rem;
+  }
+
+  .roadmap-print-principles .focus-anchor + .focus-anchor {
+    margin-left: 3mm;
+  }
+
+  .roadmap-reference-row {
+    min-height: 8mm;
+    padding-block: 1.5mm;
+  }
+
+  .roadmap-mode-section:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .roadmap-reference-period,
+  .roadmap-reference-row {
+    break-inside: avoid;
+  }
+
+  .weekly-paper {
+    padding: 0;
+  }
+
+  .weekly-header {
+    margin-bottom: 6px;
+    padding-bottom: 7px;
+  }
+
+  .weekly-progress-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .weekly-progress-card {
+    min-height: 27mm;
+    padding: 9px 10px;
+    border-radius: 9px;
+  }
+
+  .weekly-progress-heading h3,
+  .weekly-progress-heading strong {
+    font-size: 0.85rem;
+  }
+
+  .weekly-progress-card .section-kicker,
+  .weekly-progress-card > p,
+  .weekly-goal-track {
+    display: none;
+  }
+
+  .weekly-inline-metrics {
+    grid-template-columns: 1fr;
+    gap: 1px;
+    margin-top: 4px !important;
+  }
+
+  .weekly-inline-metrics dt,
+  .weekly-inline-metrics dd {
+    font-size: 0.64rem;
+  }
+
+  .weekly-detail-card {
+    display: flex;
+    min-height: 200mm;
+    flex-direction: column;
+  }
+
+  .weekly-detail-header {
+    padding: 10px 12px;
+  }
+
+  .weekly-detail-header h2 {
+    font-size: 1rem;
+  }
+
+  .focus-anchors {
+    gap: 6px;
+    margin-bottom: 9px;
+  }
+
+  .focus-anchor,
+  .progress-card,
+  .side-panel,
+  .period-heading,
+  .schedule-item {
+    padding-block: 6px;
+  }
+
+  .history-paper {
+    padding: 0;
+  }
+
+  .history-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .history-overview,
+  .history-trend-panel,
+  .history-records {
+    margin-top: 10px;
+  }
+
+  .history-kpi-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .history-kpi-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .history-kpi-card span {
+    font-size: 0.58rem;
+  }
+
+  .history-kpi-card strong {
+    font-size: 0.8rem;
+  }
+
+  .history-trend-panel {
+    padding: 9px;
+    break-inside: avoid;
+  }
+
+  .history-chart-scroll {
+    overflow: visible;
+  }
+
+  .history-chart,
+  .history-chart[data-period="30"] {
+    min-width: 0;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .history-chart-day {
+    grid-template-rows: 15px 82px 15px 17px;
+    gap: 2px;
+  }
+
+  .history-chart-track {
+    height: 82px;
+  }
+
+  .history-chart-value,
+  .history-chart-date {
+    font-size: 0.46rem;
+  }
+
+  .history-activity-marker {
+    min-width: 12px;
+    height: 12px;
+    padding: 1px;
+    font-size: 0.4rem;
+  }
+
+  .history-record-card {
+    break-inside: avoid;
+    border-radius: 9px;
+  }
+
+  .history-record-card > .history-record-body {
+    display: grid !important;
+  }
+
+  .history-record-summary {
+    padding: 9px 10px;
+  }
+
+  .history-record-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 0 8px 8px;
+  }
+
+  .history-detail-section {
+    margin-top: 7px;
+    padding: 7px;
+  }
+}

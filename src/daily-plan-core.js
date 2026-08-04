@@ -4,35 +4,20 @@ import {
   weekMondayKey,
   weekdayIdForDate,
 } from './weekly-plan-core.js';
+import { isLegacyLearningId, isLegacyLearningItem } from './legacy-learning.js';
 import { getSchedule } from './routine-data.js';
-import { storageKey } from './routine-core.js';
+import { localDateString, parseLocalDateKey, storageKey } from './routine-core.js';
 
 const SNAPSHOT_CATEGORIES = new Set(['career', 'exercise', 'meal']);
 const SNAPSHOT_DAY_IDS = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 const REVIEW_IDS = new Set(['portfolio-review', 'maintenance-portfolio']);
 const INTERVIEW_IDS = new Set(['interview-practice', 'maintenance-interview']);
-const LEGACY_LEARNING_IDS = new Set([
-  'learning',
-  'maintenance-learning',
-  'maintenance-planning',
-  'Spring',
-  'Redis',
-  'Java',
-  '프로젝트 적용',
-  'CS',
-  '코딩테스트',
-]);
 
 function addLocalDays(dateKey, offset) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
-  if (!match) return null;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(year, month - 1, day, 12);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  const date = parseLocalDateKey(dateKey);
+  if (!date) return null;
   date.setDate(date.getDate() + offset);
-  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
-    .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, '0'))
-    .join('-');
+  return localDateString(date);
 }
 
 function safeParse(raw) {
@@ -63,14 +48,6 @@ function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isLegacyLearningId(value) {
-  return typeof value === 'string' && (value.startsWith('learning:') || LEGACY_LEARNING_IDS.has(value));
-}
-
-function isLegacyLearningItem(value) {
-  return isObject(value) && (value.category === 'learning' || isLegacyLearningId(value.id));
-}
-
 function withoutLegacyLearningFields(value) {
   if (!isObject(value)) return {};
   const { learningTopics, learningReview, learning, ...rest } = value;
@@ -82,14 +59,8 @@ function validMinute(value) {
 }
 
 function validWeekKey(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? '');
-  if (!match) return false;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(year, month - 1, day, 12);
-  return date.getFullYear() === year
-    && date.getMonth() === month - 1
-    && date.getDate() === day
-    && date.getDay() === 1;
+  const date = parseLocalDateKey(value);
+  return Boolean(date && date.getDay() === 1);
 }
 
 function normalizeSnapshotItem(candidate) {

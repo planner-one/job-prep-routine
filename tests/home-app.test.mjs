@@ -114,7 +114,7 @@ test('저장값이 손상되거나 접근이 거부되어도 안전한 기본 �
 
 test('홈은 데스크톱·모바일 5탭과 토스형 허브 계약을 제공한다', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /assets\/site-shell\.css\?v=1[\s\S]*assets\/routine\.css\?v=11/);
+  assert.match(html, /assets\/site-shell\.css\?v=1[\s\S]*assets\/routine\.css\?v=12/);
   assert.match(html, /id="home-page"/);
   assert.match(html, /id="home-next-schedule"/);
   assert.match(html, /id="home-interview-action"/);

@@ -51,3 +51,13 @@ python3 -m http.server 8787 --bind 127.0.0.1
 - 연습 횟수는 다른 브라우저나 기기와 동기화되지 않습니다.
 - 외부 분석 도구, CDN, 원격 API를 사용하지 않습니다.
 - 연락처·이력서 원본·로컬 파일 경로는 공개 배포 파일에 포함하지 않습니다.
+
+## 자산 구조
+
+- `assets/data/`: 질문 카탈로그
+- `assets/routines.js`: 강조점·난이도·압축 루틴 정의
+- `assets/dashboard.js`: 저장·세션·URL·렌더링·상호작용 진입점
+- `assets/dashboard.css`: 공개 CSS 진입점
+- `assets/styles/dashboard/`: 기존 기반 스타일과 Focus 덮어쓰기 스타일
+
+`dashboard.css`의 import 순서와 데이터 스크립트의 로드 순서는 기존 화면·세션 동작을 유지하는 계약입니다.

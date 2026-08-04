@@ -1,6 +1,7 @@
 import {
   calculateDailyProgress,
   logicalDateString,
+  parseLocalDateKey,
   scheduleLogicalDayRollover,
   storageKey,
 } from './routine-core.js';
@@ -56,18 +57,8 @@ export function safeReadObject(storage, key) {
   }
 }
 
-function dateFromKey(dateKey) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
-  if (!match) return null;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(year, month - 1, day, 12);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
-    ? date
-    : null;
-}
-
 export function formatHomeDate(dateKey) {
-  const date = dateFromKey(dateKey);
+  const date = parseLocalDateKey(dateKey);
   if (!date) return dateKey;
   return new Intl.DateTimeFormat('ko-KR', {
     month: 'long',

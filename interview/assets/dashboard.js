@@ -1,6 +1,7 @@
 (() => {
   "use strict";
 
+  // 설정과 외부 데이터 계약
   const PRACTICE_STORAGE_KEY = "interview-prep.practice-counts.v1";
   const SESSION_STORAGE_KEY = "interview-prep.session.v1";
   const CATALOG_VERSION = "v5_3";
@@ -15,6 +16,7 @@
   });
   const FILTER_PARAM_NAMES = Object.keys(FILTER_DEFAULTS);
 
+  // 고정 DOM 참조
   const root = document.getElementById("dashboard-root");
   const summary = document.getElementById("data-summary");
   const sidebar = document.getElementById("question-sidebar");
@@ -51,6 +53,7 @@
   let sessionStorageAvailable = true;
   let sidebarReturnFocus = null;
 
+  // 순수 정규화와 질문 검색
   const escapeHtml = (value = "") =>
     String(value)
       .replaceAll("&", "&amp;")
@@ -123,6 +126,16 @@
     return true;
   };
 
+  const parseStoredJson = (raw) => {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  };
+
+  // 브라우저 저장과 앱 상태
   const sanitizePracticeCounts = (counts) => {
     if (!counts || typeof counts !== "object" || Array.isArray(counts)) return {};
     return Object.fromEntries(Object.entries(counts).filter(([id, count]) =>
@@ -144,12 +157,7 @@
   const loadPracticeCounts = () => {
     try {
       const raw = window.localStorage.getItem(PRACTICE_STORAGE_KEY);
-      let parsed = null;
-      try {
-        parsed = raw ? JSON.parse(raw) : null;
-      } catch {
-        parsed = null;
-      }
+      const parsed = parseStoredJson(raw);
       const counts = parsed?.version === 1 ? sanitizePracticeCounts(parsed.counts) : {};
       window.localStorage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify({ version: 1, counts }));
       return counts;
@@ -181,6 +189,7 @@
 
   const getPracticeCount = (questionId) => state.practiceCounts[questionId] || 0;
 
+  // 루틴·필터별 질문 선택
   const getRoutine = (view, routineId) => {
     if (view === "compact") return routineData.compact?.id === routineId || !routineId
       ? routineData.compact
@@ -235,6 +244,7 @@
     return getRoutineQuestions(getRoutine(view, routineId));
   };
 
+  // 세션 스키마와 진행 상태
   const normalizeContext = (context) => {
     if (!context || !VALID_VIEWS.has(context.view)) return null;
     if (context.view === "emphasis" || context.view === "difficulty") {
@@ -251,6 +261,10 @@
     return { view: context.view, routineId: "" };
   };
 
+  const getCompletionScopeIds = (context, filters = state.filters) => context.view === "all"
+    ? validQuestionIds
+    : new Set(getContextQuestions(context.view, context.routineId, filters).map((question) => question.id));
+
   const sanitizeSession = (value) => {
     if (!value || value.version !== 1 || typeof value !== "object") return null;
     const context = normalizeContext(value.context);
@@ -263,9 +277,7 @@
     const currentQuestionId = questionIds.includes(value.currentQuestionId)
       ? value.currentQuestionId
       : questionIds[0];
-    const completionScopeIds = context.view === "all"
-      ? validQuestionIds
-      : new Set(getContextQuestions(context.view, context.routineId, filters).map((question) => question.id));
+    const completionScopeIds = getCompletionScopeIds(context, filters);
     const completedQuestionIds = unique((Array.isArray(value.completedQuestionIds)
       ? value.completedQuestionIds
       : []).filter((id) => completionScopeIds.has(id)));
@@ -286,12 +298,7 @@
     try {
       const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
       if (!raw) return null;
-      let parsed = null;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        parsed = null;
-      }
+      const parsed = parseStoredJson(raw);
       const session = sanitizeSession(parsed);
       if (!session) window.localStorage.removeItem(SESSION_STORAGE_KEY);
       return session;
@@ -320,9 +327,7 @@
     const questionIds = uniqueQuestionsById(items).map((question) => question.id);
     if (!questionIds.length) return null;
     const preserveProgress = sameContext(previousSession?.context, context);
-    const completionScopeIds = context.view === "all"
-      ? validQuestionIds
-      : new Set(getContextQuestions(context.view, context.routineId).map((question) => question.id));
+    const completionScopeIds = getCompletionScopeIds(context);
     const completedQuestionIds = preserveProgress
       ? previousSession.completedQuestionIds.filter((id) => completionScopeIds.has(id))
       : [];
@@ -351,6 +356,7 @@
     state.showSummary = false;
   };
 
+  // URL 직링크와 브라우저 이동
   const findRoutineContext = (routineId) => {
     for (const view of ["emphasis", "difficulty"]) {
       if ((routineData[view] || []).some((routine) => routine.id === routineId)) {
@@ -439,6 +445,7 @@
     return true;
   };
 
+  // 질문 카드 렌더링
   const difficultyProfiles = {
     기초: { className: "is-foundation" },
     중급: { className: "is-implementation" },
@@ -595,6 +602,7 @@
     `;
   };
 
+  // 작업공간 렌더링
   const getCurrentRoutine = () => getRoutine(state.view, state.session?.context.routineId || "");
   const getCompletedCount = () => {
     if (!state.session) return 0;
@@ -781,6 +789,7 @@
     `;
   };
 
+  // 질문 탐색 사이드바 렌더링
   const renderSidebarQuestionLink = (question, index) => {
     const isCurrent = question.id === state.activeQuestionId;
     const isCompleted = state.session?.completedQuestionIds.includes(question.id);
@@ -899,6 +908,7 @@
     renderSidebar();
   };
 
+  // 사용자 명령과 포커스 이동
   const closeSidebar = ({ restoreFocus = true } = {}) => {
     if (!sidebar?.classList.contains("is-open")) return;
     sidebar.classList.remove("is-open");
@@ -1040,6 +1050,7 @@
     }
   };
 
+  // 이벤트 연결
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
       closeSidebar({ restoreFocus: false });
@@ -1156,6 +1167,7 @@
     focusActiveQuestion();
   });
 
+  // 데이터 검증과 최초 화면 복원
   const duplicateIds = questions
     .map((question) => question.id)
     .filter((id, index, ids) => ids.indexOf(id) !== index);

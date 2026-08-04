@@ -27,6 +27,19 @@ python3 -m http.server 8787 --bind 127.0.0.1
 - `history.html`: 최근 7일·30일 실행 지표와 활동 이력
 - `interview/`: 이력서 기반 면접 질문·답변 연습 대시보드
 
+## 코드 구조
+
+- `assets/site-shell.css`: 모든 화면이 공유하는 상단바·모바일 탭바
+- `assets/routine.css`: 루틴 CSS의 고정 진입점. 실제 스타일은 `assets/styles/routine/`에서 공통 → 화면별 → 반응형 → 인쇄 순서로 관리
+- `src/routine-data.js`, `src/routine-core.js`: 일정 원본과 날짜·저장·진척 공통 로직
+- `src/*-plan-core.js`: DOM에 의존하지 않는 데일리·주간 계획 로직
+- `src/*-app.js`: 각 HTML 화면의 렌더링과 이벤트 연결
+- `src/legacy-learning.js`: 이전 학습 데이터 제거 규칙의 단일 기준
+- `interview/assets/dashboard.css`: 면접 CSS의 고정 진입점. 실제 스타일은 `interview/assets/styles/dashboard/`에서 기존 기반 → Focus 덮어쓰기 순서로 관리
+- `interview/assets/dashboard.js`: 설정 → 저장·세션 → URL → 렌더링 → 사용자 명령 → 초기화 순서의 면접 화면 진입점
+
+CSS 진입점의 `@import` 순서는 기존 cascade를 보존하는 계약이므로 바꾸지 않습니다. 공개 HTML 경로와 브라우저 저장 키도 호환성을 위해 유지합니다.
+
 ## 저장 기준
 
 루틴 상태는 오전 2시를 하루 경계로 계산해 이 브라우저의 `job-prep-routine:*` 키에 저장합니다. 화면 선택은 `job-prep-routine:preferences.v1`, 면접 진행은 `interview-prep.session.v1`에 따로 저장하며 다른 기기와 동기화하지 않습니다. 이전 데이터에 남아 있는 학습 주제와 `learning` 일정은 불러올 때 무시하며, 지원·면접·운동 등 나머지 기록은 유지합니다.
