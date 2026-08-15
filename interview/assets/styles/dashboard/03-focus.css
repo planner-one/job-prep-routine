@@ -590,6 +590,84 @@ body {
   letter-spacing: -0.03em;
 }
 
+.answer-variant-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: 1px solid #dbe7f7;
+  border-radius: 0.9rem;
+  background: #f7fbff;
+}
+
+.answer-variant-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.answer-variant-heading .section-kicker {
+  margin: 0 0 0.15rem;
+  color: #1b64da;
+  font-size: 0.6rem;
+}
+
+.answer-variant-heading strong {
+  color: #191f28;
+  font-size: 0.85rem;
+}
+
+.answer-variant-heading > span {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.45rem;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: #1b64da;
+  font-size: 0.64rem;
+  font-weight: 750;
+}
+
+.answer-variant-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(5.6rem, 1fr));
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid #dbe2ea;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.answer-variant-button {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 0.58rem;
+  background: transparent;
+  color: #6b7684;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.answer-variant-button:hover {
+  background: #f2f6fb;
+  color: #1b64da;
+}
+
+.answer-variant-button.is-active {
+  background: #3182f6;
+  color: #ffffff;
+}
+
+.answer-variant-button:focus-visible {
+  outline: 3px solid rgba(49, 130, 246, 0.25);
+  outline-offset: 2px;
+}
+
 .core-answer {
   margin-top: 1.2rem;
   padding: 1.1rem 1.15rem;
@@ -627,6 +705,42 @@ body {
 
 .warning-box {
   margin-top: 0.9rem;
+}
+
+.guide-feedback-box {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #b7e4c7;
+  border-radius: 0.85rem;
+  background: #f1fbf4;
+}
+
+.guide-feedback-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.guide-feedback-heading strong {
+  color: #176b3a;
+  font-size: 0.82rem;
+}
+
+.guide-feedback-heading span {
+  color: #45815e;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.guide-feedback-box ul {
+  display: grid;
+  gap: 0.38rem;
+  margin: 0.65rem 0 0;
+  padding-left: 1.15rem;
+  color: #2f5e43;
+  font-size: 0.78rem;
+  line-height: 1.6;
 }
 
 .question-card > details,

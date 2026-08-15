@@ -30,6 +30,12 @@
   const navButtons = [...document.querySelectorAll("[data-view]")];
   const routineData = window.INTERVIEW_ROUTINES || { emphasis: [], difficulty: [], compact: null };
   const dataGroups = window.INTERVIEW_DATA || {};
+  const guideFeedbackData = window.INTERVIEW_GUIDE_FEEDBACK || {};
+  const guideFeedbackQuestions = guideFeedbackData.questions && typeof guideFeedbackData.questions === "object"
+    ? guideFeedbackData.questions
+    : {};
+  const guideQuestionIds = Object.keys(guideFeedbackQuestions);
+  const answerVariants = new Set(["original", "guide"]);
   const questions = Object.values(dataGroups)
     .filter(Array.isArray)
     .flat()
@@ -107,6 +113,10 @@
 
   const hasWarning = (question) =>
     Boolean(question.warnings?.length) || question.evidence?.status === "지원자 확인 필요";
+  const getGuideFeedback = (questionId) => {
+    const value = guideFeedbackQuestions[questionId];
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  };
   const matchesAny = (value, candidates) => !candidates?.length || candidates.includes(value);
   const intersects = (values, candidates) =>
     !candidates?.length || values?.some((value) => candidates.includes(value));
@@ -185,6 +195,7 @@
     practiceCounts: loadPracticeCounts(),
     session: null,
     showSummary: false,
+    answerVariant: "original",
   };
 
   const getPracticeCount = (questionId) => state.practiceCounts[questionId] || 0;
@@ -223,6 +234,7 @@
       if (evidence !== "all" && question.evidence?.status !== evidence) return false;
       if (stage !== "all" && normalizeStage(question.stage) !== stage) return false;
       if (!normalizedSearch) return true;
+      const guideAnswer = getGuideFeedback(question.id)?.answer || {};
       const haystack = [
         question.question,
         question.topic,
@@ -232,6 +244,9 @@
         question.answer?.compact?.conclusion,
         question.answer?.conclusion,
         ...(question.answer?.keywords || []),
+        guideAnswer.compact?.conclusion,
+        guideAnswer.conclusion,
+        ...(guideAnswer.keywords || []),
         ...(question.tags || []),
       ].join(" ").toLocaleLowerCase("ko");
       return haystack.includes(normalizedSearch);
@@ -478,14 +493,51 @@
     return `<div class="warning-box"><strong>확인 필요</strong><ul>${lines}</ul></div>`;
   };
 
+  const renderAnswerVariantSwitch = (guideFeedback, useGuideAnswer) => {
+    if (!guideFeedback?.answer) return "";
+    const currentVariant = useGuideAnswer ? "guide" : "original";
+    return `
+      <section class="answer-variant-panel" aria-label="답변 비교">
+        <div class="answer-variant-heading">
+          <div>
+            <p class="section-kicker">ANSWER COMPARE</p>
+            <strong>${useGuideAnswer ? "가이드 반영 답변" : "현재 기존 답변"}</strong>
+          </div>
+          <span>${escapeHtml(guideFeedback.sourceSection || guideFeedbackData.title || "면접 준비 가이드")}</span>
+        </div>
+        <div class="answer-variant-buttons" role="group" aria-label="답변 버전 선택">
+          <button type="button" data-answer-variant="original" aria-pressed="${currentVariant === "original"}" class="answer-variant-button ${currentVariant === "original" ? "is-active" : ""}">기존 답변</button>
+          <button type="button" data-answer-variant="guide" aria-pressed="${currentVariant === "guide"}" class="answer-variant-button ${currentVariant === "guide" ? "is-active" : ""}">가이드 반영</button>
+        </div>
+      </section>
+    `;
+  };
+
+  const renderGuideFeedback = (guideFeedback) => {
+    const feedback = Array.isArray(guideFeedback?.feedback) ? guideFeedback.feedback : [];
+    if (!feedback.length) return "";
+    return `
+      <section class="guide-feedback-box" aria-label="가이드 피드백">
+        <div class="guide-feedback-heading">
+          <strong>왜 바꿨는지</strong>
+          <span>${escapeHtml(guideFeedbackData.title || "면접 준비 가이드")} 검토</span>
+        </div>
+        <ul>${feedback.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>
+    `;
+  };
+
   const renderQuestionCard = (question, ordinal, total) => {
-    const answer = question.answer || {};
+    const guideFeedback = getGuideFeedback(question.id);
+    const useGuideAnswer = state.answerVariant === "guide" && Boolean(guideFeedback?.answer);
+    const answer = useGuideAnswer ? guideFeedback.answer : question.answer || {};
     const compact = answer.compact || {};
     const evidence = question.evidence || {};
     const followups = question.followups || [];
     const keywords = answer.keywords || [];
     const sources = evidence.sources || [];
-    const coreLabel = answer.coreLevel ? `${answer.coreLevel} 핵심문장` : "핵심 답변";
+    const coreLevel = answer.coreLevel || question.answer?.coreLevel;
+    const coreLabel = coreLevel ? `${coreLevel} 핵심문장` : "핵심 답변";
     const difficulty = question.difficulty || "미분류";
     const difficultyProfile = difficultyProfiles[difficulty] || { className: "" };
     const minuteSummaryLabels = getMinuteSummaryLabels(question);
@@ -515,6 +567,8 @@
         </div>
         <h3 id="question-title-${escapeHtml(question.id)}">${escapeHtml(question.question)}</h3>
 
+        ${renderAnswerVariantSwitch(guideFeedback, useGuideAnswer)}
+
         <section class="core-answer" aria-labelledby="core-label-${escapeHtml(question.id)}">
           <p class="answer-label" id="core-label-${escapeHtml(question.id)}">${escapeHtml(coreLabel)} · 1문장</p>
           <p>${escapeHtml(conciseAnswer.conclusion)}</p>
@@ -522,6 +576,7 @@
 
         ${keywords.length ? `<ul class="keywords" aria-label="핵심 키워드">${keywords.map((keyword) => `<li>${escapeHtml(keyword)}</li>`).join("")}</ul>` : ""}
         ${renderWarnings(question)}
+        ${useGuideAnswer ? renderGuideFeedback(guideFeedback) : ""}
 
         <details class="answer-details">
           <summary>
@@ -1073,6 +1128,14 @@
       return;
     }
 
+    const answerVariantButton = event.target.closest("[data-answer-variant]");
+    if (answerVariantButton && answerVariants.has(answerVariantButton.dataset.answerVariant)) {
+      state.answerVariant = answerVariantButton.dataset.answerVariant;
+      render();
+      root.querySelector(`[data-answer-variant="${state.answerVariant}"]`)?.focus({ preventScroll: true });
+      return;
+    }
+
     const practiceButton = event.target.closest("[data-practice-action]");
     if (practiceButton?.dataset.practiceAction === "decrement") {
       const questionId = practiceButton.dataset.questionId;
@@ -1176,8 +1239,14 @@
     return;
   }
 
+  const orphanGuideIds = guideQuestionIds.filter((id) => !validQuestionIds.has(id));
+  if (orphanGuideIds.length) {
+    root.innerHTML = `<p class="notice notice-warning">연결할 질문이 없는 가이드 답변이 발견되었습니다: ${escapeHtml(orphanGuideIds.join(", "))}</p>`;
+    return;
+  }
+
   if (summary) {
-    summary.textContent = `질문 ${questions.length}개 · 확인 필요 ${questions.filter(hasWarning).length}개 · 최신 이력서 ${CATALOG_VERSION} 기준`;
+    summary.textContent = `질문 ${questions.length}개 · 가이드 반영 ${guideQuestionIds.length}개 · 확인 필요 ${questions.filter(hasWarning).length}개 · 최신 이력서 ${CATALOG_VERSION} 기준`;
   }
 
   const storedSession = loadSession();
