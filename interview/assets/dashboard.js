@@ -5,7 +5,7 @@
   const PRACTICE_STORAGE_KEY = "interview-prep.practice-counts.v1";
   const SESSION_STORAGE_KEY = "interview-prep.session.v1";
   const CATALOG_VERSION = "v5_3";
-  const VALID_VIEWS = new Set(["emphasis", "difficulty", "compact", "all", "warnings"]);
+  const VALID_VIEWS = new Set(["emphasis", "difficulty", "compact", "guide", "all", "warnings"]);
   const FILTER_DEFAULTS = Object.freeze({
     search: "",
     category: "all",
@@ -254,6 +254,7 @@
   };
 
   const getContextQuestions = (view, routineId = "", filters = state.filters) => {
+    if (view === "guide") return guideQuestionIds.map((id) => questionById.get(id)).filter(Boolean);
     if (view === "all") return filterQuestions(filters);
     if (view === "warnings") return sortQuestions(questions.filter(hasWarning));
     return getRoutineQuestions(getRoutine(view, routineId));
@@ -746,6 +747,9 @@
     }
     if (state.view === "compact") {
       return { kicker: "면접 직전", title: "2시간 압축 복습", description: routineData.compact?.summary || "" };
+    }
+    if (state.view === "guide") {
+      return { kicker: "면접 준비 가이드", title: "기존 답변과 가이드 반영 답변 비교", description: "가이드와 연결된 14문항을 번갈아 보며 답변을 다듬습니다." };
     }
     if (state.view === "all") {
       return { kicker: "질문 탐색", title: "전체 질문", description: "검색한 목록에서도 한 번에 한 질문만 집중해서 연습합니다." };

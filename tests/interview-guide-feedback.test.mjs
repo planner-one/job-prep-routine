@@ -65,14 +65,20 @@ test('면접 화면은 가이드 데이터와 답변 전환 UI를 함께 로드�
   const html = readRepoFile('interview/index.html');
   const dashboard = readRepoFile('interview/assets/dashboard.js');
   const css = readRepoFile('interview/assets/styles/dashboard/03-focus.css');
+  const responsiveCss = readRepoFile('interview/assets/styles/dashboard/04-focus-responsive-print.css');
 
   const guideScript = html.indexOf('assets/data/guide_feedback.js?v=1');
-  const dashboardScript = html.indexOf('assets/dashboard.js?v=8');
+  const dashboardScript = html.indexOf('assets/dashboard.js?v=9');
   assert.ok(guideScript > -1);
   assert.ok(dashboardScript > guideScript);
   assert.match(dashboard, /data-answer-variant="original"/);
   assert.match(dashboard, /data-answer-variant="guide"/);
   assert.match(dashboard, /가이드 반영 \$\{guideQuestionIds\.length\}개/);
+  assert.match(html, /data-view="guide"[\s\S]*?답변 비교/);
+  assert.match(html, /assets\/dashboard\.css\?v=12/);
+  assert.match(dashboard, /view === "guide"[\s\S]*?guideQuestionIds\.map/);
+  assert.match(dashboard, /기존 답변과 가이드 반영 답변 비교/);
   assert.match(css, /\.answer-variant-panel/);
   assert.match(css, /\.guide-feedback-box/);
+  assert.match(responsiveCss, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
 });
