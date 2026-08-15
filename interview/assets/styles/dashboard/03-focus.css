@@ -125,6 +125,99 @@ body {
   color: #ffffff;
 }
 
+.interview-start-guide {
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #dbe7f7;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 8px 26px rgba(0, 27, 55, 0.05);
+}
+
+.interview-start-guide-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.interview-start-guide-heading .section-kicker {
+  margin-bottom: 0.25rem;
+  font-size: 0.65rem;
+}
+
+.interview-start-guide-heading h2 {
+  margin: 0;
+  color: #191f28;
+  font-size: 1.25rem;
+  letter-spacing: -0.035em;
+}
+
+.interview-start-guide-heading p:not(.section-kicker) {
+  margin: 0.35rem 0 0;
+  color: #6b7684;
+  font-size: 0.8rem;
+}
+
+.interview-start-guide-heading > span {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: #1b64da;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.interview-start-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.interview-start-steps li {
+  min-width: 0;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.75rem;
+  background: #f7f9fc;
+}
+
+.interview-start-steps strong,
+.interview-start-steps span {
+  display: block;
+}
+
+.interview-start-steps strong {
+  color: #1b64da;
+  font-size: 0.74rem;
+}
+
+.interview-start-steps span {
+  margin-top: 0.3rem;
+  color: #333d4b;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.interview-start-fallback {
+  display: flex;
+  gap: 0.45rem;
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid #eef1f4;
+  color: #4e5968;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.interview-start-fallback strong {
+  flex: 0 0 auto;
+  color: #191f28;
+}
+
 .dashboard-layout {
   grid-template-columns: minmax(17.5rem, 19rem) minmax(0, 1fr);
   gap: 1rem;
