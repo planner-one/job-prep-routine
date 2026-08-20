@@ -47,6 +47,29 @@ test('오전 2시 전에는 전날의 루틴과 주간 계획을 읽는다', () 
   assert.equal(model.interview.href, './interview/?view=difficulty&routine=implementation');
 });
 
+test('데일리 화면을 먼저 열지 않아도 raw legacy 실행을 홈과 주간 요약에 반영한다', () => {
+  const now = new Date(2026, 7, 4, 12);
+  const today = '2026-08-04';
+  const weekKey = weekMondayKey(today);
+  const storage = memoryStorage({
+    [storageKey('weekly', weekKey)]: JSON.stringify(createDefaultWeeklyState()),
+    [storageKey('daily', today)]: JSON.stringify({
+      mode: 'workout',
+      runStart: '21',
+      checkedIds: ['workout', 'portfolio-review', 'interview-practice'],
+      companies: [],
+    }),
+  });
+
+  const model = buildHomeModel(storage, now);
+
+  assert.equal(model.daily.completed, 3);
+  assert.equal(model.daily.total, 27);
+  assert.equal(model.weekly.reviews, 1);
+  assert.equal(model.weekly.interviews, 1);
+  assert.equal(model.weekly.exercise, 1);
+});
+
 test('진행 중인 면접 세션의 현재 질문과 완료율을 복원한다', () => {
   const session = {
     version: 1,

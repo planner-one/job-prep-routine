@@ -149,6 +149,55 @@ test('v2의 빈 계획과 revision은 기본 계획으로 되살리지 않고 �
   assert.equal(normalized.days.mon.revision, 7);
 });
 
+test('v2의 지정 유지일은 유지 일정으로 복구하고 사용자 일정과 완료를 보존한다', () => {
+  const state = createDefaultWeeklyState();
+  state.maintenanceDay = 'wed';
+  state.days.wed = addCustomPlanItem(
+    changeDayMode(state.days.wed, 'normal', '22'),
+    { label: '보존할 개인 일정', category: 'career', durationMinutes: 30 },
+    () => 'custom-maintenance-kept',
+  );
+  state.days.wed.legacyCompletion = {
+    applications: [true],
+    tasks: { interview: true },
+    maintenance: { review: true },
+  };
+
+  const normalized = normalizeWeeklyState(state);
+  const day = normalized.days.wed;
+
+  assert.equal(day.mode, 'maintenance');
+  assert.equal(day.runStart, '21');
+  assert.equal([...day.items, ...day.unscheduled].some(({ id }) => id === 'maintenance-wake'), true);
+  assert.equal([...day.items, ...day.unscheduled].some(({ id }) => id === 'normal-wake'), false);
+  assert.equal([...day.items, ...day.unscheduled].some(({ id }) => id === 'custom-maintenance-kept'), true);
+  assert.deepEqual(day.legacyCompletion, state.days.wed.legacyCompletion);
+});
+
+test('v2의 비지정 maintenance 요일은 normal로 복구하고 사용자 일정과 완료를 보존한다', () => {
+  const state = createDefaultWeeklyState();
+  state.days.mon = addCustomPlanItem(
+    changeDayMode(state.days.mon, 'maintenance', '21'),
+    { label: '보존할 개인 일정', category: 'career', durationMinutes: 30 },
+    () => 'custom-normal-kept',
+  );
+  state.days.mon.legacyCompletion = {
+    applications: [true],
+    tasks: { interview: true },
+    maintenance: { review: true },
+  };
+
+  const normalized = normalizeWeeklyState(state);
+  const day = normalized.days.mon;
+
+  assert.equal(day.mode, 'normal');
+  assert.equal([...day.items, ...day.unscheduled].some(({ id }) => id === 'normal-wake'), true);
+  assert.equal([...day.items, ...day.unscheduled].some(({ id }) => id === 'maintenance-wake'), false);
+  assert.equal([...day.items, ...day.unscheduled].some(({ id }) => id === 'custom-normal-kept'), true);
+  assert.deepEqual(day.legacyCompletion, state.days.mon.legacyCompletion);
+  assert.equal(normalizeWeeklyState(normalized).days.mon.revision, day.revision);
+});
+
 test('v2 저장값의 학습 일정과 필드만 버리고 비학습 계획·완료를 보존한다', () => {
   const normalized = normalizeWeeklyState({
     schemaVersion: 2,

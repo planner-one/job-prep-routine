@@ -293,6 +293,12 @@ export function applyUpdatedPlan(dailyState, resolvedPlan) {
   };
 }
 
+export function prepareDailyStateForAggregation(date, candidate, revision = 0) {
+  const source = isObject(candidate) ? candidate : {};
+  if (normalizePlanSnapshot(source.planSnapshot) || !hasExecutionInput(source)) return source;
+  return migrateLegacyDailyState(date, source, revision);
+}
+
 export function buildDailyExecutionSummary(dailyState) {
   const source = isObject(dailyState) ? dailyState : {};
   const snapshot = normalizePlanSnapshot(source.planSnapshot);
@@ -333,7 +339,8 @@ export function calculateWeeklyExecutionProgress(storage, weekKey) {
     if (!date) break;
     const raw = storage.getItem(storageKey('daily', date));
     if (!raw) continue;
-    mergeExecutionSummary(result, buildDailyExecutionSummary(safeParse(raw)));
+    const daily = prepareDailyStateForAggregation(date, safeParse(raw));
+    mergeExecutionSummary(result, buildDailyExecutionSummary(daily));
   }
   return result;
 }

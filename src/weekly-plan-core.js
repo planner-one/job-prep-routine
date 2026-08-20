@@ -287,11 +287,20 @@ export function normalizeWeeklyState(candidate = {}) {
   const maintenanceDay = validDayIds.has(source.maintenanceDay) ? source.maintenanceDay : 'sun';
   const sourceDays = isObject(source.days) ? source.days : {};
   if (source.schemaVersion === PLAN_SCHEMA_VERSION) {
+    const days = Object.fromEntries(WEEKDAYS.map(({ id }) => [id, normalizeV2Day(sourceDays[id], id)]));
+    for (const { id } of WEEKDAYS) {
+      const day = days[id];
+      if (id === maintenanceDay && day.mode !== 'maintenance') {
+        days[id] = changeDayMode(day, 'maintenance', '21');
+      } else if (id !== maintenanceDay && day.mode === 'maintenance') {
+        days[id] = changeDayMode(day, 'normal', day.runStart);
+      }
+    }
     return {
       schemaVersion: PLAN_SCHEMA_VERSION,
       selectedDay,
       maintenanceDay,
-      days: Object.fromEntries(WEEKDAYS.map(({ id }) => [id, normalizeV2Day(sourceDays[id], id)])),
+      days,
     };
   }
   return {

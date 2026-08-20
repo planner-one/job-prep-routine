@@ -8,6 +8,7 @@ import {
 import {
   calculateWeeklyExecutionProgress,
   prepareDailyPlan,
+  prepareDailyStateForAggregation,
   resolveDailyPlan,
 } from './daily-plan-core.js';
 import { formatMinuteRange, weekMondayKey } from './weekly-plan-core.js';
@@ -117,8 +118,9 @@ export function resolveInterviewSession(candidate) {
 
 function buildDailySummary(storage, today, weekKey) {
   const weekly = safeReadObject(storage, storageKey('weekly', weekKey)) ?? {};
-  const daily = safeReadObject(storage, storageKey('daily', today)) ?? {};
   const resolvedPlan = resolveDailyPlan(today, weekly);
+  const storedDaily = safeReadObject(storage, storageKey('daily', today)) ?? {};
+  const daily = prepareDailyStateForAggregation(today, storedDaily, resolvedPlan.revision);
   const prepared = prepareDailyPlan(daily, resolvedPlan);
   const schedule = prepared.renderPlan?.items ?? [];
   const checked = new Set(Array.isArray(prepared.state?.checkedIds) ? prepared.state.checkedIds : []);

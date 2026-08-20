@@ -8,6 +8,7 @@ import {
   hasExecutionInput,
   normalizePlanSnapshot,
   prepareDailyPlan,
+  prepareDailyStateForAggregation,
   resolveDailyPlan,
 } from '../src/daily-plan-core.js';
 import { createDefaultWeeklyState } from '../src/weekly-plan-core.js';
@@ -166,6 +167,36 @@ test('회사 파이프라인과 완료한 스냅샷 항목만 실행 요약에 �
     workouts: 1,
     runs: 1,
   });
+});
+
+test('집계는 날짜 기준으로 raw legacy 실행을 복원하고 v2 스냅샷은 그대로 유지한다', () => {
+  const legacy = {
+    mode: 'workout',
+    runStart: '21',
+    checkedIds: ['workout', 'portfolio-review', 'interview-practice'],
+    companies: [],
+  };
+  const current = {
+    checkedIds: ['run'],
+    planSnapshot: {
+      revision: 2,
+      items: [
+        { id: 'run', label: '이동 포함 저녁 러닝', category: 'exercise', startMinute: 1260, endMinute: 1320 },
+      ],
+    },
+  };
+
+  const migrated = prepareDailyStateForAggregation('2026-07-20', legacy);
+  assert.notStrictEqual(migrated, legacy);
+  assert.equal(migrated.planSnapshot.dayId, 'mon');
+  assert.deepEqual(buildDailyExecutionSummary(migrated), {
+    applications: 0,
+    reviews: 1,
+    interviews: 1,
+    workouts: 1,
+    runs: 0,
+  });
+  assert.strictEqual(prepareDailyStateForAggregation('2026-07-21', current), current);
 });
 
 test('실행 입력은 체크, 회사 정보, 비어 있지 않은 메모만 인식한다', () => {
