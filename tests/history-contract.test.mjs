@@ -8,6 +8,7 @@ const indexHtml = await readFile(new URL('../index.html', import.meta.url), 'utf
 const roadmapHtml = await readFile(new URL('../roadmap.html', import.meta.url), 'utf8').catch(() => '');
 const dailyHtml = await readFile(new URL('../daily.html', import.meta.url), 'utf8').catch(() => '');
 const weeklyHtml = await readFile(new URL('../weekly.html', import.meta.url), 'utf8').catch(() => '');
+const interviewHtml = await readFile(new URL('../interview/index.html', import.meta.url), 'utf8').catch(() => '');
 const css = await readCssBundle(new URL('../assets/routine.css', import.meta.url));
 const historyApp = await readFile(new URL('../src/history-app.js', import.meta.url), 'utf8').catch(() => '');
 
@@ -28,10 +29,11 @@ test('기록·분석 페이지는 기간 선택, 요약, 그래프, 날짜별 �
   assert.match(historyHtml, /class="history-supporting-kpis"/);
 });
 
-test('루틴 내부 화면은 오늘·주간·면접·로드맵·기록 다섯 이동을 제공한다', () => {
+test('루틴 내부 화면은 오늘·주간·로드맵·면접·기록 순서의 다섯 이동을 제공한다', () => {
   for (const html of [indexHtml, roadmapHtml, weeklyHtml, dailyHtml, historyHtml]) {
     const topbar = html.match(/<header class="app-topbar[\s\S]*?<\/header>/)?.[0] ?? '';
     const nav = topbar.match(/<nav aria-label="주요 이동">[\s\S]*?<\/nav>/)?.[0] ?? '';
+    const mobileNav = html.match(/<nav class="mobile-tabbar screen-only"[\s\S]*?<\/nav>/)?.[0] ?? '';
     assert.match(topbar, /class="app-topbar-brand" href="\.\/index\.html"/);
     assert.match(topbar, />취업 준비 루틴 보드<\/span>/);
     assert.equal((nav.match(/<a /g) ?? []).length, 5);
@@ -40,8 +42,15 @@ test('루틴 내부 화면은 오늘·주간·면접·로드맵·기록 다섯 �
     assert.match(nav, /href="\.\/interview\/"[^>]*>면접<\/a>/);
     assert.match(nav, /href="\.\/roadmap\.html"[^>]*>로드맵<\/a>/);
     assert.match(nav, /href="\.\/history\.html"[^>]*>기록<\/a>/);
+    assert.ok(nav.indexOf('>로드맵</a>') < nav.indexOf('>면접</a>'));
+    assert.ok(mobileNav.indexOf('>로드맵</a>') < mobileNav.indexOf('>면접</a>'));
     assert.doesNotMatch(nav, /contents|study-history|학습/);
   }
+
+  const interviewTopbar = interviewHtml.match(/<header class="app-topbar[\s\S]*?<\/header>/)?.[0] ?? '';
+  const interviewMobileNav = interviewHtml.match(/<nav class="mobile-tabbar screen-only"[\s\S]*?<\/nav>/)?.[0] ?? '';
+  assert.ok(interviewTopbar.indexOf('>로드맵</a>') < interviewTopbar.indexOf('>면접</a>'));
+  assert.ok(interviewMobileNav.indexOf('>로드맵</a>') < interviewMobileNav.indexOf('>면접</a>'));
 });
 
 test('홈은 오늘 실행·면접 이어하기·주간 진척을 한 화면에서 제공한다', () => {
