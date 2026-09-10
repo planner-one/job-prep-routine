@@ -135,7 +135,7 @@ test('저장값이 손상되거나 접근이 거부되어도 안전한 기본 �
   assert.equal(model.interview.active, false);
 });
 
-test('홈은 데스크톱·모바일 5탭과 토스형 허브 계약을 제공한다', async () => {
+test('홈은 데스크톱·모바일 6탭과 토스형 허브 계약을 제공한다', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /assets\/site-shell\.css\?v=2[\s\S]*assets\/routine\.css\?v=13/);
   assert.match(html, /id="home-page"/);
@@ -143,8 +143,8 @@ test('홈은 데스크톱·모바일 5탭과 토스형 허브 계약을 제공�
   assert.match(html, /id="home-interview-action"/);
   assert.match(html, /class="mobile-tabbar screen-only"/);
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 2);
-  for (const label of ['오늘', '주간', '면접', '로드맵', '기록']) {
-    assert.ok((html.match(new RegExp(`>${label}<`, 'g')) ?? []).length >= 2, `${label} 5탭을 제공해야 한다`);
+  for (const label of ['오늘', '주간', '학습', '면접', '로드맵', '기록']) {
+    assert.ok((html.match(new RegExp(`>${label}<`, 'g')) ?? []).length >= 2, `${label} 6탭을 제공해야 한다`);
   }
   assert.doesNotMatch(html, /href="\.\.\//);
   assert.doesNotMatch(html, /<svg\b/i);

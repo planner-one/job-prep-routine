@@ -5,6 +5,7 @@ import { readCssBundle } from './helpers/read-css-bundle.mjs';
 
 const html = await readFile(new URL('../daily.html', import.meta.url), 'utf8').catch(() => '');
 const css = await readCssBundle(new URL('../assets/routine.css', import.meta.url));
+const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] ?? '';
 
 function blockAfter(source, marker) {
   const markerIndex = source.indexOf(marker);
@@ -65,9 +66,9 @@ test('계획 변경과 반영 결과를 보조기기에 알리고 반영 후 포
 });
 
 test('운영 유형·러닝 시간은 데일리에서 편집할 수 없고 학습 UI를 제공하지 않는다', () => {
-  assert.doesNotMatch(html, /data-mode=/);
-  assert.doesNotMatch(html, /name="run-start"/);
-  assert.doesNotMatch(html, /학습|learning/i);
+  assert.doesNotMatch(main, /data-mode=/);
+  assert.doesNotMatch(main, /name="run-start"/);
+  assert.doesNotMatch(main, /학습|learning/i);
 });
 
 test('데일리는 학습을 제외한 시간표 카테고리 필터와 빈 결과 안내를 제공한다', () => {

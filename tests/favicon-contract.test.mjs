@@ -8,6 +8,8 @@ const pageNames = [
   'weekly.html',
   'daily.html',
   'history.html',
+  'learning.html',
+  'learning-plan.html',
 ];
 
 test('루틴 화면은 맞춤 SVG 파비콘을 사용한다', async () => {

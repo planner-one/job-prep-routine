@@ -29,27 +29,42 @@ test('기록·분석 페이지는 기간 선택, 요약, 그래프, 날짜별 �
   assert.match(historyHtml, /class="history-supporting-kpis"/);
 });
 
-test('루틴 내부 화면은 오늘·주간·로드맵·면접·기록 순서의 다섯 이동을 제공한다', () => {
+test('루틴 내부 화면은 오늘·주간·학습·로드맵·면접·기록 순서의 여섯 이동을 제공한다', () => {
   for (const html of [indexHtml, roadmapHtml, weeklyHtml, dailyHtml, historyHtml]) {
     const topbar = html.match(/<header class="app-topbar[\s\S]*?<\/header>/)?.[0] ?? '';
     const nav = topbar.match(/<nav aria-label="주요 이동">[\s\S]*?<\/nav>/)?.[0] ?? '';
     const mobileNav = html.match(/<nav class="mobile-tabbar screen-only"[\s\S]*?<\/nav>/)?.[0] ?? '';
     assert.match(topbar, /class="app-topbar-brand" href="\.\/index\.html"/);
     assert.match(topbar, />취업 준비 루틴 보드<\/span>/);
-    assert.equal((nav.match(/<a /g) ?? []).length, 5);
+    assert.equal((nav.match(/<a /g) ?? []).length, 6);
+    assert.equal((mobileNav.match(/<a /g) ?? []).length, 6);
     assert.match(nav, /href="\.\/index\.html"[^>]*>오늘<\/a>/);
     assert.match(nav, /href="\.\/weekly\.html"[^>]*>주간<\/a>/);
+    assert.match(nav, /href="\.\/learning\.html"[^>]*>학습<\/a>/);
     assert.match(nav, /href="\.\/interview\/"[^>]*>면접<\/a>/);
     assert.match(nav, /href="\.\/roadmap\.html"[^>]*>로드맵<\/a>/);
     assert.match(nav, /href="\.\/history\.html"[^>]*>기록<\/a>/);
+    assert.ok(nav.indexOf('>주간</a>') < nav.indexOf('>학습</a>'));
+    assert.ok(nav.indexOf('>학습</a>') < nav.indexOf('>로드맵</a>'));
     assert.ok(nav.indexOf('>로드맵</a>') < nav.indexOf('>면접</a>'));
+    assert.ok(mobileNav.indexOf('>주간</a>') < mobileNav.indexOf('>학습</a>'));
+    assert.ok(mobileNav.indexOf('>학습</a>') < mobileNav.indexOf('>로드맵</a>'));
     assert.ok(mobileNav.indexOf('>로드맵</a>') < mobileNav.indexOf('>면접</a>'));
-    assert.doesNotMatch(nav, /contents|study-history|학습/);
+    assert.doesNotMatch(nav, /contents|study-history/);
   }
 
   const interviewTopbar = interviewHtml.match(/<header class="app-topbar[\s\S]*?<\/header>/)?.[0] ?? '';
+  const interviewNav = interviewTopbar.match(/<nav aria-label="주요 이동">[\s\S]*?<\/nav>/)?.[0] ?? '';
   const interviewMobileNav = interviewHtml.match(/<nav class="mobile-tabbar screen-only"[\s\S]*?<\/nav>/)?.[0] ?? '';
+  assert.equal((interviewNav.match(/<a /g) ?? []).length, 6);
+  assert.equal((interviewMobileNav.match(/<a /g) ?? []).length, 6);
+  assert.match(interviewNav, /href="\.\.\/learning\.html"[^>]*>학습<\/a>/);
+  assert.match(interviewMobileNav, /href="\.\.\/learning\.html"[^>]*>학습<\/a>/);
+  assert.ok(interviewTopbar.indexOf('>주간</a>') < interviewTopbar.indexOf('>학습</a>'));
+  assert.ok(interviewTopbar.indexOf('>학습</a>') < interviewTopbar.indexOf('>로드맵</a>'));
   assert.ok(interviewTopbar.indexOf('>로드맵</a>') < interviewTopbar.indexOf('>면접</a>'));
+  assert.ok(interviewMobileNav.indexOf('>주간</a>') < interviewMobileNav.indexOf('>학습</a>'));
+  assert.ok(interviewMobileNav.indexOf('>학습</a>') < interviewMobileNav.indexOf('>로드맵</a>'));
   assert.ok(interviewMobileNav.indexOf('>로드맵</a>') < interviewMobileNav.indexOf('>면접</a>'));
 });
 

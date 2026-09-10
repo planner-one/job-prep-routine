@@ -5,6 +5,7 @@ import { readCssBundle } from './helpers/read-css-bundle.mjs';
 
 const html = await readFile(new URL('../weekly.html', import.meta.url), 'utf8').catch(() => '');
 const css = await readCssBundle(new URL('../assets/routine.css', import.meta.url));
+const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] ?? '';
 
 function blockAfter(source, marker) {
   const markerIndex = source.indexOf(marker);
@@ -26,7 +27,7 @@ test('주간 목표와 일곱 요일 및 운영 유형 선택을 유지한다', 
   assert.match(html, /id="weekly-mode-controls"/);
   assert.match(html, /id="weekly-run-start-controls"/);
   assert.match(html, /id="set-maintenance-day"/);
-  assert.doesNotMatch(html, /학습|learning/i);
+  assert.doesNotMatch(main, /학습|learning/i);
 });
 
 test('선택 요일은 중복 체크리스트 없이 하나의 세로 플래너를 제공한다', () => {

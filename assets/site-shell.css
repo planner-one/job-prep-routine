@@ -94,7 +94,7 @@ html {
     left: 0;
     z-index: 35;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     min-height: calc(4rem + var(--site-safe-bottom));
     padding: 6px 8px calc(6px + var(--site-safe-bottom));
     border-top: 1px solid rgba(229, 232, 235, 0.96);

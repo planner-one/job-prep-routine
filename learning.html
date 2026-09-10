@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="2026년 9월 4일부터 17일까지 체화·수집 학습과 강의별 진척을 기록하는 개인 학습 대시보드">
+    <title>2주 학습 | 취업 준비 루틴 보드</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
+    <link rel="stylesheet" href="./assets/site-shell.css?v=2">
+    <link rel="stylesheet" href="./assets/routine.css?v=13">
+    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=9">
+  </head>
+  <body class="learning-body">
+    <header class="app-topbar screen-only">
+      <a class="app-topbar-brand" href="./index.html" aria-label="취업 준비 루틴 보드 홈">
+        <img src="./assets/favicon.svg" alt="" width="28" height="28">
+        <span>취업 준비 루틴 보드</span>
+      </a>
+      <nav aria-label="주요 이동">
+        <a href="./index.html">오늘</a>
+        <a href="./weekly.html">주간</a>
+        <a href="./learning.html" aria-current="page">학습</a>
+        <a href="./roadmap.html">로드맵</a>
+        <a href="./interview/">면접</a>
+        <a href="./history.html">기록</a>
+      </nav>
+    </header>
+
+    <div class="learning-shell">
+      <main id="learning-page" aria-labelledby="learning-title">
+        <div class="learning-workspace" id="learning-desk">
+          <aside class="learning-sidebar" aria-label="2주 학습 메뉴">
+            <header class="learning-toolbar">
+              <h1 id="learning-title">2주 학습</h1>
+              <div><span class="learning-period">9.4 — 9.17</span><span id="learning-today"></span></div>
+            </header>
+        <nav class="learning-views" aria-label="학습 화면">
+          <button type="button" data-learning-view="courses" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6c2 0 2 2 2 2s0-2 2-2h6v15h-6c-2 0-2 1-2 1s0-1-2-1H4z M12 6v14"/></svg>강의·노트</button>
+          <button type="button" data-learning-view="overview" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M10 10v10"/></svg>반영 현황</button>
+          <button type="button" data-learning-view="program" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v15H5z M8 3v4 M16 3v4 M5 10h14"/></svg>청년프로그램</button>
+          <button type="button" data-learning-view="reviews" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8 M4 4v6h6 M12 7v5l3 2"/></svg>복습 <span id="learning-review-count">0</span></button>
+          <button type="button" data-learning-view="records" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M10 11h5 M10 15h5"/></svg>학습 기록</button>
+          <button type="button" data-learning-view="guide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M9 8h6 M9 12h6 M9 16h3"/></svg>추천·학습 방법</button>
+        </nav>
+          </aside>
+          <div class="learning-content" id="learning-content">
+            <header class="learning-document-bar"><span id="learning-view-label">강의·노트</span><span id="learning-save-status" role="status" aria-live="polite">강의를 불러오는 중…</span><a href="./learning-plan.html">한 장 플랜 ↗</a></header>
+            <div class="learning-paper">
+              <noscript>학습 기록을 사용하려면 JavaScript를 켜 주세요.</noscript>
+              <section data-learning-panel="courses" aria-label="강의·노트"><div id="learning-course-detail" class="learning-detail" aria-label="선택한 강의"><p class="learning-hint" role="status">강의 목록과 목차를 불러오고 있습니다.</p><a href="./learning.html">오래 걸리면 다시 불러오기</a></div></section>
+        <section data-learning-panel="overview" aria-label="반영 현황" hidden>
+          <div class="learning-section-bar"><h2>이번 2주에 반영된 내용</h2><span>선택한 강의의 진도와 체크, 청년프로그램 일정을 함께 봅니다.</span></div>
+          <div id="learning-overview"></div>
+        </section>
+        <section data-learning-panel="program" aria-label="청년프로그램" hidden>
+          <div class="learning-section-bar"><h2>청년프로그램</h2><span>날짜와 시간만 선택하면 반영 현황에 들어갑니다.</span></div>
+          <div id="learning-program"></div>
+        </section>
+        <section data-learning-panel="reviews" aria-label="복습" hidden>
+          <div class="learning-section-bar"><h2>다시 볼 내용</h2><span>먼저 떠올려 보고, 필요할 때 노트와 비교하세요.</span></div>
+          <div id="learning-review-list"></div>
+        </section>
+        <section data-learning-panel="records" aria-label="학습 기록" hidden>
+          <div class="learning-section-bar"><h2>학습 기록</h2><span>강의 순서와 하루 기록 수는 정해져 있지 않습니다.</span></div>
+          <div id="learning-results"></div>
+          <details class="learning-archive"><summary>이전 날짜별 기록</summary><div id="learning-legacy-results"></div></details>
+        </section>
+        <section data-learning-panel="guide" aria-label="추천·학습 방법" hidden>
+          <div class="learning-section-bar"><h2>강의를 고를 때 참고</h2><span>추천은 선택을 돕는 정보이며 수강 조건이 아닙니다.</span></div>
+          <div id="learning-recommendations"></div>
+          <details class="learning-guide"><summary>정리노트 보는 시점</summary><p>강의를 본 뒤 기억나는 내용을 말하거나 짧게 적어 보세요. 그다음 노트에서 막혔던 부분만 확인하면 됩니다. 노트는 언제든 열 수 있습니다.</p><p>D+1 · D+3 · D+7은 복습 간격의 추천값입니다. 공부 기록마다 다시 볼 날짜를 직접 정하거나 비워 둘 수 있습니다.</p></details>
+          <details class="learning-guide"><summary>기록은 필요한 만큼만</summary><p>코드 위치, 흐름도, 면접 답변 중 이번에 남긴 것 하나만 메모하거나 기존 노트를 연결해 두세요. 회상 답변이나 질문을 모두 작성할 필요는 없습니다.</p><p>바쁜 날은 이어 볼 위치만 남겨도 됩니다. 한 강의의 수강 체크와 스스로 설명해 본 기록은 따로 관리합니다.</p></details>
+        </section>
+            </div>
+          </div>
+          <aside class="learning-course-sidebar" aria-label="강의 목록">
+            <div class="learning-catalog">
+              <div class="learning-sidebar-label">강의 목록 <span>위쪽부터 우선순위</span></div>
+          <div class="learning-list-toolbar">
+            <div id="learning-course-filters" role="group" aria-label="강의 필터">
+              <button type="button" data-course-filter="all" aria-pressed="true">전체 <span id="learning-total-count">53</span></button>
+              <button type="button" data-course-filter="added" aria-pressed="false">이번 추가</button>
+              <button type="button" data-course-filter="mine" aria-pressed="false">내 선택 <span id="learning-picked-count">0</span></button>
+              <button type="button" data-course-filter="recommended" aria-pressed="false">추천</button>
+              <button type="button" data-course-filter="enrolled" aria-pressed="false">추가 신청</button>
+              <button type="button" data-course-filter="skipped" aria-pressed="false">안 볼 강의</button>
+              <button type="button" data-course-filter="deleted" aria-pressed="false">삭제한 강의 <span id="learning-deleted-count">0</span></button>
+            </div>
+            <label><span class="visually-hidden">강의 검색</span><input type="search" id="learning-course-search" placeholder="강의 검색" autocomplete="off"></label>
+          </div>
+          <div class="learning-selection-total"><output id="learning-selected-duration" aria-live="polite">선택한 강의 시간을 불러오는 중…</output><small>‘내 선택’ 체크 기준 · 전체 영상 · 1배속</small></div>
+          <p class="learning-order-help">숫자 옆 ⠿를 누른 채 끌어 순서를 바꾸세요.<br>숫자는 전체 목록 기준 우선순위입니다.</p>
+          <p class="learning-list-caption"><span>이번 2주에 들을 강의는 ‘내 선택’에 체크하세요. 순서와 분량은 자유롭게 정하면 됩니다.</span><span id="learning-visible-count">불러오는 중</span></p>
+              <div class="learning-course-scroll"><table class="learning-table"><caption class="visually-hidden">전체 강의 목록과 나의 선택</caption>
+                <colgroup><col style="width:34px"><col><col style="width:34px"></colgroup>
+                <thead><tr><th scope="col">우선순위</th><th scope="col">강의</th><th scope="col">내 선택</th></tr></thead>
+                <tbody id="learning-course-list"><tr><td colspan="3">강의 목록을 불러오는 중…</td></tr></tbody>
+              </table>
+              <p id="learning-course-empty" class="learning-empty" hidden>해당하는 강의가 없습니다. 필터나 검색어를 바꿔 보세요.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <nav class="mobile-tabbar screen-only" aria-label="모바일 주요 이동">
+      <a href="./index.html">오늘</a>
+      <a href="./weekly.html">주간</a>
+      <a href="./learning.html" aria-current="page">학습</a>
+      <a href="./roadmap.html">로드맵</a>
+      <a href="./interview/">면접</a>
+      <a href="./history.html">기록</a>
+    </nav>
+
+    <script type="module">
+      // 가져오기 또는 초기화가 실패해도 빈 화면만 남기지 않습니다.
+      import('./src/learning-app.js?v=9').catch((error) => {
+        const status = document.getElementById('learning-save-status');
+        status.textContent = '강의를 불러오지 못했습니다.';
+        status.classList.add('is-error');
+        document.getElementById('learning-course-detail').innerHTML = '<p role="alert">강의 화면을 불러오지 못했습니다. 다시 불러와 주세요.</p><a href="./learning.html">다시 불러오기</a>';
+        document.getElementById('learning-course-list').innerHTML = '<tr><td colspan="3">목록을 불러오지 못했습니다.</td></tr>';
+        document.getElementById('learning-visible-count').textContent = '불러오기 실패';
+        console.error('학습 화면 초기화 실패', error);
+      });
+    </script>
+  </body>
+</html>
