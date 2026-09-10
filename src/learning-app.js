@@ -1,12 +1,13 @@
-import { setupLearningTransfer } from './learning-transfer.js?v=10';
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=10';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=10';
+import { setupLearningSync } from './learning-sync.js?v=11';
+import { setupLearningTransfer } from './learning-transfer.js?v=11';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=11';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=11';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=10';
+} from './learning-core.js?v=11';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];
@@ -33,6 +34,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   }
   const viewScroll = new Map();
   let saved = true;
+  let sync = null;
   const el = (selector) => root.querySelector(selector);
   const all = (selector) => root.querySelectorAll(selector);
   function announce(message) {
@@ -42,7 +44,8 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   function persist(next) {
     saved = true;
     state = saveLearningState(storage, next, today, () => { saved = false; });
-    announce('저장됨');
+    announce('이 기기에 저장됨');
+    if (saved) sync?.changed(state);
   }
   function renderCounts() {
     el('#learning-total-count').textContent = activeCourses().length;
@@ -399,10 +402,35 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   renderCourses(); renderDetail(); renderGuide(); selectView(view);
   setupLearningTransfer(root, storage, today, () => state, (imported) => {
     state = imported; saved = true;
+    sync?.changed(state);
     renderCourses(); renderDetail(); selectView('records');
     announce('가져온 기록을 이 기기에 저장했습니다.');
   });
-  announce('이 기기에 저장 · 기기 간 자동 동기화 안 됨');
+  sync = setupLearningSync(root, storage, today, () => state, (incoming) => {
+    const content = el('#learning-content'), scroll = content.scrollTop;
+    const openSections = [...all('[data-section][open]')].map(node => node.dataset.section);
+    const active = root.ownerDocument.activeElement;
+    const field = active?.dataset?.courseField;
+    const selection = field ? [active.selectionStart, active.selectionEnd] : null;
+    let failed = false;
+    const next = saveLearningState(storage, incoming, today, () => { failed = true; });
+    if (failed) throw new Error('기기 저장 실패');
+    state = next;
+    renderCourses(); renderDetail();
+    if (view === 'overview') renderOverview();
+    if (view === 'program') renderProgram();
+    if (view === 'reviews') renderReviews();
+    if (view === 'records') renderRecords();
+    all('[data-section]').forEach(node => { node.open = openSections.includes(node.dataset.section); });
+    if (field) {
+      const input = el(`[data-course-field="${field}"]`);
+      input?.focus({preventScroll: true});
+      try { input?.setSelectionRange(...selection); } catch { /* 날짜 입력에는 선택 범위가 없습니다. */ }
+    }
+    content.scrollTop = scroll;
+    announce('서버 기록을 이 기기에 반영했습니다.');
+  });
+  announce('이 기기에 저장 · 동기화 상태는 기기 동기화에서 확인');
   return { getState: () => state };
 }
 const pageRoot = typeof document === 'undefined' ? null : document.querySelector('#learning-page');
