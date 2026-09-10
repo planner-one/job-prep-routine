@@ -1,11 +1,12 @@
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=9';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=9';
+import { setupLearningTransfer } from './learning-transfer.js?v=10';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=10';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=10';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=9';
+} from './learning-core.js?v=10';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];
@@ -26,6 +27,10 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   let courseFilter = 'all';
   let searchQuery = '';
   let view = 'courses';
+  let mobileListScroll = 0;
+  function showMobilePane(pane) {
+    el('#learning-desk').dataset.mobilePane = pane;
+  }
   const viewScroll = new Map();
   let saved = true;
   const el = (selector) => root.querySelector(selector);
@@ -52,6 +57,8 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     const content = el('#learning-content');
     viewScroll.set(view, content.scrollTop);
     view = next;
+    el('#learning-mobile-view').value = view;
+    showMobilePane(view === 'courses' ? 'list' : 'detail');
     el('#learning-view-label').textContent = {courses:'강의·노트',overview:'반영 현황',program:'청년프로그램',reviews:'복습',records:'학습 기록',guide:'추천·학습 방법'}[view];
     all('[data-learning-panel]').forEach((panel) => { panel.hidden = panel.dataset.learningPanel !== view; });
     all('[data-learning-view]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.learningView === view)));
@@ -104,7 +111,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   };
   function progressMarkup(course, p) {
     const meta = COURSE_CURRICULA[course.id], summary = courseWorkSummary(state, course.id);
-    const unitRow = (u) => `<tr><td><span>${escapeHtml(u.title)}</span><small>${u.video ? `${Math.floor(u.seconds/60)}:${String(u.seconds%60).padStart(2,'0')}` : '자료·퀴즈'}</small></td>${Object.entries(STUDY_CHECKS).map(([key,label]) => `<td><input type="checkbox" data-unit-id="${u.id}" data-unit-check="${key}" aria-label="${escapeHtml(u.title)}: ${key==='watched'&&!u.video?'자료·퀴즈 확인':label}" ${p.unitChecks[u.id]?.[key]?'checked':''}></td>`).join('')}</tr>`;
+    const unitRow = (u) => `<tr><td><span>${escapeHtml(u.title)}</span><small>${u.video ? `${Math.floor(u.seconds/60)}:${String(u.seconds%60).padStart(2,'0')}` : '자료·퀴즈'}</small></td>${Object.entries(STUDY_CHECKS).map(([key,label]) => `<td><label class="learning-unit-check"><input type="checkbox" data-unit-id="${u.id}" data-unit-check="${key}" aria-label="${escapeHtml(u.title)}: ${key==='watched'&&!u.video?'자료·퀴즈 확인':label}" ${p.unitChecks[u.id]?.[key]?'checked':''}><span>${label}</span></label></td>`).join('')}</tr>`;
     return `<div class="learning-progress-heading"><h3>진도</h3><span id="learning-progress-summary">${summary.label} · ${summary.percent}%</span></div>
       <p class="learning-hint">전체 ${meta.totalUnits}개 수업 · ${summary.total}개 영상 · ${duration(meta.totalSeconds)} ${linkMarkup(meta.url,'인프런 원문')} · ${meta.checkedOn} 확인</p>
       ${course.duration.startsWith('선별') ? `<p class="learning-hint">기존 추천 범위: ${escapeHtml(course.duration)}. 위 시간은 전체 강의 기준입니다.</p>` : ''}
@@ -178,10 +185,15 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     renderDetailLinks(); refreshProgress();
   }
   function openCourse(id) {
+    mobileListScroll = el('.learning-course-scroll').scrollTop;
     persist(selectLearningCourse(state, id, today));
     selectView('courses'); renderCourses(); renderDetail();
     el('#learning-content').scrollTop = 0;
-    if (window.matchMedia('(max-width: 600px)').matches) el('#learning-content').scrollIntoView({block:'start'});
+    showMobilePane('detail');
+    if (window.matchMedia('(max-width: 600px)').matches) {
+      el('#learning-content').setAttribute('tabindex', '-1');
+      el('#learning-content').focus({preventScroll:true});
+    }
   }
   function logMarkup(log, review = false) {
     const p = courseProgressFor(state, log.courseId);
@@ -287,6 +299,12 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   root.addEventListener('click', (event) => {
     const button = event.target.closest('button');
     if (!button) return;
+    if (button.hasAttribute('data-mobile-list')) {
+      selectView('courses');
+      el('.learning-course-scroll').scrollTop = mobileListScroll;
+      el('.learning-course-scroll').focus({preventScroll:true});
+      return;
+    }
     if (button.dataset.deleteCourse) {
       persist(setCourseDeleted(state, button.dataset.deleteCourse, true, today));
       renderCourses(); renderDetail();
@@ -329,6 +347,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   });
   root.addEventListener('change', (event) => {
     const input = event.target;
+    if (input.id === 'learning-mobile-view') { selectView(input.value); return; }
     if (input.hasAttribute('data-program-choice')) { persist(setYouthProgram(state, { choice: input.value }, today)); renderProgram(); return; }
     if (input.dataset.eventField) {
       const id=input.closest('[data-event-id]').dataset.eventId;
@@ -378,7 +397,12 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   el('#learning-today').textContent = `${dateLabel(today)} 학습일`;
   el('#learning-today').title = '하루 마감은 오전 2시입니다.';
   renderCourses(); renderDetail(); renderGuide(); selectView(view);
-  announce('이 브라우저에 자동 저장');
+  setupLearningTransfer(root, storage, today, () => state, (imported) => {
+    state = imported; saved = true;
+    renderCourses(); renderDetail(); selectView('records');
+    announce('가져온 기록을 이 기기에 저장했습니다.');
+  });
+  announce('이 기기에 저장 · 기기 간 자동 동기화 안 됨');
   return { getState: () => state };
 }
 const pageRoot = typeof document === 'undefined' ? null : document.querySelector('#learning-page');
