@@ -218,3 +218,27 @@ test('서버 체크를 기기에 적용하다 실패해도 이전 원문을 서�
   assert.equal(applied.courses[COURSES[0].id].inPlan, true);
   assert.equal((await backend.read()).revision, 2);
 });
+
+test('노트북 완료 체크가 다른 기기에 반영되고 모바일 해제는 다시 노트북에 반영된다', async () => {
+  const backend = server(initial()), base = await backend.read(), id = COURSES[0].id;
+  const laptop = device(backend, base), mobile = device(backend, base);
+  const next = copy(base.data); next.courses[id].completed = true;
+  laptop.engine.update(next); await laptop.engine.sync(); await mobile.engine.sync();
+  assert.equal(mobile.engine.snapshot().local.courses[id].completed, true);
+  const unchecked = mobile.engine.snapshot().local; unchecked.courses[id].completed = false;
+  mobile.engine.update(unchecked); await mobile.engine.sync(); await laptop.engine.sync();
+  assert.equal(laptop.engine.snapshot().local.courses[id].completed, false);
+});
+
+test('이전 형식의 최신 삭제 변경을 버리지 않고 오래된 삭제 40개 사본보다 우선한다', async t => {
+  const base = { revision: 1, data: initial() };
+  for (const course of COURSES.slice(0, 40)) base.data.courses[course.id].deleted = true;
+  const fresh = applySharedLearningState(createDefaultLearningState(today), base.data, today);
+  fresh.courses[COURSES[0].id].deleted = false;
+  delete fresh.version;
+  const app = lifecycle(t, { row: base, state: fresh, cached: { base, local: base.data } });
+  const recovered = loadLearningState(app.storage, today);
+  assert.equal(Object.values(recovered.courses).filter(c => c.deleted).length, 39);
+  await settle();
+  assert.equal(Object.values(app.row().data.courses).filter(c => c.deleted).length, 39);
+});

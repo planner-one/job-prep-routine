@@ -93,3 +93,19 @@ test('Neon 쿼리는 자료를 매개변수로 전달하고 초기 생성과 버
   assert.match(insert.values[0], /DROP TABLE/);
   assert.equal(queries.filter(q => q.text.startsWith('CREATE TABLE')).length, 1);
 });
+
+test('이전 모바일 탭의 저장은 새 완료 표시를 지우지 않고 명시적 해제는 반영한다', async () => {
+  const f = fixture(), cookie = await f.login(), current = data(), id = COURSES[0].id;
+  current.courses[id].completed = true;
+  await f.request('PUT', 'state', { revision: 0, data: current }, cookie);
+  const oldClient = structuredClone(current);
+  for (const course of Object.values(oldClient.courses)) delete course.completed;
+  oldClient.courses[id].memo = '이전 탭에서 수정';
+  const merged = await f.request('PUT', 'state', { revision: 1, data: oldClient }, cookie);
+  assert.equal(merged.code, 200);
+  assert.equal(merged.body.data.courses[id].completed, true);
+  merged.body.data.courses[id].completed = false;
+  const unchecked = await f.request('PUT', 'state', { revision: 2, data: merged.body.data }, cookie);
+  assert.equal(unchecked.code, 200);
+  assert.equal(unchecked.body.data.courses[id].completed, false);
+});

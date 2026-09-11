@@ -66,7 +66,18 @@ export function createLearningHandler({ env = process.env, getStore = getLearnin
         const remote = await store.read(Number.isSafeInteger(revision) && revision >= 0 ? revision : -1);
         return reply(200, remote && remote.revision === revision ? { revision, unchanged: true } : remote);
       }
-      const saved = await store.write(body.revision, body.data);
+      // 이전 버전의 탭이 저장하더라도 새로 추가한 완료 표시를 지우지 않습니다.
+      let data = body.data;
+      if (COURSES.some(c => !Object.hasOwn(data.courses[c.id], 'completed'))) {
+        const current = await store.read();
+        if ((current?.revision || 0) !== body.revision) return reply(409, { error: 'revision_conflict' });
+        data = { ...data, courses: Object.fromEntries(COURSES.map(c => [c.id, {
+          ...data.courses[c.id],
+          completed: Object.hasOwn(data.courses[c.id], 'completed')
+            ? data.courses[c.id].completed === true : current?.data.courses[c.id]?.completed === true,
+        }])) };
+      }
+      const saved = await store.write(body.revision, data);
       return reply(saved ? 200 : 409, saved || { error: 'revision_conflict' });
     } catch {
       // 연결 문자열과 학습 기록이 노출되지 않도록 예외 원문을 로그·응답에 넣지 않습니다.

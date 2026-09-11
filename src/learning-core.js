@@ -1,11 +1,11 @@
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=16';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=17';
 import {
   COURSES,
   LEARNING_SPRINT_END,
   LEARNING_SPRINT_START,
   ROUTINE_STEPS,
   SPRINT_DAYS,
-} from './learning-data.js?v=16';
+} from './learning-data.js?v=17';
 import { localDateString, parseLocalDateKey } from './routine-core.js';
 
 export const LEARNING_STORAGE_KEY = 'job-prep-routine:learning-sprint.v1';
@@ -80,6 +80,7 @@ function normalizeCourses(candidate) {
     next.skipped = progress.skipped === true;
     next.enrolled = progress.enrolled === true;
     next.inPlan = progress.inPlan === true;
+    next.completed = progress.completed === true;
     for (const key of WORK_FIELDS) next[key] = textValue(progress[key]);
     next.noteReference = typeof progress.noteReference === 'string'
       ? progress.noteReference.trim().slice(0, 500)
@@ -144,7 +145,13 @@ export function loadLearningState(storage, today = LEARNING_SPRINT_START) {
     const raw = storage?.getItem?.(LEARNING_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === LEARNING_SCHEMA_VERSION && parsed.courses) return normalizeLearningState(parsed, today);
+      // 초기 버전에는 version 또는 courses가 없는 부분 기록도 있었습니다.
+      // 이 원문을 손상으로 오인해 이전 동기화 사본으로 되돌리지 않습니다.
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+          && (parsed.version === undefined || parsed.version === LEARNING_SCHEMA_VERSION)
+          && ['courses', 'courseOrder', 'daily', 'sessions', 'studyLogs', 'youthProgram'].some(key => Object.hasOwn(parsed, key))) {
+        return normalizeLearningState(parsed, today);
+      }
     }
   } catch { /* 원문을 지우지 않고 남아 있는 전송 대기 사본을 확인합니다. */ }
   try {
@@ -187,6 +194,7 @@ export function courseProgressFor(state, courseId) {
     skipped: progress.skipped === true,
     enrolled: progress.enrolled === true,
     inPlan: progress.inPlan === true,
+    completed: progress.completed === true,
     ...Object.fromEntries(WORK_FIELDS.map((key) => [key, textValue(progress[key])])),
     noteReference: typeof progress.noteReference === 'string' ? progress.noteReference : '',
     updatedDate: typeof progress.updatedDate === 'string' ? progress.updatedDate : '',
@@ -264,6 +272,7 @@ export function updateCourseProgress(state, courseId, patch, updatedDate, today 
   if (typeof source.skipped === 'boolean') current.skipped = source.skipped;
   if (typeof source.enrolled === 'boolean') current.enrolled = source.enrolled;
   if (typeof source.inPlan === 'boolean') current.inPlan = source.inPlan;
+  if (typeof source.completed === 'boolean') current.completed = source.completed;
   for (const key of WORK_FIELDS) if (typeof source[key] === 'string') current[key] = textValue(source[key]);
   if (typeof source.noteReference === 'string') current.noteReference = source.noteReference.trim().slice(0, 500);
   current.updatedDate = /^\d{4}-\d{2}-\d{2}$/.test(updatedDate ?? '') ? updatedDate : current.updatedDate;

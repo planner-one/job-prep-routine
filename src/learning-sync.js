@@ -1,6 +1,6 @@
-import { serializeLearningBackup } from './learning-transfer.js?v=16';
-import { LEARNING_STORAGE_KEY, createDefaultLearningState } from './learning-core.js?v=16';
-import { sharedLearningState, applySharedLearningState, createLearningSyncEngine, equalSyncValue } from './learning-sync-core.js?v=16';
+import { serializeLearningBackup } from './learning-transfer.js?v=17';
+import { LEARNING_STORAGE_KEY, createDefaultLearningState } from './learning-core.js?v=17';
+import { sharedLearningState, applySharedLearningState, createLearningSyncEngine, equalSyncValue } from './learning-sync-core.js?v=17';
 
 const OWNER_KEY = `${LEARNING_STORAGE_KEY}:owner`;
 const PENDING_KEY = `${LEARNING_STORAGE_KEY}:pending-cloud`;
@@ -42,6 +42,7 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
     } catch { stop(); storageFailed(); }
   }
   const location = globalThis.window?.location;
+  if (el('#learning-sync-address')) el('#learning-sync-address').textContent = location?.hostname || '로컬 파일';
   if (location?.protocol !== 'https:' || location.hostname.endsWith('.github.io')) {
     staticOnly = true;
     el('#learning-sync-retry').hidden = true;
@@ -73,6 +74,16 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
   }
   async function boot() {
     const cacheKey = uid => `${LEARNING_STORAGE_KEY}:sync:${uid}`;
+    function showServerSummary(row) {
+      const target = el('#learning-sync-records');
+      if (!target) return;
+      target.hidden = !row?.data;
+      if (row?.data) {
+        const values = Object.values(row.data.courses);
+        const active = values.filter(c => !c.deleted);
+        target.textContent = `서버 기록: 목록 ${active.length}개 · 내 선택 ${active.filter(c => c.inPlan).length}개 · 삭제 ${values.length - active.length}개`;
+      }
+    }
     async function read() {
       const result = await request(`state${remoteCache ? `&revision=${remoteCache.revision}` : ''}`);
       if (result?.unchanged) {
@@ -80,18 +91,19 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
         return remoteCache;
       }
       remoteCache = result;
+      showServerSummary(result);
       return result;
     }
     async function write(_uid, revision, data) {
       const result = await request('state', 'PUT', { revision, data });
-      if (result) remoteCache = result;
+      if (result) { remoteCache = result; showServerSummary(result); }
       return result;
     }
     function backupLocal() {
       const raw = storage.getItem(LEARNING_STORAGE_KEY);
       const key = `${LEARNING_STORAGE_KEY}:before-cloud:${storage.getItem(OWNER_KEY) || 'local'}`;
       const previousOwner = storage.getItem(OWNER_KEY);
-      if (raw && (previousOwner || storage.getItem(key) === null)) storage.setItem(key, raw);
+      if (raw && storage.getItem(key) === null) storage.setItem(key, raw);
       if (previousOwner) {
         const previous = JSON.parse(storage.getItem(cacheKey(previousOwner)) || 'null');
         if (previous) storage.setItem(cacheKey(previousOwner), JSON.stringify({ ...previous, local: sharedLearningState(getState(), today) }));
