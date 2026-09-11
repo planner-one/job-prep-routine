@@ -14,7 +14,7 @@ test('자유 학습은 강의 목록에서 시작하고 날짜별 강제 과제�
   assert.match(html, /<h1 id="learning-title">2주 학습<\/h1>/);
   assert.match(html, /data-learning-view="courses" aria-pressed="true"/);
   assert.match(html, /정리노트 보는 시점/);
-  assert.match(html, /learning-app\.js\?v=13/);
+  assert.match(html, /learning-app\.js\?v=14/);
   assert.match(html, /learning-plan\.html/);
   assert.doesNotMatch(html + app + css, /learning-focus-card|learning-condition-buttons|data-complete-session/);
   assert.doesNotMatch(app, /completeLearningSession|learningCapacity|selectedDay/);
@@ -29,7 +29,7 @@ test('한 장 플랜 페이지는 첨부 이미지를 원본 비율과 A4 인쇄
 });
 
 test('전체 강의·사용자 선택·수강 상태·기존 노트는 목록과 상세에 제공한다', () => {
-  assert.equal(data.COURSES.length, 53);
+  assert.equal(data.COURSES.length, 54);
   assert.match(app, /let courseFilter = 'all'/);
   assert.match(app, /data-course-flag="inPlan"/);
   for (const field of ['enrolled', 'skipped', 'noteReference', 'position', 'memo']) assert.ok(app.includes(field));
@@ -83,11 +83,11 @@ test('삭제 및 복원은 강의 상세와 삭제 목록에서 접근할 수 �
 
 test('초기 데이터 로딩과 모듈 실패를 빈 화면 대신 안내한다', () => {
   assert.match(html, /강의 목록과 목차를 불러오고 있습니다/);
-  assert.match(html, /import\('\.\/src\/learning-app\.js\?v=13'\)\.catch/);
+  assert.match(html, /import\('\.\/src\/learning-app\.js\?v=14'\)\.catch/);
   assert.match(html, /role="alert"/);
   assert.match(html, /다시 불러오기/);
-  assert.match(app, /learning-core\.js\?v=13/);
-  assert.match(app, /learning-curriculum\.js\?v=13/);
+  assert.match(app, /learning-core\.js\?v=14/);
+  assert.match(app, /learning-curriculum\.js\?v=14/);
 });
 
 test('선택 강의의 전체 시간 합계를 목록과 반영 현황에 표시한다', () => {

@@ -1,13 +1,13 @@
-import { setupLearningSync } from './learning-sync.js?v=13';
-import { setupLearningTransfer } from './learning-transfer.js?v=13';
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=13';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=13';
+import { setupLearningSync } from './learning-sync.js?v=14';
+import { setupLearningTransfer } from './learning-transfer.js?v=14';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=14';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=14';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=13';
+} from './learning-core.js?v=14';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];

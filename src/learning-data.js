@@ -74,6 +74,7 @@ export const COURSES = Object.freeze([
   course('42', '광고비 0원, 검색 유입만으로 쉽게 돈 벌자! AI 시대 맞춤 SEO', 'excluded', 'collect'),
   course('43', '블록체인 채굴 모듈 만들어보기', 'excluded', 'collect'),
   course('44', '컴맹도 따라하는 주식 바이브코딩 - AI로 만드는 주식 자동매매 시스템', 'excluded', 'collect'),
+  course('extra-339538', 'Docker Essentials - 감 잡히는 컨테이너 & 도커', 'later', 'collect', '3시간 58분'),
 ]);
 
 const day = (date, phase, focus, courseIds, question, review = '') => ({

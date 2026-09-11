@@ -28,9 +28,30 @@ function memoryStorage(entries = {}) {
   };
 }
 
-test('기존 51개와 새 요청 2개를 중복 없이 기록한다', () => {
-  assert.equal(COURSES.length, 53);
-  assert.equal(new Set(COURSES.map(({ id }) => id)).size, 53);
+test('Docker Essentials 추가 시 기존 체크·삭제·우선순위를 유지하고 새 목차를 제공한다', () => {
+  const id = 'extra-339538', date = '2026-09-11';
+  const old = createDefaultLearningState(date);
+  delete old.courses[id];
+  old.courseOrder = old.courseOrder.filter(key => key !== id).reverse();
+  old.courses['35'] = { ...courseProgressFor(old, '35'), inPlan: true, memo: '기존 정리노트' };
+  old.courses['19'] = { ...courseProgressFor(old, '19'), deleted: true };
+  const restored = loadLearningState(memoryStorage({ [LEARNING_STORAGE_KEY]: JSON.stringify(old) }), date);
+  assert.deepEqual(restored.courseOrder, [...old.courseOrder, id]);
+  assert.deepEqual(restored.courses['35'], old.courses['35']);
+  assert.deepEqual(restored.courses['19'], old.courses['19']);
+  assert.equal(courseProgressFor(restored, id).inPlan, false);
+  const meta = COURSE_CURRICULA[id], units = courseUnits(id);
+  assert.equal(meta.inflearnId, 339538);
+  assert.equal(meta.sections.length, 7);
+  assert.equal(units.length, 34);
+  assert.equal(units.filter(unit => unit.video).length, 28);
+  assert.equal(meta.totalSeconds, 14316);
+  assert.equal(units.reduce((sum, unit) => sum + unit.seconds, 0), meta.totalSeconds);
+});
+
+test('54개 강의를 중복 없이 기록한다', () => {
+  assert.equal(COURSES.length, 54);
+  assert.equal(new Set(COURSES.map(({ id }) => id)).size, 54);
   assert.deepEqual(
     COURSES
       .map(({ id }) => Number(id))
@@ -42,7 +63,7 @@ test('기존 51개와 새 요청 2개를 중복 없이 기록한다', () => {
     Object.fromEntries(['sprint', 'conditional', 'later', 'excluded'].map(
       (status) => [status, COURSES.filter((course) => course.status === status).length],
     )),
-    { sprint: 9, conditional: 9, later: 18, excluded: 17 },
+    { sprint: 9, conditional: 9, later: 19, excluded: 17 },
   );
 });
 
@@ -319,12 +340,12 @@ test('강의 위치와 메모를 지운 값도 저장하고 중복 기록 ID는 
 });
 
 
-test('53개 공식 커리큘럼은 강의별 출처를 가지며 영상 시간 합계가 총시간과 일치한다', () => {
+test('54개 공식 커리큘럼은 강의별 출처를 가지며 영상 시간 합계가 총시간과 일치한다', () => {
   assert.equal(Object.keys(COURSE_CURRICULA).length, COURSES.length);
   for (const course of COURSES) {
     const meta=COURSE_CURRICULA[course.id],units=courseUnits(course.id);
     assert.ok(meta.url.startsWith('https://www.inflearn.com/course/'));
-    assert.equal(meta.checkedOn,'2026-09-06');
+    assert.equal(meta.checkedOn,course.id === 'extra-339538' ? '2026-09-11' : '2026-09-06');
     assert.equal(new Set(units.map(u=>u.id)).size,units.length);
     assert.equal(units.reduce((sum,u)=>sum+(u.seconds||0),0),meta.totalSeconds);
     assert.ok(units.length >= meta.totalUnits);
@@ -398,11 +419,11 @@ test('섹션 체크와 취소는 해당 단계에만 적용되며 기록 시점�
   assert.equal(s.studyLogs[0].unitStageSnapshot.watched,ids.length);
 });
 
-test('요청한 네 링크는 기존 강의 두 개와 새 강의 두 개에 연결된다', () => {
+test('요청한 다섯 링크가 해당 강의에 중복 없이 연결된다', () => {
   const entries=Object.entries(COURSE_CURRICULA).filter(([,c])=>c.dashboardUrl);
-  assert.equal(entries.length,4);
+  assert.equal(entries.length,5);
   assert.deepEqual(Object.fromEntries(entries.map(([id,c])=>[c.inflearnId,id])),{
-    342699:'extra-342699',340328:'extra-340328',339298:'45',340020:'15'
+    342699:'extra-342699',340328:'extra-340328',339298:'45',340020:'15',339538:'extra-339538'
   });
   for(const [,c] of entries) assert.equal(Number(new URL(c.dashboardUrl).searchParams.get('cid')),c.inflearnId);
 });

@@ -17571,5 +17571,262 @@ export const COURSE_CURRICULA = {
     ],
     "inflearnId": 340328,
     "dashboardUrl": "https://demo-sub.inflearn.com/course/the-ultimate-guide-t/dashboard?cid=340328"
+  },
+  "extra-339538": {
+    "title": "Docker Essentials - 감 잡히는 컨테이너 & 도커",
+    "url": "https://www.inflearn.com/course/docker-essentials-감",
+    "checkedOn": "2026-09-11",
+    "totalSeconds": 14316,
+    "totalUnits": 34,
+    "sections": [
+      {
+        "id": "363764",
+        "title": "왜 컨테이너이며 무엇일까?",
+        "units": [
+          {
+            "id": "363771",
+            "title": "강의 소개 및 목표",
+            "seconds": 169,
+            "video": true
+          },
+          {
+            "id": "363772",
+            "title": "왜 컨테이너가 등장 했을까?",
+            "seconds": 300,
+            "video": true
+          },
+          {
+            "id": "366122",
+            "title": "컨테이너는 무엇이고 어떤 기술로 만들어졌을까?",
+            "seconds": 492,
+            "video": true
+          },
+          {
+            "id": "363768",
+            "title": "컨테이너 이미지란 정확히 무엇일까?",
+            "seconds": 291,
+            "video": true
+          },
+          {
+            "id": "377739",
+            "title": "강의 자료 (PDF)",
+            "seconds": 0,
+            "video": false
+          },
+          {
+            "id": "376323",
+            "title": "섹션 1 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "363767",
+        "title": "도커 기초 개념 완전 정복",
+        "units": [
+          {
+            "id": "363770",
+            "title": "도커란 무엇이며, 왜 개발자들이 필수로 사용하게 되었을까?",
+            "seconds": 380,
+            "video": true
+          },
+          {
+            "id": "375867",
+            "title": "실습 환경 (개인PC, 회사 PC 모두 사용 가능)",
+            "seconds": 132,
+            "video": true
+          },
+          {
+            "id": "369204",
+            "title": "도커 명령어, 어떻게 사용해야 ‘제대로’ 쓰는 걸까?",
+            "seconds": 205,
+            "video": true
+          },
+          {
+            "id": "369827",
+            "title": "도커 명령어, 무조건 사용하는 TOP10",
+            "seconds": 1415,
+            "video": true
+          },
+          {
+            "id": "371023",
+            "title": "과제 1 정답: Docker로 직접 웹페이지 수정해보기",
+            "seconds": 200,
+            "video": true
+          },
+          {
+            "id": "371035",
+            "title": "과제 2 정답: 컨테이너 재실행 & 포트 변경 실습",
+            "seconds": 165,
+            "video": true
+          },
+          {
+            "id": "371189",
+            "title": "과제3 정답 : 로컬 이미지 정리와 자동 pull 동작 원리 이해하기",
+            "seconds": 185,
+            "video": true
+          },
+          {
+            "id": "376332",
+            "title": "섹션 2 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "370248",
+        "title": "Dockerfile 이해 및 Best Practices",
+        "units": [
+          {
+            "id": "370249",
+            "title": "도커 이미지의 ‘설계도’, Dockerfile은 무엇일까?",
+            "seconds": 755,
+            "video": true
+          },
+          {
+            "id": "370994",
+            "title": "Dockerfile Best Practices 8가지 규칙",
+            "seconds": 1037,
+            "video": true
+          },
+          {
+            "id": "371674",
+            "title": "실습 : Dockerfile Best Practice",
+            "seconds": 405,
+            "video": true
+          },
+          {
+            "id": "371675",
+            "title": "최종 정리 : 도커 이미지, Dockerfile",
+            "seconds": 168,
+            "video": true
+          },
+          {
+            "id": "375798",
+            "title": "과제 정답 : 나만의 유틸리티 이미지 만들기",
+            "seconds": 313,
+            "video": true
+          },
+          {
+            "id": "376321",
+            "title": "섹션 3 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "370921",
+        "title": "도커에서 컨테이너의 데이터, 어떻게 관리해야 할까?",
+        "units": [
+          {
+            "id": "371673",
+            "title": "Volume vs Bind Mount 정확히 이해하기",
+            "seconds": 779,
+            "video": true
+          },
+          {
+            "id": "373982",
+            "title": "과제 정답 : 볼륨으로 데이터 보존 실험",
+            "seconds": 403,
+            "video": true
+          },
+          {
+            "id": "420321",
+            "title": "[중간 개념 정리] 헷갈리기 쉬운 도커 컨테이너 개념 정리하기",
+            "seconds": 1431,
+            "video": true
+          }
+        ]
+      },
+      {
+        "id": "374160",
+        "title": "도커 네트워크, 어떻게 동작하며 왜 이렇게 설계되었을까?",
+        "units": [
+          {
+            "id": "374316",
+            "title": "기초 개념 네트워크 7가지",
+            "seconds": 617,
+            "video": true
+          },
+          {
+            "id": "374804",
+            "title": "도커 네트워크 전체 흐름 완벽 이해",
+            "seconds": 1149,
+            "video": true
+          },
+          {
+            "id": "374865",
+            "title": "과제 정답 : 미니 블로그 네트워크 연결",
+            "seconds": 397,
+            "video": true
+          },
+          {
+            "id": "376322",
+            "title": "섹션 5 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "374866",
+        "title": "여러 컨테이너를 한번에 관리할 수 있을까?",
+        "units": [
+          {
+            "id": "375129",
+            "title": "왜 Docker Compose가 필요한가?",
+            "seconds": 402,
+            "video": true
+          },
+          {
+            "id": "375132",
+            "title": "Compose 파일 구조 완벽 이해",
+            "seconds": 630,
+            "video": true
+          },
+          {
+            "id": "375170",
+            "title": "Compose 자주 실수하는 TOP5",
+            "seconds": 345,
+            "video": true
+          },
+          {
+            "id": "375171",
+            "title": "과제 정답: Compose로 미니 블로그 스택 구축하기",
+            "seconds": 615,
+            "video": true
+          },
+          {
+            "id": "376324",
+            "title": "섹션 6 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "375172",
+        "title": "실무에서 꼭 알아야 할 Docker 핵심 정리",
+        "units": [
+          {
+            "id": "375769",
+            "title": "실무에서 반드시 알아야할 개념 도커 7가지 최종 정리",
+            "seconds": 364,
+            "video": true
+          },
+          {
+            "id": "375794",
+            "title": "실무에서 가장 많이 겪는 문제와 해결 방법 TOP 6",
+            "seconds": 572,
+            "video": true
+          }
+        ]
+      }
+    ],
+    "inflearnId": 339538,
+    "dashboardUrl": "https://demo-sub.inflearn.com/course/docker-essentials-%EA%B0%90/dashboard?cid=339538"
   }
 };
