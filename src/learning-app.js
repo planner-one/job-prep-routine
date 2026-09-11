@@ -1,13 +1,13 @@
-import { setupLearningSync } from './learning-sync.js?v=14';
-import { setupLearningTransfer } from './learning-transfer.js?v=14';
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=14';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=14';
+import { setupLearningSync } from './learning-sync.js?v=15';
+import { setupLearningTransfer } from './learning-transfer.js?v=15';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=15';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=15';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=14';
+} from './learning-core.js?v=15';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];
@@ -18,6 +18,23 @@ function safeLink(value) {
 }
 const dateLabel = (date) => date ? date.slice(5).replace('-', '/') : '';
 const titleFor = (id) => COURSES.find((course) => course.id === id)?.title ?? '이전 학습';
+
+export function learningFormatMarkup(id, detailed = false) {
+  const format = COURSE_CURRICULA[id]?.learningFormat;
+  const focus = { theory: '이론 중심', practice: '실습 중심', mixed: '이론+실습' }[format?.focus] || '구성 미확인';
+  const practice = { yes: '실습 있음', no: '실습 없음', unknown: '실습 미확인' }[format?.practice] || '실습 미확인';
+  const nonCoding = format?.practiceType.includes('비코딩') ? ' · 비코딩' : '';
+  const labels = `<span class="learning-format-label">${focus}</span><span class="learning-practice-label" data-practice="${format?.practice || 'unknown'}">${practice}${nonCoding}</span>`;
+  if (!detailed || !format) return labels;
+  const basis = format.basis === 'official' ? `인프런 공식 분류: ${format.officialLabel}` : '소개·목차를 검토한 분류';
+  const source = safeLink(format.sourceUrl), lesson = safeLink(format.lessonUrl);
+  return `<div class="learning-format-summary">${labels}<span>${escapeHtml(format.practiceType)}</span></div>
+    <details class="learning-format-details"><summary>강의 구성 확인 근거</summary>
+      <p>${escapeHtml(format.summary)}</p>
+      <p>${escapeHtml(basis)} · ${escapeHtml(format.checkedOn)} 확인 · <a href="${escapeHtml(source)}" target="_blank" rel="noreferrer">공식 소개·목차 ↗</a>${lesson ? ` · <a href="${escapeHtml(lesson)}" target="_blank" rel="noreferrer">확인한 수업 ↗</a>` : ''}</p>
+      <p class="learning-hint">직접 구현·도구 조작·설계·말하기 과제를 실습으로 봅니다. 퀴즈나 사례 설명만으로 실습 있음으로 분류하지 않으며, 미확인은 없음과 다릅니다.</p>
+    </details>`;
+}
 
 export function createLearningApp(root, storage, now = () => new Date()) {
   const today = logicalDateString(now());
@@ -83,11 +100,11 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   }
   function rowMarkup(course, rank) {
     const p = courseProgressFor(state, course.id);
-    if (p.deleted) return `<tr data-course-id="${course.id}"><td></td><td colspan="2"><span class="learning-deleted-title">${escapeHtml(course.title)}</span><button type="button" class="learning-restore" data-restore-course="${course.id}" aria-label="${escapeHtml(course.title)} 복원">복원</button></td></tr>`;
+    if (p.deleted) return `<tr data-course-id="${course.id}"><td></td><td colspan="2"><span class="learning-deleted-title">${escapeHtml(course.title)}</span><div class="learning-row-meta">${learningFormatMarkup(course.id)}</div><button type="button" class="learning-restore" data-restore-course="${course.id}" aria-label="${escapeHtml(course.title)} 복원">복원</button></td></tr>`;
     return `<tr data-course-id="${course.id}" class="${p.skipped ? 'is-skipped' : ''} ${state.selectedCourseId === course.id ? 'is-selected' : ''}">
       <td><button type="button" class="learning-drag-handle" data-drag-course="${course.id}" aria-label="${escapeHtml(course.title)}: ${rank}순위, 드래그 또는 위아래 방향키로 이동" title="누른 채 끌어서 이동 · 키보드 ↑ ↓"><span class="learning-priority">${rank}</span><span aria-hidden="true">⠿</span></button></td>
       <td><button type="button" class="learning-course-title" data-open-course="${course.id}" aria-pressed="${state.selectedCourseId === course.id}">${escapeHtml(course.title)}</button>
-        <div class="learning-row-meta"><span>${RECOMMENDATIONS[course.status]}</span><span>${LEARNING_MODE_LABELS[course.mode]}</span><span>${duration(COURSE_CURRICULA[course.id]?.totalSeconds)}</span>${p.enrolled ? '<span class="learning-enrolled">추가 신청</span>' : ''}${p.skipped ? '<span>안 볼 강의</span>' : ''}</div></td><td><label class="learning-pick"><input type="checkbox" data-course-flag="inPlan" ${p.inPlan ? 'checked' : ''} aria-label="${escapeHtml(course.title)}: 이번 2주에 선택"></label></td>
+        <div class="learning-row-meta">${learningFormatMarkup(course.id)}<span>${duration(COURSE_CURRICULA[course.id]?.totalSeconds)}</span>${p.enrolled ? '<span class="learning-enrolled">추가 신청</span>' : ''}${p.skipped ? '<span>안 볼 강의</span>' : ''}</div></td><td><label class="learning-pick"><input type="checkbox" data-course-flag="inPlan" ${p.inPlan ? 'checked' : ''} aria-label="${escapeHtml(course.title)}: 이번 2주에 선택"></label></td>
     </tr>`;
   }
   function renderCourses() {
@@ -174,6 +191,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     const labels = stageLabelsForCourse(course.mode);
     panel.innerHTML = `<div class="learning-detail-heading"><h2>${escapeHtml(course.title)}</h2><button type="button" data-delete-course="${course.id}" title="체크와 기록은 보존하며 삭제한 강의에서 복원할 수 있습니다">삭제</button><button type="button" data-close-detail aria-label="강의 상세 닫기">닫기</button></div>
       <p class="learning-detail-meta">${RECOMMENDATIONS[course.status]} · ${LEARNING_MODE_LABELS[course.mode]}</p>
+      ${learningFormatMarkup(course.id, true)}
       <div class="learning-flags">${[['inPlan', '이번 2주에 선택'], ['enrolled', '추가 신청'], ['skipped', '안 볼 강의']].map(([key, label]) => `<label><input type="checkbox" data-course-flag="${key}" ${p[key] ? 'checked' : ''}>${label}</label>`).join('')}</div>
       <div id="learning-detail-links" class="learning-links"></div>
       ${progressMarkup(course, p)}

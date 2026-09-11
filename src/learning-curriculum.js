@@ -1,6 +1,16 @@
 // 인프런 공개 강의 페이지의 목차·시간. 조회일과 출처는 강의별로 보존합니다.
 export const COURSE_CURRICULA = {
   "20": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "설정·배포",
+      "basis": "official",
+      "summary": "YAML·Pod·Deployment·Service부터 PV/PVC, ArgoCD 배포와 Istio 장애 패턴까지 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/kubernetes-for-toss",
+      "officialLabel": "실습 중심"
+    },
     "title": "금융 인프라를 운영하는 Toss 개발자의 Kubernetes",
     "url": "https://www.inflearn.com/course/kubernetes-for-toss",
     "checkedOn": "2026-09-06",
@@ -251,6 +261,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "36": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "설정·배포",
+      "basis": "review",
+      "summary": "Spring 서버를 Docker·Kubernetes·AWS EKS에 배포하고 CI/CD·오토스케일·ArgoCD·모니터링을 구성합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/eks-%EB%8D%B0%EB%B8%8C%EC%98%B5%EC%8A%A4%EC%A0%84%EB%B0%98"
+    },
     "title": "eks를 활용한 spring 운영서버 배포(feat. devops의 모든것)",
     "url": "https://www.inflearn.com/course/eks-%EB%8D%B0%EB%B8%8C%EC%98%B5%EC%8A%A4%EC%A0%84%EB%B0%98",
     "checkedOn": "2026-09-06",
@@ -591,6 +610,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "41": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "yes",
+      "practiceType": "일부 도구 실습",
+      "basis": "review",
+      "summary": "마케팅 개념·지표 설명이 중심이며 Google Analytics 데모 계정으로 리포트를 조작하는 실습이 있습니다. 현재 GA4와 다른 구버전 화면을 사용합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/3%EC%8B%9C%EA%B0%84%EC%97%90-%EB%81%9D%EB%82%B4%EB%8A%94-%EB%94%94%EC%A7%80%ED%84%B8%EB%A7%88%EC%BC%80%ED%8C%85-%EB%AA%A8%EB%93%A0%EA%B2%83",
+      "lessonUrl": "https://www.inflearn.com/courses/lecture?courseId=325403&unitId=43980"
+    },
     "title": "3시간에 끝내는 디지털 마케팅의 모든 것",
     "url": "https://www.inflearn.com/course/3%EC%8B%9C%EA%B0%84%EC%97%90-%EB%81%9D%EB%82%B4%EB%8A%94-%EB%94%94%EC%A7%80%ED%84%B8%EB%A7%88%EC%BC%80%ED%8C%85-%EB%AA%A8%EB%93%A0%EA%B2%83",
     "checkedOn": "2026-09-06",
@@ -739,6 +768,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "16": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "설정·운영",
+      "basis": "official",
+      "summary": "NGINX 설정과 Reverse Proxy를 직접 구성하며 WebSocket 통신, HTTPS·HTTP/2와 운영 패턴을 확인합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/nginx-used-to-proces",
+      "officialLabel": "실습 중심"
+    },
     "title": "네이버 면접관이 알려주는 1,000,000++ TPS를 위한 NGINX",
     "url": "https://www.inflearn.com/course/nginx-used-to-proces",
     "checkedOn": "2026-09-06",
@@ -899,6 +938,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "6": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "결제 연동과 결제 내역 집계 프로젝트를 바탕으로 예외 처리와 집계 성능 개선을 진행합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%B0%B1%EC%97%94%EB%93%9C-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4-%EC%8B%A4%EB%AC%B4%EC%9D%B4%EB%A0%A5%EA%B0%95%ED%99%94-%EC%98%AC%EC%9D%B8%EC%9B%90-part1",
+      "officialLabel": "실습 중심"
+    },
     "title": "[백엔드/예외처리 시나리오/집계 최적화] 백엔드 포트폴리오와 실무 이력 강화 전략. 올인원 PART1",
     "url": "https://www.inflearn.com/course/%EB%B0%B1%EC%97%94%EB%93%9C-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4-%EC%8B%A4%EB%AC%B4%EC%9D%B4%EB%A0%A5%EA%B0%95%ED%99%94-%EC%98%AC%EC%9D%B8%EC%9B%90-part1",
     "checkedOn": "2026-09-06",
@@ -1083,6 +1132,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "7": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "코딩·배포",
+      "basis": "official",
+      "summary": "MSA 패턴을 설명하고 REST·gRPC·CQRS·분산 트랜잭션 등 30개 예제를 구현하며 배포까지 다룹니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%A7%88%EC%9D%B4%ED%81%AC%EB%A1%9C%EC%84%9C%EB%B9%84%EC%8A%A4-%EB%94%94%EC%9E%90%EC%9D%B8%ED%8C%A8%ED%84%B4-msa",
+      "officialLabel": "이론 실습 모두"
+    },
     "title": "마이크로서비스 디자인 패턴 완벽 가이드",
     "url": "https://www.inflearn.com/course/%EB%A7%88%EC%9D%B4%ED%81%AC%EB%A1%9C%EC%84%9C%EB%B9%84%EC%8A%A4-%EB%94%94%EC%9E%90%EC%9D%B8%ED%8C%A8%ED%84%B4-msa",
     "checkedOn": "2026-09-06",
@@ -2017,6 +2076,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "extra-mysql": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "SQL 튜닝",
+      "basis": "official",
+      "summary": "인덱스와 실행 계획을 배우고 여러 실제 쿼리의 성능을 측정·개선합니다. 소개에서 17개 실습 예제를 안내합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%B9%84%EC%A0%84%EA%B3%B5%EC%9E%90-mysql-%EC%84%B1%EB%8A%A5%EC%B5%9C%EC%A0%95%ED%99%95-sql%ED%8A%9C%EB%8B%9D",
+      "officialLabel": "이론 실습 모두"
+    },
     "title": "비전공자도 이해할 수 있는 MySQL 성능 최적화 입문/실전 (SQL 튜닝편)",
     "url": "https://www.inflearn.com/course/%EB%B9%84%EC%A0%84%EA%B3%B5%EC%9E%90-mysql-%EC%84%B1%EB%8A%A5%EC%B5%9C%EC%A0%95%ED%99%95-sql%ED%8A%9C%EB%8B%9D",
     "checkedOn": "2026-09-06",
@@ -2339,6 +2408,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "17": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "review",
+      "summary": "GraphQL 개념 이후 Apollo·Prisma 기반 블로그 CRUD를 만들고 고급 패턴과 단위·통합 테스트를 다룹니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/graphql-for-document"
+    },
     "title": "카카오 면접관이 알려주는 문서기반의 프레임워크 통신 패턴을 위한 GraphQL",
     "url": "https://www.inflearn.com/course/graphql-for-document",
     "checkedOn": "2026-09-06",
@@ -2499,6 +2577,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "40": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩·배포",
+      "basis": "official",
+      "summary": "Tasklet·Chunk를 직접 작성하고 대량 데이터 정산 프로젝트와 Jenkins 연동을 수행합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/spring-batch-%EC%9E%85%EB%AC%B8-3%EC%8B%9C%EA%B0%84",
+      "officialLabel": "실습 중심"
+    },
     "title": "Spring Batch 입문: 3시간 만에 끝내는 대용량 처리의 기초",
     "url": "https://www.inflearn.com/course/spring-batch-%EC%9E%85%EB%AC%B8-3%EC%8B%9C%EA%B0%84",
     "checkedOn": "2026-09-06",
@@ -2875,6 +2963,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "37": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "review",
+      "summary": "Kafka 핵심 이론과 Spring Boot 메시지 송수신·순서 보장·오프셋 실습이 있습니다. Connect·Streams·Avro는 이론만 다룬다고 안내합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/practical-kafka-gett-1"
+    },
     "title": "핵심만 빠르게 끝내는 실전 카프카(kafka)",
     "url": "https://www.inflearn.com/course/practical-kafka-gett-1",
     "checkedOn": "2026-09-06",
@@ -2981,6 +3078,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "21": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 활용 코딩",
+      "basis": "official",
+      "summary": "AI Agent로 주문·결제 예제를 구성하며 보상 트랜잭션·TCC·Saga·Outbox·멱등성을 단계별로 구현하고 실패를 재현합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/distributed-transact-1",
+      "officialLabel": "실습 중심"
+    },
     "title": "코드로 끝내는 분산 트랜잭션 (feat. AI Agent)",
     "url": "https://www.inflearn.com/course/distributed-transact-1",
     "checkedOn": "2026-09-06",
@@ -3321,6 +3428,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "10": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "주문 서비스를 모놀리식에서 MSA로 전환하며 TCC·Saga 보상 로직과 실패 상황을 구현·테스트합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%A3%BC%EB%AC%B8%EC%8B%9C%EC%8A%A4%ED%85%9C%EC%9C%BC%EB%A1%9C-%EC%95%8C%EC%95%84%EB%B3%B4%EB%8A%94-%EB%B6%84%EC%82%B0%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%98",
+      "officialLabel": "실습 중심"
+    },
     "title": "주문시스템으로 알아보는 분산트랜잭션",
     "url": "https://www.inflearn.com/course/%EC%A3%BC%EB%AC%B8%EC%8B%9C%EC%8A%A4%ED%85%9C%EC%9C%BC%EB%A1%9C-%EC%95%8C%EC%95%84%EB%B3%B4%EB%8A%94-%EB%B6%84%EC%82%B0%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%98",
     "checkedOn": "2026-09-06",
@@ -3667,6 +3784,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "26": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "no",
+      "practiceType": "없음",
+      "basis": "review",
+      "summary": "웹 기술의 발전과 요청·응답 구조를 강사가 그려 설명하는 개념 수업입니다. 공개 목차에는 별도 구현·조작 실습이 없습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%AA%A8%EB%93%A0-%EC%9B%B9-%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EB%B4%90%EC%95%BC-%ED%95%A0-%EB%8B%A8-%ED%95%9C-%EC%9E%A5"
+    },
     "title": "모든 웹 개발자가 봐야 할 단 한 장의 지도",
     "url": "https://www.inflearn.com/course/%EB%AA%A8%EB%93%A0-%EC%9B%B9-%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EB%B4%90%EC%95%BC-%ED%95%A0-%EB%8B%A8-%ED%95%9C-%EC%9E%A5",
     "checkedOn": "2026-09-06",
@@ -3743,6 +3869,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "30": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 도구·코딩",
+      "basis": "review",
+      "summary": "Codex 사용법 이후 웹·프로그램 제작과 자동화를 따라 합니다. 복사 가능한 실습 프롬프트와 실무 프로젝트가 포함됩니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/codex-true-education"
+    },
     "title": "코덱스 참교육 - Codex 업무 자동화부터 바이브 코딩까지",
     "url": "https://www.inflearn.com/course/codex-true-education",
     "checkedOn": "2026-09-06",
@@ -4191,6 +4326,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "31": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "코딩·프로젝트 과제",
+      "basis": "official",
+      "summary": "이력서 전략과 함께 k6 부하 테스트·DB 인덱스·락·Redis를 실습하며 자신의 프로젝트에 적용하는 미션을 제공합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/6%EC%A3%BC%EC%99%84%EC%84%B1-%EB%B0%B1%EC%97%94%EB%93%9C-%EC%9D%B4%EB%A0%A5%EC%84%9C-%EB%8F%8B%EB%B3%B4%EC%9D%B4%EB%8A%94%EB%B2%95",
+      "officialLabel": "이론 실습 모두"
+    },
     "title": "6주 완성! 백엔드 이력서 차별화 전략 4가지 - 똑같은 이력서 속에서 돋보이는 법",
     "url": "https://www.inflearn.com/course/6%EC%A3%BC%EC%99%84%EC%84%B1-%EB%B0%B1%EC%97%94%EB%93%9C-%EC%9D%B4%EB%A0%A5%EC%84%9C-%EB%8F%8B%EB%B3%B4%EC%9D%B4%EB%8A%94%EB%B2%95",
     "checkedOn": "2026-09-06",
@@ -4753,6 +4898,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "27": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "yes",
+      "practiceType": "일부 AWS 설정",
+      "basis": "review",
+      "summary": "네트워크 원리 설명이 중심이며 Route 53·VPC 설정 예시가 포함됩니다. Gateway Endpoint 생성 절차와 CLI 확인 방법을 수업 내용에서 확인했습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/aws%EB%A1%9C-%EB%B0%B0%EC%9A%B0%EB%8A%94-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%9D%B4%EB%A1%A0%EB%B6%80%ED%84%B0-%EC%8B%A4",
+      "lessonUrl": "https://www.inflearn.com/courses/lecture?courseId=341114&unitId=418990"
+    },
     "title": "AWS로 배우는 네트워크: 이론부터 실무까지",
     "url": "https://www.inflearn.com/course/aws%EB%A1%9C-%EB%B0%B0%EC%9A%B0%EB%8A%94-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%9D%B4%EB%A1%A0%EB%B6%80%ED%84%B0-%EC%8B%A4",
     "checkedOn": "2026-09-06",
@@ -5177,6 +5332,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "1": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "모놀리식 서버를 MSA로 전환하고 Gateway·Eureka·Config Server와 서비스 간 통신을 직접 구성합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/spring-cloud-%EA%B8%B0%EC%B4%88-msa",
+      "officialLabel": "이론 실습 모두"
+    },
     "title": "빠르게 배우는 Spring Cloud 기초(MSA)",
     "url": "https://www.inflearn.com/course/spring-cloud-%EA%B8%B0%EC%B4%88-msa",
     "checkedOn": "2026-09-06",
@@ -5331,6 +5496,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "11": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코드 분석·수정",
+      "basis": "review",
+      "summary": "커머스 레거시 프로젝트에서 요구사항을 분석하고 AI로 코드를 정리·확장하는 과정을 따라갑니다. 학습용 프로젝트를 제공합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%A0%9C%EB%AF%B8%EB%8B%88%EC%9D%98-%EA%B0%9C%EB%B0%9C%EC%8B%A4%EB%AC%B4-%EB%B0%B1%EC%97%94%EB%93%9C%EB%A0%88%EA%B1%B0%EC%8B%9C-ai%ED%99%9C%EC%9A%A9"
+    },
     "title": "제미니의 개발실무 - 커머스 백엔드 레거시와 AI 활용편",
     "url": "https://www.inflearn.com/course/%EC%A0%9C%EB%AF%B8%EB%8B%88%EC%9D%98-%EA%B0%9C%EB%B0%9C%EC%8B%A4%EB%AC%B4-%EB%B0%B1%EC%97%94%EB%93%9C%EB%A0%88%EA%B1%B0%EC%8B%9C-ai%ED%99%9C%EC%9A%A9",
     "checkedOn": "2026-09-06",
@@ -5689,6 +5863,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "46": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "설정·운영",
+      "basis": "official",
+      "summary": "Docker로 Grafana·Tempo·OpenTelemetry와 예제 서버를 구성하고 분산 추적 데이터 수집·조회·분석을 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EC%95%8C%EB%A0%A4%EC%A3%BC%EB%8A%94-%EC%88%98%EB%B0%B1%EA%B0%9C%EC%9D%98-m",
+      "officialLabel": "실습 중심"
+    },
     "title": "카카오 면접관이 알려주는 수백개의 MSA 서비스 아키텍처에서의 분산 추적 시스템",
     "url": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EC%95%8C%EB%A0%A4%EC%A3%BC%EB%8A%94-%EC%88%98%EB%B0%B1%EA%B0%9C%EC%9D%98-m",
     "checkedOn": "2026-09-06",
@@ -5885,6 +6069,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "2": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "review",
+      "summary": "캐시 문제를 설명한 뒤 Redis 환경을 구성하고 Bloom Filter·Jitter·Rate Limit 등 해결 전략을 코드로 구현·테스트합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/spring-boot-hands-on"
+    },
     "title": "스프링부트로 직접 만들면서 배우는 대규모 시스템 설계 - 캐시 전략",
     "url": "https://www.inflearn.com/course/spring-boot-hands-on",
     "checkedOn": "2026-09-06",
@@ -6231,6 +6424,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "28": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 도구 활용",
+      "basis": "official",
+      "summary": "Sidabari 자동화 도구의 제작 과정과 실제 프롬프트·대화 기록을 따라가며 Claude Code 활용과 내부 동작을 학습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/solo-developer-autom",
+      "officialLabel": "실습 중심"
+    },
     "title": "Claude Code로 만드는 1인 개발자 자동화 시스템 - Sidabari 프로젝트",
     "url": "https://www.inflearn.com/course/solo-developer-autom",
     "checkedOn": "2026-09-06",
@@ -6367,6 +6570,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "12": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩·환경 구성",
+      "basis": "official",
+      "summary": "Docker 환경에 Kafka·Debezium·Temporal을 연결하고 Kotlin·Spring Boot로 이벤트 처리와 워크플로우를 구현·테스트합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%99%80-%ED%95%A8%EA%BB%98%ED%95%98%EB%8A%94-%EC%9B%8C%ED%81%AC%ED%94%8C%EB%A1%9C%EC%9A%B0",
+      "officialLabel": "실습 중심"
+    },
     "title": "카카오 면접관과 함께하는 워크플로우 기반의 대용량 트래픽 처리 기법",
     "url": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%99%80-%ED%95%A8%EA%BB%98%ED%95%98%EB%8A%94-%EC%9B%8C%ED%81%AC%ED%94%8C%EB%A1%9C%EC%9A%B0",
     "checkedOn": "2026-09-06",
@@ -6617,6 +6830,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "45": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "Spring Boot·Docker·Kafka로 3개 서비스를 구성해 Saga의 Orchestration·Choreography와 보상 처리를 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/distributed-transact",
+      "officialLabel": "실습 중심"
+    },
     "title": "카카오 면접관이 알려주는 MSA 관점에서의 분산 트랜잭션 패턴",
     "url": "https://www.inflearn.com/course/distributed-transact",
     "checkedOn": "2026-09-06",
@@ -6839,6 +7062,16 @@ export const COURSE_CURRICULA = {
     "dashboardUrl": "https://demo-sub.inflearn.com/course/카카오-면접관개발자이-알려주는-msa/dashboard?cid=339298"
   },
   "32": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 코딩·배포",
+      "basis": "official",
+      "summary": "MCP 도구 연동, Terraform 인프라, E2E 테스트와 실제 서비스 제작 프로젝트로 AI 개발 흐름을 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/the-10x-ai-native-de",
+      "officialLabel": "실습 중심"
+    },
     "title": "The 10x AI-Native Developer: 회사에서 AI로 압도적 성과를 내는 법",
     "url": "https://www.inflearn.com/course/the-10x-ai-native-de",
     "checkedOn": "2026-09-06",
@@ -7191,6 +7424,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "24": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "review",
+      "summary": "Spring Boot 마이크로서비스를 직접 구성하며 조회·쓰기 API, 트랜잭션, 메시징과 JWT 인증을 구현합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%B9%84%EC%A0%84%EA%B3%B5%EC%9E%90%EB%8F%84-%EC%9D%B4%ED%95%B4%ED%95%A0-%EC%88%98-%EC%9E%88%EB%8A%94-msa-%EC%9E%85"
+    },
     "title": "비전공자도 이해할 수 있는 MSA 입문/실전 (feat. Spring Boot)",
     "url": "https://www.inflearn.com/course/%EB%B9%84%EC%A0%84%EA%B3%B5%EC%9E%90%EB%8F%84-%EC%9D%B4%ED%95%B4%ED%95%A0-%EC%88%98-%EC%9E%88%EB%8A%94-msa-%EC%9E%85",
     "checkedOn": "2026-09-06",
@@ -7747,6 +7989,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "25": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 코딩·배포",
+      "basis": "review",
+      "summary": "AI로 3-Tier 웹 서비스를 개발하고 AWS S3·RDS·EC2·Amplify에 배포합니다. 구현에 필요한 원리 설명도 포함합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%9C%A0%ED%96%89-%EB%A7%90%EA%B3%A0-%EB%82%B4%EA%B3%B5-30%EB%85%84%EC%B0%A8-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%9D%98-%EC%8B%A4"
+    },
     "title": "유행 말고 내공. 30년차 개발자의 실전 바이브 코딩",
     "url": "https://www.inflearn.com/course/%EC%9C%A0%ED%96%89-%EB%A7%90%EA%B3%A0-%EB%82%B4%EA%B3%B5-30%EB%85%84%EC%B0%A8-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%9D%98-%EC%8B%A4",
     "checkedOn": "2026-09-06",
@@ -8255,6 +8506,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "extra-spring-db2": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "코딩·테스트",
+      "basis": "review",
+      "summary": "예제 프로젝트를 JdbcTemplate·MyBatis·JPA·Querydsl로 구현하며 DB 테스트와 트랜잭션 전파를 코드로 확인합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%8A%A4%ED%94%84%EB%A7%81-db-2"
+    },
     "title": "스프링 DB 2편 - 데이터 접근 활용 기술",
     "url": "https://www.inflearn.com/course/%EC%8A%A4%ED%94%84%EB%A7%81-db-2",
     "checkedOn": "2026-09-06",
@@ -8937,6 +9197,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "33": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "JDBC 코드를 직접 다룬 뒤 JPA·연관관계·QueryDSL로 확장하며 영속성과 조회 성능을 프로젝트에서 경험합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/lv2-jpa-mastery-for",
+      "officialLabel": "실습 중심"
+    },
     "title": "[Lv2] 현업 개발자의 JPA 완전 정복 - 영속성 컨텍스트부터 실무 패턴까지",
     "url": "https://www.inflearn.com/course/lv2-jpa-mastery-for",
     "checkedOn": "2026-09-06",
@@ -9229,6 +9499,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "44": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 코딩",
+      "basis": "review",
+      "summary": "AI에 지시해 주식 프로그램의 기능과 전략을 구현합니다. 실습용 코드·프롬프트를 제공하며 개발 과정을 따라갑니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/stock-vibe-coding-ev"
+    },
     "title": "컴맹도 따라하는 주식 바이브코딩 - AI로 만드는 주식 자동매매 시스템",
     "url": "https://www.inflearn.com/course/stock-vibe-coding-ev",
     "checkedOn": "2026-09-06",
@@ -9659,6 +9938,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "13": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩·환경 구성",
+      "basis": "official",
+      "summary": "Python·Docker로 Airflow 환경을 구성하고 DAG 의존 관계, TaskGroup, Custom Operator와 분산 배치를 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%ED%86%A0%EC%8A%A4-%EC%8B%9C%EB%8B%88%EC%96%B4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%99%80-%ED%95%A8%EA%BB%98%ED%95%98%EB%8A%94-dat",
+      "officialLabel": "실습 중심"
+    },
     "title": "토스 개발자와 함께하는 Data Workflow Management 기반의 대용량 데이터 처리 설계 패턴",
     "url": "https://www.inflearn.com/course/%ED%86%A0%EC%8A%A4-%EC%8B%9C%EB%8B%88%EC%96%B4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%99%80-%ED%95%A8%EA%BB%98%ED%95%98%EB%8A%94-dat",
     "checkedOn": "2026-09-06",
@@ -9921,6 +10210,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "29": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "AI 코딩·배포",
+      "basis": "review",
+      "summary": "Claude Code로 통합 자산관리 서비스를 개발하며 DB·스토리지·QA 자동화와 운영 과정을 진행합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/one-click-with-claud"
+    },
     "title": "클로드로 딸깍! 루프 엔지니어링으로 통합 자산관리 시스템 개발하기",
     "url": "https://www.inflearn.com/course/one-click-with-claud",
     "checkedOn": "2026-09-06",
@@ -10057,6 +10355,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "3": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "no",
+      "practiceType": "없음",
+      "basis": "review",
+      "summary": "소개에서 코딩 수업이 아닌 이론 수업이라고 명시합니다. 시스템 설계 원리·트레이드오프 설명과 퀴즈로 구성됩니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EA%B0%9C%EB%B0%9C%EC%9E%90%EB%9D%BC%EB%A9%B4-%EA%BC%AD-%EC%95%8C%EC%95%84%EC%95%BC%ED%95%A0-%EC%8B%9C%EC%8A%A4%ED%85%9C%EB%94%94%EC%9E%90%EC%9D%B8"
+    },
     "title": "개발자라면 꼭 알아야할 시스템디자인 완벽가이드",
     "url": "https://www.inflearn.com/course/%EA%B0%9C%EB%B0%9C%EC%9E%90%EB%9D%BC%EB%A9%B4-%EA%BC%AD-%EC%95%8C%EC%95%84%EC%95%BC%ED%95%A0-%EC%8B%9C%EC%8A%A4%ED%85%9C%EB%94%94%EC%9E%90%EC%9D%B8",
     "checkedOn": "2026-09-06",
@@ -10403,6 +10710,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "34": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "unknown",
+      "practiceType": "취업 전략",
+      "basis": "review",
+      "summary": "JD 분석·포트폴리오 구성·면접 전략을 설명합니다. 별도 실습 과제는 확인되지 않았으며, 소개의 신청형 커피챗은 영상 실습과 구분합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/job-bomber-private-s"
+    },
     "title": "[취업폭격기] 사기업 IT취업 치트키 : 서류·포트폴리오·커리어까지 한 번에 뚫는 정규과정",
     "url": "https://www.inflearn.com/course/job-bomber-private-s",
     "checkedOn": "2026-09-06",
@@ -10551,6 +10867,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "8": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "unknown",
+      "practiceType": "취업 전략",
+      "basis": "review",
+      "summary": "경험 정리·기관 분석·서류 작성과 면접 준비 방법을 설명합니다. 별도로 수행하는 실습·제출 과제는 소개와 목차만으로 확정하기 어렵습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B7%A8%EC%97%85%ED%8F%AD%EA%B2%A9%EA%B8%B0-%EC%A0%84%EC%82%B0%EC%A7%81-%EC%B7%A8%EC%97%85%EC%A4%80%EB%B9%84"
+    },
     "title": "[취업폭격기] 공공기관 전산직 취업 치트키 : NCS·전공·PT면접까지 한 번에 뚫는 정규과정",
     "url": "https://www.inflearn.com/course/%EC%B7%A8%EC%97%85%ED%8F%AD%EA%B2%A9%EA%B8%B0-%EC%A0%84%EC%82%B0%EC%A7%81-%EC%B7%A8%EC%97%85%EC%A4%80%EB%B9%84",
     "checkedOn": "2026-09-06",
@@ -10795,6 +11120,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "22": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩·테스트",
+      "basis": "official",
+      "summary": "공유 변수·DB·분산 환경에서 경쟁 상태를 재현하고 낙관적·비관적·분산 락으로 해결하는 실습입니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EA%B0%80%EC%9E%A5-%EC%89%AC%EC%9A%B4-%EB%8F%99%EC%8B%9C%EC%84%B1-%EB%AC%B8%EC%A0%9C-race-co",
+      "officialLabel": "실습 중심"
+    },
     "title": "가장 쉬운 동시성 문제 - Race Condition",
     "url": "https://www.inflearn.com/course/%EA%B0%80%EC%9E%A5-%EC%89%AC%EC%9A%B4-%EB%8F%99%EC%8B%9C%EC%84%B1-%EB%AC%B8%EC%A0%9C-race-co",
     "checkedOn": "2026-09-06",
@@ -11009,6 +11344,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "extra-java": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "yes",
+      "practiceType": "면접 훈련·비코딩",
+      "basis": "review",
+      "summary": "자바·객체지향 원리를 도해와 코드 예시로 설명합니다. 실전 훈련·면접 워크북·인터뷰 연습이 있으며 별도 코딩 프로젝트와는 구분합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/java-and-object-orie"
+    },
     "title": "[CS 기술면접 6] 말이 트이는 자바와 객체지향",
     "url": "https://www.inflearn.com/course/java-and-object-orie",
     "checkedOn": "2026-09-06",
@@ -11343,6 +11687,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "18": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "Spring Batch의 기본 구조를 배우고 Tasklet·Chunk 처리, Skip·Retry, 병렬 처리 패턴을 직접 구현합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/kakao-interviewers-p",
+      "officialLabel": "실습 중심"
+    },
     "title": "카카오 면접관의 실무 밀착형 Spring Batch: 대용량 데이터 처리의 모든 것",
     "url": "https://www.inflearn.com/course/kakao-interviewers-p",
     "checkedOn": "2026-09-06",
@@ -11563,6 +11917,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "extra-load-test": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "성능 측정·설정",
+      "basis": "review",
+      "summary": "AWS에 API·DB·부하 발생기를 구성하고 k6로 병목을 진단한 뒤 DB와 애플리케이션 성능을 개선합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%8C%80%EA%B7%9C%EB%AA%A8%ED%8A%B8%EB%9E%98%ED%94%BD-%EB%B6%80%ED%95%98%ED%85%8C%EC%8A%A4%ED%8A%B8-%EC%9E%85%EB%AC%B8-%EC%8B%A4%EC%A0%84"
+    },
     "title": "대규모 트래픽 처리를 위한 부하테스트 입문/실전",
     "url": "https://www.inflearn.com/course/%EB%8C%80%EA%B7%9C%EB%AA%A8%ED%8A%B8%EB%9E%98%ED%94%BD-%EB%B6%80%ED%95%98%ED%85%8C%EC%8A%A4%ED%8A%B8-%EC%9E%85%EB%AC%B8-%EC%8B%A4%EC%A0%84",
     "checkedOn": "2026-09-06",
@@ -11891,6 +12254,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "38": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "말하기·비코딩",
+      "basis": "review",
+      "summary": "호흡·발음·원고 낭독을 반복 훈련하고 3분 스피치와 1분 자기소개를 직접 작성·발표하는 과제가 있습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/쉽게-배우는-기초스피치"
+    },
     "title": "[기초스피치] 14년차 아나운서에게 배우는 말 잘하는 방법!",
     "url": "https://www.inflearn.com/course/쉽게-배우는-기초스피치",
     "checkedOn": "2026-09-06",
@@ -12513,6 +12885,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "4": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "도구·코딩",
+      "basis": "review",
+      "summary": "Kafka Connect의 내부 원리를 설명하고 JDBC·Debezium 커넥터, CDC 데이터 연동과 운영 설정을 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B9%B4%ED%94%84%EC%B9%B4-%EC%99%84%EB%B2%BD%EA%B0%80%EC%9D%B4%EB%93%9C-%EC%BB%A4%EB%84%A5%ED%8A%B8"
+    },
     "title": "카프카 완벽 가이드 - 커넥트(Connect) 편",
     "url": "https://www.inflearn.com/course/%EC%B9%B4%ED%94%84%EC%B9%B4-%EC%99%84%EB%B2%BD%EA%B0%80%EC%9D%B4%EB%93%9C-%EC%BB%A4%EB%84%A5%ED%8A%B8",
     "checkedOn": "2026-09-06",
@@ -13543,6 +13924,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "extra-system-design": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "yes",
+      "practiceType": "설계 과제·비코딩",
+      "basis": "review",
+      "summary": "소개에서 기술 설치·코드 구현 실습은 다루지 않는다고 명시합니다. 대신 프로젝트 목표·문제 설정과 아키텍처 그림 작성 미션이 있습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%8B%9C%EC%8A%A4%ED%85%9C-%EB%94%94%EC%9E%90%EC%9D%B8-%EC%B2%AB%EA%B1%B8%EC%9D%8C"
+    },
     "title": "시스템 디자인 첫걸음: 면접에서 돋보이는 백엔드 아키텍처 설계하기",
     "url": "https://www.inflearn.com/course/%EC%8B%9C%EC%8A%A4%ED%85%9C-%EB%94%94%EC%9E%90%EC%9D%B8-%EC%B2%AB%EA%B1%B8%EC%9D%8C",
     "checkedOn": "2026-09-06",
@@ -13733,6 +14123,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "14": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "Go와 Protocol Buffers로 전자상거래·메신저 예제를 만들며 gRPC 서버·클라이언트와 스트리밍 통신을 확인합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%ED%86%A0%EC%8A%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EC%95%8C%EB%A0%A4%EC%A3%BC%EB%8A%94-%EC%88%98%EB%B0%B1%EA%B0%9C",
+      "officialLabel": "실습 중심"
+    },
     "title": "카카오, 토스 개발자가 알려주는 수백개의 MSA 환경에서의 성능 보장을 위한 RPC 처리 기법",
     "url": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%ED%86%A0%EC%8A%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EC%95%8C%EB%A0%A4%EC%A3%BC%EB%8A%94-%EC%88%98%EB%B0%B1%EA%B0%9C",
     "checkedOn": "2026-09-06",
@@ -13959,6 +14359,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "43": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "소개에서 최소 이론 뒤 바로 코드를 작성한다고 명시합니다. Go로 지갑·체인·트랜잭션 모듈을 만들고 테스트합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EB%94%B0%EB%9D%BC%ED%95%98%EB%A9%B4%EC%84%9C-%EB%A7%8C%EB%93%9C%EB%8A%94-%EB%B8%94%EB%A1%9D%EC%B2%B4%EC%9D%B8-%EC%BD%94%EC%96%B4-golang",
+      "officialLabel": "실습 중심"
+    },
     "title": "블록체인 채굴 모듈 만들어보기",
     "url": "https://www.inflearn.com/course/%EB%94%B0%EB%9D%BC%ED%95%98%EB%A9%B4%EC%84%9C-%EB%A7%8C%EB%93%9C%EB%8A%94-%EB%B8%94%EB%A1%9D%EC%B2%B4%EC%9D%B8-%EC%BD%94%EC%96%B4-golang",
     "checkedOn": "2026-09-06",
@@ -14257,6 +14667,17 @@ export const COURSE_CURRICULA = {
     ]
   },
   "42": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "SEO 도구",
+      "basis": "official",
+      "summary": "공식 분류는 실습 중심입니다. 실제 사이트를 SEO 분석 도구로 크롤링하고 메타 태그·사이트맵·트래픽을 점검하는 시연을 확인했습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EA%B4%91%EA%B3%A0%EB%B9%84-0%EC%9B%90-%EA%B2%80%EC%83%89-%EC%9C%A0%EC%9E%85%EB%A7%8C%EC%9C%BC%EB%A1%9C-%EC%89%BD%EA%B2%8C-%EB%8F%88",
+      "officialLabel": "실습 중심",
+      "lessonUrl": "https://www.inflearn.com/courses/lecture?courseId=339564&unitId=365024"
+    },
     "title": "광고비 0원, 검색 유입만으로 쉽게 돈 벌자! AI 시대 맞춤 SEO",
     "url": "https://www.inflearn.com/course/%EA%B4%91%EA%B3%A0%EB%B9%84-0%EC%9B%90-%EA%B2%80%EC%83%89-%EC%9C%A0%EC%9E%85%EB%A7%8C%EC%9C%BC%EB%A1%9C-%EC%89%BD%EA%B2%8C-%EB%8F%88",
     "checkedOn": "2026-09-06",
@@ -14333,6 +14754,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "15": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코드 분석·테스트",
+      "basis": "official",
+      "summary": "아키텍처와 분산 환경 개념에 더해 Modular Monolith·Clean·Hexagonal 구조를 살펴보고 단위·통합·계약 테스트를 실습합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EB%A9%B4%EC%A0%91%EA%B4%80%EA%B0%80-%EC%95%8C%EB%A0%A4%EC%A3%BC%EB%8A%94-%EB%B0%98%EB%93%9C%EC%8B%9C",
+      "officialLabel": "실습 중심"
+    },
     "title": "카카오 면접관이 알려주는 반드시 알아야하는 Distributed Environment",
     "url": "https://www.inflearn.com/course/%EC%B9%B4%EC%B9%B4%EC%98%A4-%EA%B0%9C%EB%B0%9C%EC%9E%90%EB%A9%B4%EC%A0%91%EA%B4%80%EA%B0%80-%EC%95%8C%EB%A0%A4%EC%A3%BC%EB%8A%94-%EB%B0%98%EB%93%9C%EC%8B%9C",
     "checkedOn": "2026-09-06",
@@ -14591,6 +15022,15 @@ export const COURSE_CURRICULA = {
     "dashboardUrl": "https://demo-sub.inflearn.com/course/카카오-개발자면접관가-알려주는-반드시/dashboard?cid=340020"
   },
   "5": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩·CLI",
+      "basis": "review",
+      "summary": "소개에서 이론 30%·실습 70%로 안내합니다. CLI 조작과 Java Producer·Consumer 애플리케이션을 라이브 코딩합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%B9%B4%ED%94%84%EC%B9%B4-%EC%99%84%EB%B2%BD%EA%B0%80%EC%9D%B4%EB%93%9C-%EC%BD%94%EC%96%B4"
+    },
     "title": "카프카 완벽 가이드 - 코어편",
     "url": "https://www.inflearn.com/course/%EC%B9%B4%ED%94%84%EC%B9%B4-%EC%99%84%EB%B2%BD%EA%B0%80%EC%9D%B4%EB%93%9C-%EC%BD%94%EC%96%B4",
     "checkedOn": "2026-09-06",
@@ -15657,6 +16097,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "39": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "no",
+      "practiceType": "전자책·사례 학습",
+      "basis": "review",
+      "summary": "뉴스·공시를 해석하는 PDF 가이드북과 사례 학습입니다. 공개 구성에는 별도 도구 실습이나 제작 과제가 없습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%A3%BC%EC%8B%9D%ED%88%AC%EC%9E%90-%EB%89%B4%EC%8A%A4-%EC%9E%AC%EB%A3%8C-%EA%B0%80%EC%9D%B4%EB%93%9C%EB%B6%81"
+    },
     "title": "주식투자 뉴스, 공시 등 재료를 공부하실 수 있는 가이드북을 드립니다.",
     "url": "https://www.inflearn.com/course/%EC%A3%BC%EC%8B%9D%ED%88%AC%EC%9E%90-%EB%89%B4%EC%8A%A4-%EC%9E%AC%EB%A3%8C-%EA%B0%80%EC%9D%B4%EB%93%9C%EB%B6%81",
     "checkedOn": "2026-09-06",
@@ -15853,6 +16302,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "19": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "CLI·설정",
+      "basis": "official",
+      "summary": "Docker 이미지와 컨테이너를 직접 조작하며 볼륨·네트워크·Compose와 프로젝트 배포를 익힙니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/docker-for-toss-deve",
+      "officialLabel": "실습 중심"
+    },
     "title": "금융 인프라를 운영하는 Toss 개발자의 Docker",
     "url": "https://www.inflearn.com/course/docker-for-toss-deve",
     "checkedOn": "2026-09-06",
@@ -16067,6 +16526,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "23": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩·검색 설정",
+      "basis": "review",
+      "summary": "Elasticsearch CRUD와 분석기·검색 기능을 직접 확인하고 상품 검색 프로젝트 및 Elastic Cloud 연결을 진행합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/%EC%8B%A4%EC%A0%84-elasticsearch-%EC%9E%85%EB%AC%B8"
+    },
     "title": "실전에서 바로 써먹는 Elasticsearch 입문 (검색 최적화편)",
     "url": "https://www.inflearn.com/course/%EC%8B%A4%EC%A0%84-elasticsearch-%EC%9E%85%EB%AC%B8",
     "checkedOn": "2026-09-06",
@@ -16629,6 +17097,15 @@ export const COURSE_CURRICULA = {
     ]
   },
   "9": {
+    "learningFormat": {
+      "focus": "mixed",
+      "practice": "yes",
+      "practiceType": "설계·코딩 과제",
+      "basis": "review",
+      "summary": "SOLID·클린 아키텍처 원칙을 배우고 프로젝트 계획과 최종 적용 과제를 수행합니다. 실습 소스와 AI 프롬프트를 제공합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/4%EC%A3%BC-%EC%99%84%EC%84%B1-%ED%81%B4%EB%A6%B0-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98-with-a"
+    },
     "title": "[4주 완성] 시니어로 도약을 위한 클린 아키텍처 with AI",
     "url": "https://www.inflearn.com/course/4%EC%A3%BC-%EC%99%84%EC%84%B1-%ED%81%B4%EB%A6%B0-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98-with-a",
     "checkedOn": "2026-09-06",
@@ -16759,6 +17236,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "35": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "순수 Java 서버부터 Spring Boot·JPA로 발전시키며 프록시·트랜잭션을 직접 실습하고 User-Todo 프로젝트를 완성합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/lv1-%EB%A9%B4%EC%A0%91%EC%97%90%EC%84%9C-x27%EC%84%A4%EB%AA%85%ED%95%A0-%EC%88%98-%EC%9E%88%EB%8A%94",
+      "officialLabel": "실습 중심"
+    },
     "title": "[Lv1] 면접에서 설명할 수 있는 Spring Boot - 경험으로 답변하는 백엔드 개발",
     "url": "https://www.inflearn.com/course/lv1-%EB%A9%B4%EC%A0%91%EC%97%90%EC%84%9C-x27%EC%84%A4%EB%AA%85%ED%95%A0-%EC%88%98-%EC%9E%88%EB%8A%94",
     "checkedOn": "2026-09-06",
@@ -17075,6 +17562,16 @@ export const COURSE_CURRICULA = {
     ]
   },
   "extra-342699": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "코딩",
+      "basis": "official",
+      "summary": "에이전트를 직접 만든 뒤 Vercel AI SDK로 옮기며 도구·메모리·제어 기능을 붙이고 캡스톤 업무 에이전트를 완성합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/up-to-1500-usd-credi",
+      "officialLabel": "실습 중심"
+    },
     "title": "실리콘 밸리 개발자와 함께하는 실전 AI 에이전트 핵심 원리 및 확장 개발",
     "url": "https://www.inflearn.com/course/up-to-1500-usd-credi",
     "checkedOn": "2026-09-06",
@@ -17399,6 +17896,15 @@ export const COURSE_CURRICULA = {
     "dashboardUrl": "https://demo-sub.inflearn.com/course/up-to-1500-usd-credi/dashboard?cid=342699"
   },
   "extra-340328": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "unknown",
+      "practiceType": "면접 전략",
+      "basis": "review",
+      "summary": "답변 구조와 모의면접 연습 방법을 설명하는 영상입니다. 실제 수강생 수행 실습·과제의 포함 여부는 공개 소개와 목차만으로 확정하기 어렵습니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/the-ultimate-guide-t"
+    },
     "title": "개발자 기술면접 완벽 가이드 : 면접관 100회의 합격 프레임",
     "url": "https://www.inflearn.com/course/the-ultimate-guide-t",
     "checkedOn": "2026-09-06",
@@ -17573,6 +18079,16 @@ export const COURSE_CURRICULA = {
     "dashboardUrl": "https://demo-sub.inflearn.com/course/the-ultimate-guide-t/dashboard?cid=340328"
   },
   "extra-339538": {
+    "learningFormat": {
+      "focus": "practice",
+      "practice": "yes",
+      "practiceType": "CLI·구성 과제",
+      "basis": "official",
+      "summary": "Dockerfile·볼륨·네트워크를 실습하고 웹페이지 수정과 Compose 미니 블로그 스택 구성 과제를 수행합니다.",
+      "checkedOn": "2026-09-11",
+      "sourceUrl": "https://www.inflearn.com/course/docker-essentials-감",
+      "officialLabel": "실습 중심"
+    },
     "title": "Docker Essentials - 감 잡히는 컨테이너 & 도커",
     "url": "https://www.inflearn.com/course/docker-essentials-감",
     "checkedOn": "2026-09-11",

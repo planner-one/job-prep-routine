@@ -1,11 +1,11 @@
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=14';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=15';
 import {
   COURSES,
   LEARNING_SPRINT_END,
   LEARNING_SPRINT_START,
   ROUTINE_STEPS,
   SPRINT_DAYS,
-} from './learning-data.js?v=14';
+} from './learning-data.js?v=15';
 import { localDateString, parseLocalDateKey } from './routine-core.js';
 
 export const LEARNING_STORAGE_KEY = 'job-prep-routine:learning-sprint.v1';

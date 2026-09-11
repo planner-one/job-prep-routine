@@ -105,7 +105,15 @@ body.learning-body { background: #f3f4f6; color: #343944; }
 .learning-table .is-selected { background: #e9eef6; }
 .learning-table .is-skipped .learning-course-title { text-decoration: line-through; color: #939ba8; }
 .learning-row-meta { display: flex; flex-wrap: wrap; gap: 2px 6px; font-size: 10px; color: #9299a4; margin-top: 4px; }
-.learning-row-meta > span:nth-child(2) { display: none; }
+.learning-format-label { color: #455979; font-weight: 600; white-space: nowrap; }
+.learning-practice-label { color: #667085; white-space: nowrap; }
+.learning-practice-label[data-practice="yes"] { color: #246452; }
+.learning-practice-label[data-practice="unknown"] { color: #855d20; }
+.learning-format-summary { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: #667085; }
+.learning-format-details { margin: 8px 0 16px; font-size: 12px; line-height: 1.7; color: #667085; }
+.learning-format-details summary { cursor: pointer; width: fit-content; padding: 4px 0; }
+.learning-format-details p { margin: 6px 0; overflow-wrap: anywhere; }
+.learning-format-details a { color: #455979; text-decoration: underline; text-underline-offset: 3px; }
 .learning-enrolled { color: #957137; }
 .learning-content { overflow-y: auto; min-height: 0; min-width: 0; padding: 0 0 34px; scrollbar-width: thin; scrollbar-color: #d0d6df transparent; }
 .learning-document-bar { display: flex; align-items: center; gap: 18px; max-width: 840px; min-height: 38px; margin: 0 auto 10px; font-size: 11px; color: #9299a5; }
@@ -239,7 +247,6 @@ body.learning-body { background: #f3f4f6; color: #343944; }
  .learning-catalog .learning-table td { padding: 12px 4px; }
  #learning-page .learning-course-title { font-size: 15px; min-height: 44px; line-height: 1.55; font-weight: 550; color: #344054; }
  .learning-row-meta { font-size: 12px; color: #667085; gap: 3px 8px; }
- .learning-row-meta > span:first-child { display: none; }
  .learning-pick { width: 44px; min-height: 48px; }
  #learning-page input:is([type="checkbox"],[type="radio"]) { width: 21px; height: 21px; }
  #learning-page .learning-drag-handle { width: 40px; min-height: 48px; }
