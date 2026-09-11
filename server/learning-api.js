@@ -10,9 +10,12 @@ const sign = (payload, secret) => createHmac('sha256', secret).update(`routine-s
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 export function validLearningData(data) {
-  return data?.version === 1 && object(data.courses) && COURSES.every(c => object(data.courses[c.id]))
-    && Array.isArray(data.courseOrder) && data.courseOrder.length === COURSES.length
-    && new Set(data.courseOrder).size === COURSES.length && COURSES.every(c => data.courseOrder.includes(c.id))
+  if (!object(data?.courses)) return false;
+  // v18까지의 54개 강의 목록도 저장할 수 있도록 이번 신규 강의만 누락을 허용합니다.
+  const supplied = COURSES.filter(c => c.id !== 'extra-327136' || Object.hasOwn(data.courses, c.id));
+  return data.version === 1 && supplied.every(c => object(data.courses[c.id]))
+    && Array.isArray(data.courseOrder) && data.courseOrder.length === supplied.length
+    && new Set(data.courseOrder).size === supplied.length && supplied.every(c => data.courseOrder.includes(c.id))
     && object(data.daily) && object(data.sessions) && object(data.studyLogs)
     && object(data.youthProgram) && object(data.youthProgram.events);
 }
@@ -66,16 +69,21 @@ export function createLearningHandler({ env = process.env, getStore = getLearnin
         const remote = await store.read(Number.isSafeInteger(revision) && revision >= 0 ? revision : -1);
         return reply(200, remote && remote.revision === revision ? { revision, unchanged: true } : remote);
       }
-      // 이전 버전의 탭이 저장하더라도 새로 추가한 완료 표시를 지우지 않습니다.
+      // 이전 버전의 탭은 자신이 모르는 신규 강의·완료 표시를 지울 수 없습니다.
       let data = body.data;
-      if (COURSES.some(c => !Object.hasOwn(data.courses[c.id], 'completed'))) {
+      if (COURSES.some(c => !data.courses[c.id] || !Object.hasOwn(data.courses[c.id], 'completed'))) {
         const current = await store.read();
         if ((current?.revision || 0) !== body.revision) return reply(409, { error: 'revision_conflict' });
-        data = { ...data, courses: Object.fromEntries(COURSES.map(c => [c.id, {
-          ...data.courses[c.id],
-          completed: Object.hasOwn(data.courses[c.id], 'completed')
-            ? data.courses[c.id].completed === true : current?.data.courses[c.id]?.completed === true,
-        }])) };
+        const courseOrder = [...data.courseOrder];
+        for (const course of COURSES.filter(c => !courseOrder.includes(c.id))) {
+          const position = current?.data.courseOrder.indexOf(course.id) ?? -1;
+          courseOrder.splice(position < 0 ? courseOrder.length : Math.min(position, courseOrder.length), 0, course.id);
+        }
+        data = { ...data, courseOrder, courses: Object.fromEntries(COURSES.map(c => {
+          const progress = data.courses[c.id] || current?.data.courses[c.id] || {};
+          return [c.id, { ...progress, completed: Object.hasOwn(progress, 'completed')
+            ? progress.completed === true : current?.data.courses[c.id]?.completed === true }];
+        })) };
       }
       const saved = await store.write(body.revision, data);
       return reply(saved ? 200 : 409, saved || { error: 'revision_conflict' });

@@ -109,3 +109,21 @@ test('이전 모바일 탭의 저장은 새 완료 표시를 지우지 않고 �
   assert.equal(unchecked.code, 200);
   assert.equal(unchecked.body.data.courses[id].completed, false);
 });
+
+test('54개 목록의 이전 탭이 저장해도 신규 강의 기록·완료·우선순위를 보존한다', async () => {
+  const f = fixture(), cookie = await f.login(), current = data(), id = 'extra-327136';
+  current.courses[id] = { ...current.courses[id], inPlan: true, completed: true, memo: '새 강의 노트' };
+  current.courseOrder = [id, ...current.courseOrder.filter(key => key !== id)];
+  await f.request('PUT', 'state', { revision: 0, data: current }, cookie);
+  const legacy = structuredClone(current);
+  delete legacy.courses[id]; legacy.courseOrder = legacy.courseOrder.filter(key => key !== id);
+  legacy.courses['35'].memo = '예전 탭에서도 저장';
+  const saved = await f.request('PUT', 'state', { revision: 1, data: legacy }, cookie);
+  assert.equal(saved.code, 200);
+  assert.deepEqual(saved.body.data.courses[id], current.courses[id]);
+  assert.equal(saved.body.data.courseOrder[0], id);
+  assert.equal(saved.body.data.courses['35'].memo, '예전 탭에서도 저장');
+  assert.equal((await f.request('PUT', 'state', { revision: 1, data: legacy }, cookie)).code, 409);
+  delete legacy.courses['35'];
+  assert.equal((await f.request('PUT', 'state', { revision: 2, data: legacy }, cookie)).code, 400);
+});

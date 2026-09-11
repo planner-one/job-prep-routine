@@ -18344,5 +18344,200 @@ export const COURSE_CURRICULA = {
     ],
     "inflearnId": 339538,
     "dashboardUrl": "https://demo-sub.inflearn.com/course/docker-essentials-%EA%B0%90/dashboard?cid=339538"
+  },
+  "extra-327136": {
+    "learningFormat": {
+      "focus": "theory",
+      "practice": "unknown",
+      "practiceType": "",
+      "basis": "curriculum",
+      "summary": "내부 동작·CAT API 모니터링·장애 사례 분석 중심입니다. 구축 과정은 제외하며, 직접 따라 하는 실습 여부는 공개 소개·목차만으로 확정하기 어렵습니다.",
+      "checkedOn": "2026-09-12",
+      "sourceUrl": "https://www.inflearn.com/course/elasticsearch-essential"
+    },
+    "title": "ElasticSearch Essential",
+    "url": "https://www.inflearn.com/course/elasticsearch-essential",
+    "checkedOn": "2026-09-12",
+    "updatedAt": "2025-05-13 16:52:54",
+    "totalSeconds": 11417,
+    "totalUnits": 19,
+    "sections": [
+      {
+        "id": "135041",
+        "title": "강의 소개",
+        "units": [
+          {
+            "id": "135042",
+            "title": "첫 번째 강의 - 강의 소개",
+            "seconds": 386,
+            "video": true
+          }
+        ]
+      },
+      {
+        "id": "135043",
+        "title": "ElasticSearch 살펴 보기",
+        "units": [
+          {
+            "id": "135044",
+            "title": "두 번째 강의 - ElasticSearch 소개",
+            "seconds": 323,
+            "video": true
+          },
+          {
+            "id": "135045",
+            "title": "세 번째 강의 - 클러스터와 노드 이해하기",
+            "seconds": 624,
+            "video": true
+          },
+          {
+            "id": "135046",
+            "title": "네 번째 강의 - 인덱스와 샤드 이해하기",
+            "seconds": 974,
+            "video": true
+          },
+          {
+            "id": "135047",
+            "title": "다섯 번째 강의 - 매핑 이해하기",
+            "seconds": 517,
+            "video": true
+          },
+          {
+            "id": "300088",
+            "title": "섹션 2 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "135048",
+        "title": "ElasticSearch 동작 이해하기",
+        "units": [
+          {
+            "id": "135049",
+            "title": "여섯 번째 강의 - 색인 과정 이해하기",
+            "seconds": 936,
+            "video": true
+          },
+          {
+            "id": "135050",
+            "title": "일곱 번째 강의 - 검색 과정 이해하기",
+            "seconds": 815,
+            "video": true
+          },
+          {
+            "id": "135051",
+            "title": "여덟 번째 강의 - text vs keyword",
+            "seconds": 687,
+            "video": true
+          },
+          {
+            "id": "297266",
+            "title": "섹션 3 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "135052",
+        "title": "ElasticSearch 모니터링 하기",
+        "units": [
+          {
+            "id": "135053",
+            "title": "아홉 번째 강의 - cat API 활용하기 #1",
+            "seconds": 603,
+            "video": true
+          },
+          {
+            "id": "135054",
+            "title": "열 번째 강의 - cat API 활용하기 #2",
+            "seconds": 506,
+            "video": true
+          },
+          {
+            "id": "135055",
+            "title": "열한 번째 강의 - 주요 모니터링 지표 살펴보기",
+            "seconds": 1254,
+            "video": true
+          },
+          {
+            "id": "299362",
+            "title": "섹션 4 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "135056",
+        "title": "ElasticSearch 트러블 슈팅",
+        "units": [
+          {
+            "id": "135057",
+            "title": "열두 번째 강의 - 트러블 슈팅의 기본",
+            "seconds": 429,
+            "video": true
+          },
+          {
+            "id": "135058",
+            "title": "열세 번째 강의 - 트러블 슈팅 사례 분석 #1 (클러스터의 상태 이상)",
+            "seconds": 504,
+            "video": true
+          },
+          {
+            "id": "135059",
+            "title": "열네 번째 강의 - 트러블 슈팅 사례 분석 #2 (문서 색인 불가)",
+            "seconds": 469,
+            "video": true
+          },
+          {
+            "id": "135060",
+            "title": "열다섯 번째 강의 - 트러블 슈팅 사례 분석 #3 (간헐적인 색인 누락)",
+            "seconds": 576,
+            "video": true
+          },
+          {
+            "id": "135061",
+            "title": "열여섯 번째 강의 - 트러블 슈팅 사례 분석 #4 (샤드 배치 불가)",
+            "seconds": 424,
+            "video": true
+          },
+          {
+            "id": "135062",
+            "title": "열일곱 번째 강의 - 트러블 슈팅 사례 분석 #5 (잦은 GC 발생)",
+            "seconds": 554,
+            "video": true
+          },
+          {
+            "id": "138065",
+            "title": "열여덟 번째 강의 - 강의를 마치며",
+            "seconds": 255,
+            "video": true
+          },
+          {
+            "id": "297842",
+            "title": "섹션 5 퀴즈",
+            "seconds": 0,
+            "video": false
+          }
+        ]
+      },
+      {
+        "id": "198162",
+        "title": "추가 강의",
+        "units": [
+          {
+            "id": "198163",
+            "title": "열아홉 번째 강의 - 트러블 슈팅 사례 분석 #6 (ThreadpoolWriteRejected 증가)",
+            "seconds": 581,
+            "video": true
+          }
+        ]
+      }
+    ],
+    "inflearnId": 327136,
+    "dashboardUrl": "https://demo-sub.inflearn.com/course/elasticsearch-essential/dashboard?cid=327136"
   }
 };

@@ -11,13 +11,13 @@ const data = await import('../src/learning-data.js');
 const { COURSE_CURRICULA } = await import('../src/learning-curriculum.js');
 const { learningFormatMarkup } = await import('../src/learning-app.js');
 
-test('54개 강의의 구성·실습 판정은 출처와 함께 표시하고 미확인과 비코딩 실습을 구분한다', () => {
+test('55개 강의의 구성·실습 판정은 출처와 함께 표시하고 미확인과 비코딩 실습을 구분한다', () => {
   for (const course of data.COURSES) {
     const format = COURSE_CURRICULA[course.id].learningFormat;
     assert.ok(['theory', 'practice', 'mixed'].includes(format.focus), course.id);
     assert.ok(['yes', 'no', 'unknown'].includes(format.practice), course.id);
     assert.equal(new URL(format.sourceUrl).hostname, 'www.inflearn.com');
-    assert.equal(format.checkedOn, '2026-09-11');
+    assert.equal(format.checkedOn, course.id === 'extra-327136' ? '2026-09-12' : '2026-09-11');
     assert.ok(format.summary.length > 20);
     if (format.basis === 'official') assert.equal(format.focus, { '실습 중심': 'practice', '이론 중심': 'theory', '이론 실습 모두': 'mixed' }[format.officialLabel]);
     assert.match(learningFormatMarkup(course.id, true), /공식 소개·목차/);
@@ -37,7 +37,7 @@ test('자유 학습은 강의 목록에서 시작하고 날짜별 강제 과제�
   assert.match(html, /<h1 id="learning-title">2주 학습<\/h1>/);
   assert.match(html, /data-learning-view="courses" aria-pressed="true"/);
   assert.match(html, /정리노트 보는 시점/);
-  assert.match(html, /learning-app\.js\?v=18/);
+  assert.match(html, /learning-app\.js\?v=19/);
   assert.match(html, /learning-plan\.html/);
   assert.doesNotMatch(html + app + css, /learning-focus-card|learning-condition-buttons|data-complete-session/);
   assert.doesNotMatch(app, /completeLearningSession|learningCapacity|selectedDay/);
@@ -52,7 +52,7 @@ test('한 장 플랜 페이지는 첨부 이미지를 원본 비율과 A4 인쇄
 });
 
 test('전체 강의·사용자 선택·수강 상태·기존 노트는 목록과 상세에 제공한다', () => {
-  assert.equal(data.COURSES.length, 54);
+  assert.equal(data.COURSES.length, 55);
   assert.match(app, /let courseFilter = 'all'/);
   assert.match(app, /data-course-flag="inPlan"/);
   for (const field of ['enrolled', 'skipped', 'noteReference', 'position', 'memo']) assert.ok(app.includes(field));
@@ -106,11 +106,11 @@ test('삭제 및 복원은 강의 상세와 삭제 목록에서 접근할 수 �
 
 test('초기 데이터 로딩과 모듈 실패를 빈 화면 대신 안내한다', () => {
   assert.match(html, /강의 목록과 목차를 불러오고 있습니다/);
-  assert.match(html, /import\('\.\/src\/learning-app\.js\?v=18'\)\.catch/);
+  assert.match(html, /import\('\.\/src\/learning-app\.js\?v=19'\)\.catch/);
   assert.match(html, /role="alert"/);
   assert.match(html, /다시 불러오기/);
-  assert.match(app, /learning-core\.js\?v=18/);
-  assert.match(app, /learning-curriculum\.js\?v=18/);
+  assert.match(app, /learning-core\.js\?v=19/);
+  assert.match(app, /learning-curriculum\.js\?v=19/);
 });
 
 test('완료 강의를 제외한 남은 시간을 목록과 반영 현황에 표시한다', () => {
