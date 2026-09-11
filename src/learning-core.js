@@ -1,11 +1,11 @@
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=17';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=18';
 import {
   COURSES,
   LEARNING_SPRINT_END,
   LEARNING_SPRINT_START,
   ROUTINE_STEPS,
   SPRINT_DAYS,
-} from './learning-data.js?v=17';
+} from './learning-data.js?v=18';
 import { localDateString, parseLocalDateKey } from './routine-core.js';
 
 export const LEARNING_STORAGE_KEY = 'job-prep-routine:learning-sprint.v1';
@@ -110,7 +110,7 @@ export function selectedCourseSummary(state) {
   });
   return {
     count: selected.length,
-    totalSeconds: selected.reduce((sum,course) => sum + (COURSE_CURRICULA[course.id]?.totalSeconds || 0), 0),
+    totalSeconds: selected.reduce((sum,course) => sum + (courseProgressFor(state, course.id).completed ? 0 : COURSE_CURRICULA[course.id]?.totalSeconds || 0), 0),
   };
 }
 

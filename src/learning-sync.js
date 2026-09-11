@@ -1,6 +1,6 @@
-import { serializeLearningBackup } from './learning-transfer.js?v=17';
-import { LEARNING_STORAGE_KEY, createDefaultLearningState } from './learning-core.js?v=17';
-import { sharedLearningState, applySharedLearningState, createLearningSyncEngine, equalSyncValue } from './learning-sync-core.js?v=17';
+import { serializeLearningBackup } from './learning-transfer.js?v=18';
+import { LEARNING_STORAGE_KEY, createDefaultLearningState } from './learning-core.js?v=18';
+import { sharedLearningState, applySharedLearningState, createLearningSyncEngine, equalSyncValue } from './learning-sync-core.js?v=18';
 
 const OWNER_KEY = `${LEARNING_STORAGE_KEY}:owner`;
 const PENDING_KEY = `${LEARNING_STORAGE_KEY}:pending-cloud`;

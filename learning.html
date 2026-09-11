@@ -7,8 +7,8 @@
     <title>2주 학습 | 취업 준비 루틴 보드</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
     <link rel="stylesheet" href="./assets/site-shell.css?v=2">
-    <link rel="stylesheet" href="./assets/routine.css?v=17">
-    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=17">
+    <link rel="stylesheet" href="./assets/routine.css?v=18">
+    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=18">
   </head>
   <body class="learning-body">
     <header class="app-topbar screen-only">
@@ -49,7 +49,7 @@
             <details class="learning-sync"><summary><span>기기 동기화</span><span id="learning-sync-indicator" role="status" aria-live="polite" data-state="connecting">연결 중</span></summary>
               <p id="learning-sync-status" role="status" aria-live="polite">연결 설정 확인 중…</p>
               <p id="learning-sync-records" hidden></p>
-              <small>학습 화면 v17 · <span id="learning-sync-address"></span></small>
+              <small>학습 화면 v18 · <span id="learning-sync-address"></span></small>
               <p id="learning-sync-production" hidden><a href="https://job-prep-routine.vercel.app/learning.html">동기화되는 운영 대시보드 열기 ↗</a><br>이 주소의 기록은 학습 기록 → 기록 옮기기 · 백업에서 먼저 내보내세요.</p>
               <form id="learning-sync-login" hidden><label class="learning-field">개인 접속코드<input type="password" name="accessCode" autocomplete="current-password" required></label><button type="submit">기기 연결</button><p>노트북과 모바일에서 같은 코드를 입력하세요.</p></form>
               <div id="learning-sync-first" hidden><p>연결 전 기록은 복구용으로 보관합니다. 처음 합칠 때는 체크된 항목·작성한 메모를 추가하며, 이전 서버 기록의 체크를 해제하려면 연결 후 해제하세요.</p><button type="button" id="learning-sync-seed">이 노트북의 체크·삭제 기록으로 시작</button><button type="button" id="learning-sync-download">이 기기 기록과 서버 기록 합치기</button></div>
@@ -111,7 +111,7 @@
             <label class="learning-mobile-filter"><span class="visually-hidden">강의 필터 선택</span><select id="learning-mobile-filter"><option value="all">전체</option><option value="mine">내 선택</option><option value="added">이번 추가</option><option value="recommended">추천</option><option value="enrolled">추가 신청</option><option value="skipped">안 볼 강의</option><option value="deleted">삭제한 강의</option></select></label>
             <label class="learning-search"><span class="visually-hidden">강의 검색</span><input type="search" id="learning-course-search" placeholder="강의 검색" autocomplete="off"></label>
           </div>
-          <div class="learning-selection-total"><output id="learning-selected-duration" aria-live="polite">선택한 강의 시간을 불러오는 중…</output><small>‘내 선택’ 체크 기준 · 전체 영상 · 1배속</small></div>
+          <div class="learning-selection-total"><output id="learning-selected-duration" aria-live="polite">선택한 강의 시간을 불러오는 중…</output><small>완료 강의 제외 · 전체 영상 · 1배속</small></div>
           <p class="learning-order-help">숫자 옆 ⠿를 누른 채 끌어 순서를 바꾸세요.<br>숫자는 전체 목록 기준 우선순위입니다.</p>
           <p class="learning-list-caption"><span>이번 2주에 들을 강의는 ‘내 선택’에 체크하세요. 순서와 분량은 자유롭게 정하면 됩니다.</span><span id="learning-visible-count">불러오는 중</span></p>
               <div class="learning-course-scroll" tabindex="-1"><table class="learning-table"><caption class="visually-hidden">전체 강의 목록과 나의 선택</caption>
@@ -138,7 +138,7 @@
 
     <script type="module">
       // 가져오기 또는 초기화가 실패해도 빈 화면만 남기지 않습니다.
-      import('./src/learning-app.js?v=17').catch((error) => {
+      import('./src/learning-app.js?v=18').catch((error) => {
         const status = document.getElementById('learning-save-status');
         status.textContent = '강의를 불러오지 못했습니다.';
         status.classList.add('is-error');

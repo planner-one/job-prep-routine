@@ -1,4 +1,4 @@
-import { LEARNING_STORAGE_KEY, normalizeLearningState, selectedCourseSummary } from './learning-core.js?v=17';
+import { LEARNING_STORAGE_KEY, normalizeLearningState, selectedCourseSummary } from './learning-core.js?v=18';
 
 export const RECOVERY_KEY = `${LEARNING_STORAGE_KEY}:before-import`;
 const FORMAT = 'job-prep-learning-backup';

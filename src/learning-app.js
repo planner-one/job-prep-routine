@@ -1,13 +1,13 @@
-import { setupLearningSync } from './learning-sync.js?v=17';
-import { setupLearningTransfer } from './learning-transfer.js?v=17';
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=17';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=17';
+import { setupLearningSync } from './learning-sync.js?v=18';
+import { setupLearningTransfer } from './learning-transfer.js?v=18';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=18';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=18';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=17';
+} from './learning-core.js?v=18';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];
@@ -73,7 +73,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     for (const key of ['all', 'mine', 'deleted']) {
       el(`#learning-mobile-filter option[value="${key}"]`).textContent = { all: `전체 ${activeCourses().length}`, mine: `내 선택 ${selected.count}`, deleted: `삭제 ${COURSES.length - activeCourses().length}` }[key];
     }
-    el('#learning-selected-duration').textContent = `내 선택 ${selected.count}개 · 총 ${duration(selected.totalSeconds)}`;
+    el('#learning-selected-duration').textContent = `내 선택 ${selected.count}개 · 남은 ${duration(selected.totalSeconds)}`;
     el('#learning-review-count').textContent = state.studyLogs.filter((log) => log.reviewDate && log.reviewDate <= today).length + learningReviewQueue(state, today).filter((item) => item.due).length;
   }
   function selectView(next) {
@@ -165,7 +165,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     }).join('');
     const program=state.youthProgram;
     const events=program.choice==='yes'?[...program.events].sort((a,b)=>`${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`)):[];
-    return `<div class="learning-section-bar"><h3>내가 선택한 강의 ${selected.length}개 · 총 ${duration(selectedTime.totalSeconds)}</h3><button type="button" data-learning-view="courses">강의 선택·체크</button></div>
+    return `<div class="learning-section-bar"><h3>내가 선택한 강의 ${selected.length}개 · 남은 ${duration(selectedTime.totalSeconds)}</h3><button type="button" data-learning-view="courses">강의 선택·체크</button></div>
       ${selected.length?`<div class="learning-overview-scroll"><table class="learning-overview-table"><thead><tr><th>강의</th><th>영상 진도</th>${Object.values(STUDY_CHECKS).map(label=>`<th>${label}</th>`).join('')}<th>적용한 곳·노트</th></tr></thead><tbody>${courseRows}</tbody></table></div>`:'<p class="learning-empty">오른쪽 목록에서 ‘내 선택’을 체크하면 여기에 모입니다.</p>'}
       <div class="learning-section-bar"><h3>청년프로그램 일정</h3><button type="button" data-learning-view="program">유무·날짜·시간 선택</button></div>
       ${program.choice!=='yes'?`<p>${program.choice==='no'?'프로그램 없음으로 선택했습니다.':'프로그램 유무를 아직 선택하지 않았습니다.'}</p>`:events.length?events.map(e=>`<div class="learning-event-line"><time>${dateLabel(e.date)} ${e.start}–${e.end}</time><span>${escapeHtml(e.name)}</span><span>${e.attended?'참여 완료':'예정'}${e.date<'2026-09-04'||e.date>'2026-09-17'?' · 2주 기간 밖':''}</span></div>`).join(''):'<p>프로그램 있음 · 날짜와 시간을 선택해 주세요.</p>'}

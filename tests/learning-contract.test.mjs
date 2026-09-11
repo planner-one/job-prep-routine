@@ -37,7 +37,7 @@ test('자유 학습은 강의 목록에서 시작하고 날짜별 강제 과제�
   assert.match(html, /<h1 id="learning-title">2주 학습<\/h1>/);
   assert.match(html, /data-learning-view="courses" aria-pressed="true"/);
   assert.match(html, /정리노트 보는 시점/);
-  assert.match(html, /learning-app\.js\?v=17/);
+  assert.match(html, /learning-app\.js\?v=18/);
   assert.match(html, /learning-plan\.html/);
   assert.doesNotMatch(html + app + css, /learning-focus-card|learning-condition-buttons|data-complete-session/);
   assert.doesNotMatch(app, /completeLearningSession|learningCapacity|selectedDay/);
@@ -106,16 +106,16 @@ test('삭제 및 복원은 강의 상세와 삭제 목록에서 접근할 수 �
 
 test('초기 데이터 로딩과 모듈 실패를 빈 화면 대신 안내한다', () => {
   assert.match(html, /강의 목록과 목차를 불러오고 있습니다/);
-  assert.match(html, /import\('\.\/src\/learning-app\.js\?v=17'\)\.catch/);
+  assert.match(html, /import\('\.\/src\/learning-app\.js\?v=18'\)\.catch/);
   assert.match(html, /role="alert"/);
   assert.match(html, /다시 불러오기/);
-  assert.match(app, /learning-core\.js\?v=17/);
-  assert.match(app, /learning-curriculum\.js\?v=17/);
+  assert.match(app, /learning-core\.js\?v=18/);
+  assert.match(app, /learning-curriculum\.js\?v=18/);
 });
 
-test('선택 강의의 전체 시간 합계를 목록과 반영 현황에 표시한다', () => {
+test('완료 강의를 제외한 남은 시간을 목록과 반영 현황에 표시한다', () => {
   assert.match(html, /id="learning-selected-duration" aria-live="polite"/);
-  assert.match(html, /‘내 선택’ 체크 기준 · 전체 영상 · 1배속/);
+  assert.match(html, /완료 강의 제외 · 전체 영상 · 1배속/);
   assert.match(app, /selectedCourseSummary\(state\)/);
   assert.match(app, /duration\(selectedTime.totalSeconds\)/);
 });

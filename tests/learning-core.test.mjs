@@ -518,6 +518,27 @@ test('선택 강의 총시간은 전체 영상시간을 합산하고 해제·삭
   assert.deepEqual(selectedCourseSummary(state),{count:1,totalSeconds:COURSE_CURRICULA['35'].totalSeconds});
 });
 
+test('완료한 선택 강의는 남은 시간에서 빠지고 해제·새로고침·삭제 복원에도 정확히 계산된다', () => {
+  const date = '2026-09-11', storage = memoryStorage();
+  let state = createDefaultLearningState(date);
+  for (const id of ['35', '33']) state = updateCourseProgress(state, id, { inPlan: true }, date, date);
+  const total = selectedCourseSummary(state).totalSeconds;
+  state = updateCourseProgress(state, '35', { completed: true }, date, date);
+  assert.deepEqual(selectedCourseSummary(state), { count: 2, totalSeconds: total - COURSE_CURRICULA['35'].totalSeconds });
+  saveLearningState(storage, state, date);
+  state = loadLearningState(storage, date);
+  assert.deepEqual(selectedCourseSummary(state), { count: 2, totalSeconds: COURSE_CURRICULA['33'].totalSeconds });
+  state = setCourseDeleted(state, '35', true, date);
+  state = setCourseDeleted(state, '35', false, date);
+  assert.equal(selectedCourseSummary(state).totalSeconds, COURSE_CURRICULA['33'].totalSeconds);
+  state = updateCourseProgress(state, '33', { completed: true }, date, date);
+  assert.deepEqual(selectedCourseSummary(state), { count: 2, totalSeconds: 0 });
+  state = updateCourseProgress(state, '15', { completed: true }, date, date);
+  assert.equal(selectedCourseSummary(state).totalSeconds, 0);
+  state = updateCourseProgress(state, '35', { completed: false }, date, date);
+  assert.deepEqual(selectedCourseSummary(state), { count: 2, totalSeconds: COURSE_CURRICULA['35'].totalSeconds });
+});
+
 test('강의 완료는 직접 체크·해제하며 목차 진도와 선택을 바꾸지 않고 복원된다', () => {
   const today = '2026-09-11', id = '35', storage = memoryStorage();
   let state = updateCourseProgress(createDefaultLearningState(today), id, { completed: true, memo: '기존 메모' }, today, today);
