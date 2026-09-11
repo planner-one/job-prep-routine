@@ -99,4 +99,6 @@ Vercel의 Storage에서 Neon **Free**를 연결해 Production 환경에 `DATABAS
 
 Vercel 빌드는 `npm run build:vercel`로 공개 화면·자산만 `_site/`에 구성합니다. 서버 코드와 환경 변수는 정적 출력에서 제외합니다. 기존 GitHub Actions는 계속 Pages를 갱신하며, Vercel Git 연결은 별도 설정입니다. 연결하지 않은 상태에서 GitHub push만으로 Vercel도 배포된다고 판단하지 않습니다.
 
+연결 도구의 파일 업로드 한도는 4MB입니다. 이 경로로 배포할 때는 큰 플랜 PNG만 업로드에서 제외하며, 빌드 스크립트가 고정 Git 커밋의 공개 원본을 가져와 SHA-256 일치 후 배포물에 넣습니다. 원본 이미지와 Git 파일은 변경하지 않습니다. 일반 Git·CLI 배포에서는 포함된 로컬 이미지를 그대로 복사합니다.
+
 Focused 검증: `node --test tests/learning-sync.test.mjs tests/learning-api.test.mjs tests/learning-transfer.test.mjs tests/learning-contract.test.mjs`. 인증·충돌·기존 기록 보존·빌드 파일 범위는 로컬에서 확인합니다. 실제 Neon 통신, 노트북 원본 이전과 모바일 화면은 연결 후 별도 확인해야 합니다.
