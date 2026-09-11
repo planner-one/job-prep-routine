@@ -1,4 +1,4 @@
-import { LEARNING_STORAGE_KEY, normalizeLearningState, selectedCourseSummary } from './learning-core.js?v=11';
+import { LEARNING_STORAGE_KEY, normalizeLearningState, selectedCourseSummary } from './learning-core.js?v=12';
 
 export const RECOVERY_KEY = `${LEARNING_STORAGE_KEY}:before-import`;
 const FORMAT = 'job-prep-learning-backup';
@@ -79,7 +79,7 @@ export function setupLearningTransfer(root, storage, today, getState, onImport) 
     try {
       const imported = importLearningBackup(storage, pending, today);
       pending = null; el('#learning-import-preview').hidden = true; el('#learning-import').value = '';
-      onImport(imported); refreshUndo(); status('이 기기에 반영했습니다. 이후 변경은 자동 동기화되지 않습니다.');
+      onImport(imported); refreshUndo(); status('이 기기에 반영했습니다. 기기 동기화가 연결돼 있으면 서버에도 반영합니다.');
     } catch { status('저장하지 못했습니다. 기기 저장 공간과 브라우저 설정을 확인해 주세요.'); refreshUndo(); }
   });
   el('#learning-import-undo').addEventListener('click', () => {

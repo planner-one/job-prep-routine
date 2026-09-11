@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
     <link rel="stylesheet" href="./assets/site-shell.css?v=2">
     <link rel="stylesheet" href="./assets/routine.css?v=13">
-    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=11">
+    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=12">
   </head>
   <body class="learning-body">
     <header class="app-topbar screen-only">
@@ -48,10 +48,10 @@
         </nav>
             <details class="learning-sync"><summary>기기 동기화</summary>
               <p id="learning-sync-status" role="status" aria-live="polite">연결 설정 확인 중…</p>
-              <form id="learning-sync-login" hidden><label class="learning-field">이메일<input type="email" name="email" autocomplete="username" required></label><label class="learning-field">비밀번호<input type="password" name="password" autocomplete="current-password" required></label><button type="submit">로그인</button><p>연결한 계정으로 노트북과 모바일에서 로그인하세요.</p></form>
-              <div id="learning-sync-first" hidden><button type="button" id="learning-sync-seed">이 노트북의 체크·삭제 기록으로 시작</button><button type="button" id="learning-sync-download">서버에 저장된 기록 불러오기</button></div>
+              <form id="learning-sync-login" hidden><label class="learning-field">개인 접속코드<input type="password" name="accessCode" autocomplete="current-password" required></label><button type="submit">기기 연결</button><p>노트북과 모바일에서 같은 코드를 입력하세요.</p></form>
+              <div id="learning-sync-first" hidden><p>기존 배포 주소에서 기록했다면 먼저 학습 기록의 백업 파일을 가져오세요. 서버 기록이 있으면 불러오기를 선택하세요.</p><button type="button" id="learning-sync-seed">이 노트북의 체크·삭제 기록으로 시작</button><button type="button" id="learning-sync-download">서버에 저장된 기록 불러오기</button></div>
               <div id="learning-sync-conflict" hidden><p>서로 다른 항목의 변경은 모두 유지합니다. 충돌한 항목에 적용할 값을 선택하세요.</p><button type="button" id="learning-sync-local">충돌 항목은 이 기기 값 사용</button><button type="button" id="learning-sync-remote">충돌 항목은 서버 값 사용</button></div>
-              <button type="button" id="learning-sync-backup" hidden>연결 전 기록 내보내기</button><button type="button" id="learning-sync-retry">연결 다시 확인</button><button type="button" id="learning-sync-logout" hidden>로그아웃</button>
+              <button type="button" id="learning-sync-backup" hidden>연결 전 기록 내보내기</button><button type="button" id="learning-sync-retry">연결 다시 확인</button><button type="button" id="learning-sync-logout" hidden>이 기기 연결 해제</button>
             </details>
           </aside>
           <div class="learning-content" id="learning-content">
@@ -134,7 +134,7 @@
 
     <script type="module">
       // 가져오기 또는 초기화가 실패해도 빈 화면만 남기지 않습니다.
-      import('./src/learning-app.js?v=11').catch((error) => {
+      import('./src/learning-app.js?v=12').catch((error) => {
         const status = document.getElementById('learning-save-status');
         status.textContent = '강의를 불러오지 못했습니다.';
         status.classList.add('is-error');

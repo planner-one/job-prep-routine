@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { createLearningSyncEngine, mergeLearningChanges, sharedLearningState, applySharedLearningState, equalSyncValue } from '../src/learning-sync-core.js';
 import { createDefaultLearningState, updateCourseProgress, setCourseDeleted } from '../src/learning-core.js';
 import { COURSES } from '../src/learning-data.js';
@@ -9,13 +8,13 @@ import { setupLearningSync } from '../src/learning-sync.js';
 const today = '2026-09-11';
 const copy = value => structuredClone(value);
 const initial = () => sharedLearningState(createDefaultLearningState(today), today);
-test('프로젝트 미연결 상태에서는 사용자 기록을 읽거나 바꾸거나 전송하지 않는다', () => {
+test('로컬·정적 주소에서는 사용자 기록을 읽거나 바꾸거나 전송하지 않는다', () => {
   const nodes = new Map();
   const root = { querySelector: selector => { if (!nodes.has(selector)) nodes.set(selector, {}); return nodes.get(selector); } };
   const forbidden = () => { throw new Error('미연결 상태에서는 호출하면 안 됨'); };
   const sync = setupLearningSync(root, { getItem: forbidden, setItem: forbidden }, today, forbidden, forbidden);
   sync.changed({ courses: {} });
-  assert.match(nodes.get('#learning-sync-status').textContent, /프로젝트 연결 대기/);
+  assert.match(nodes.get('#learning-sync-status').textContent, /기기에만 저장/);
   assert.equal(nodes.get('#learning-sync-retry').hidden, true);
 });
 function server(data) {
@@ -109,13 +108,4 @@ test('중지한 연결의 늦은 응답은 다른 계정에 적용되지 않는�
   const a = device({ ...backend, read }, base);
   const work = a.engine.sync(); a.engine.stop(); release(base); await work;
   assert.equal(a.saved.length, 0);
-});
-test('개인 행은 RLS·로그인 사용자 검증을 적용하고 초기 업로드는 기존 행을 교체하지 않는다', async () => {
-  const sql = await readFile(new URL('../scripts/learning-sync.sql', import.meta.url), 'utf8');
-  assert.match(sql, /enable row level security/);
-  assert.match(sql, /auth.uid\(\) <> expected_user_id/);
-  assert.match(sql, /on conflict \(user_id\) do nothing/);
-  assert.match(sql, /revision = expected_revision/);
-  assert.match(sql, /security invoker/);
-  assert.doesNotMatch(sql, /security definer/i);
 });
