@@ -1,6 +1,6 @@
-import { serializeLearningBackup } from './learning-transfer.js?v=12';
-import { LEARNING_STORAGE_KEY } from './learning-core.js?v=12';
-import { sharedLearningState, applySharedLearningState, createLearningSyncEngine } from './learning-sync-core.js?v=12';
+import { serializeLearningBackup } from './learning-transfer.js?v=13';
+import { LEARNING_STORAGE_KEY } from './learning-core.js?v=13';
+import { sharedLearningState, applySharedLearningState, createLearningSyncEngine } from './learning-sync-core.js?v=13';
 
 const OWNER_KEY = `${LEARNING_STORAGE_KEY}:owner`;
 export function setupLearningSync(root, storage, today, getState, applyState) {

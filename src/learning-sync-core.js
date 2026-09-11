@@ -1,5 +1,5 @@
-import { COURSES } from './learning-data.js?v=12';
-import { courseProgressFor, normalizeLearningState } from './learning-core.js?v=12';
+import { COURSES } from './learning-data.js?v=13';
+import { courseProgressFor, normalizeLearningState } from './learning-core.js?v=13';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const clone = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));

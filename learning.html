@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=1">
     <link rel="stylesheet" href="./assets/site-shell.css?v=2">
     <link rel="stylesheet" href="./assets/routine.css?v=13">
-    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=12">
+    <link rel="stylesheet" href="./assets/styles/routine/09-learning-sprint.css?v=13">
   </head>
   <body class="learning-body">
     <header class="app-topbar screen-only">
@@ -105,7 +105,8 @@
               <button type="button" data-course-filter="skipped" aria-pressed="false">안 볼 강의</button>
               <button type="button" data-course-filter="deleted" aria-pressed="false">삭제한 강의 <span id="learning-deleted-count">0</span></button>
             </div>
-            <label><span class="visually-hidden">강의 검색</span><input type="search" id="learning-course-search" placeholder="강의 검색" autocomplete="off"></label>
+            <label class="learning-mobile-filter"><span class="visually-hidden">강의 필터 선택</span><select id="learning-mobile-filter"><option value="all">전체</option><option value="mine">내 선택</option><option value="added">이번 추가</option><option value="recommended">추천</option><option value="enrolled">추가 신청</option><option value="skipped">안 볼 강의</option><option value="deleted">삭제한 강의</option></select></label>
+            <label class="learning-search"><span class="visually-hidden">강의 검색</span><input type="search" id="learning-course-search" placeholder="강의 검색" autocomplete="off"></label>
           </div>
           <div class="learning-selection-total"><output id="learning-selected-duration" aria-live="polite">선택한 강의 시간을 불러오는 중…</output><small>‘내 선택’ 체크 기준 · 전체 영상 · 1배속</small></div>
           <p class="learning-order-help">숫자 옆 ⠿를 누른 채 끌어 순서를 바꾸세요.<br>숫자는 전체 목록 기준 우선순위입니다.</p>
@@ -134,7 +135,7 @@
 
     <script type="module">
       // 가져오기 또는 초기화가 실패해도 빈 화면만 남기지 않습니다.
-      import('./src/learning-app.js?v=12').catch((error) => {
+      import('./src/learning-app.js?v=13').catch((error) => {
         const status = document.getElementById('learning-save-status');
         status.textContent = '강의를 불러오지 못했습니다.';
         status.classList.add('is-error');

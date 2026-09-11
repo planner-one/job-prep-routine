@@ -1,13 +1,13 @@
-import { setupLearningSync } from './learning-sync.js?v=12';
-import { setupLearningTransfer } from './learning-transfer.js?v=12';
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=12';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=12';
+import { setupLearningSync } from './learning-sync.js?v=13';
+import { setupLearningTransfer } from './learning-transfer.js?v=13';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=13';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=13';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=12';
+} from './learning-core.js?v=13';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];
@@ -52,6 +52,9 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     el('#learning-deleted-count').textContent = COURSES.length - activeCourses().length;
     const selected = selectedCourseSummary(state);
     el('#learning-picked-count').textContent = selected.count;
+    for (const key of ['all', 'mine', 'deleted']) {
+      el(`#learning-mobile-filter option[value="${key}"]`).textContent = { all: `전체 ${activeCourses().length}`, mine: `내 선택 ${selected.count}`, deleted: `삭제 ${COURSES.length - activeCourses().length}` }[key];
+    }
     el('#learning-selected-duration').textContent = `내 선택 ${selected.count}개 · 총 ${duration(selected.totalSeconds)}`;
     el('#learning-review-count').textContent = state.studyLogs.filter((log) => log.reviewDate && log.reviewDate <= today).length + learningReviewQueue(state, today).filter((item) => item.due).length;
   }
@@ -94,6 +97,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     el('#learning-visible-count').textContent = `${courses.length}개 표시`;
     el('#learning-course-empty').hidden = courses.length > 0;
     all('[data-course-filter]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.courseFilter === courseFilter)));
+    el('#learning-mobile-filter').value = courseFilter;
     renderCounts();
   }
   function linkMarkup(value, label) {
@@ -350,6 +354,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
   });
   root.addEventListener('change', (event) => {
     const input = event.target;
+    if (input.id === 'learning-mobile-filter') { courseFilter = input.value; renderCourses(); return; }
     if (input.id === 'learning-mobile-view') { selectView(input.value); return; }
     if (input.hasAttribute('data-program-choice')) { persist(setYouthProgram(state, { choice: input.value }, today)); renderProgram(); return; }
     if (input.dataset.eventField) {
