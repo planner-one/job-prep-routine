@@ -278,9 +278,12 @@ body.learning-body { background: #f3f4f6; color: #343944; }
 }
 @media print { .learning-sidebar,.learning-course-sidebar,.learning-document-bar { display: none; } .learning-workspace { display: block; height: auto; } .learning-content { overflow: visible; } .learning-paper { border: 0; box-shadow: none; aspect-ratio: auto; max-width: none; padding: 0; } }
 
-/* 동기화 상태는 메뉴 안에 작게 표시하고 강의 작업 영역과 분리합니다. */
+/* 목록·상세 어디서든 저장 여부를 확인할 수 있게 접힌 제목에도 상태를 표시합니다. */
 .learning-sync { font-size: 12px; padding: 0 8px 12px; overflow-y: auto; }
 .learning-sync > summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 600; }
+#learning-sync-indicator { display: block; font-size: 11px; font-weight: 500; color: #805500; }
+#learning-sync-indicator[data-state="synced"] { color: #267352; }
+#learning-sync-indicator[data-state="error"],#learning-sync-indicator[data-state="conflict"] { color: #b42318; }
 .learning-sync p { overflow-wrap: anywhere; color: #667085; margin: 8px 0; }
 .learning-sync button { margin: 4px 0; }
 .learning-sync .learning-field { margin: 8px 0; }
@@ -288,6 +291,6 @@ body.learning-body { background: #f3f4f6; color: #343944; }
 @media (max-width: 600px) {
  .learning-sync { padding: 0; max-height: 45dvh; }
  .learning-sync:not([open]) { max-height: 44px; }
- .learning-sync > summary { padding-block: 12px; min-height: 44px; font-size: 11px; }
+ .learning-sync > summary { padding-block: 4px; min-height: 44px; font-size: 11px; line-height: 16px; }
  .learning-sync[open] { grid-column: 1/-1; padding-bottom: 12px; }
 }

@@ -1,5 +1,5 @@
-import { COURSES } from './learning-data.js?v=15';
-import { courseProgressFor, normalizeLearningState } from './learning-core.js?v=15';
+import { COURSES } from './learning-data.js?v=16';
+import { courseProgressFor, normalizeLearningState } from './learning-core.js?v=16';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const clone = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -90,11 +90,13 @@ export function createLearningSyncEngine({ base, local, read, write, persist, on
           acknowledged = result;
         }
         const remaining = mergeLearningChanges(sent, current, acknowledged.data);
-        baseline = clone(acknowledged);
         const changed = !equalSyncValue(current, remaining.value);
+        // 화면의 기기 저장이 실패하면 기준 버전을 먼저 확정하지 않습니다.
+        // 그래야 다음 접속 때 이전 원문을 새 변경으로 보고 서버에 되돌리지 않습니다.
+        if (changed) onState(clone(remaining.value));
+        baseline = clone(acknowledged);
         current = remaining.value;
         checkpoint();
-        if (changed) onState(clone(current));
         preference = '';
         if (equalSyncValue(current, baseline.data)) { onStatus('synced'); return; }
       }

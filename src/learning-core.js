@@ -1,11 +1,11 @@
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=15';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=16';
 import {
   COURSES,
   LEARNING_SPRINT_END,
   LEARNING_SPRINT_START,
   ROUTINE_STEPS,
   SPRINT_DAYS,
-} from './learning-data.js?v=15';
+} from './learning-data.js?v=16';
 import { localDateString, parseLocalDateKey } from './routine-core.js';
 
 export const LEARNING_STORAGE_KEY = 'job-prep-routine:learning-sprint.v1';
@@ -142,10 +142,20 @@ export function normalizeLearningState(candidate = {}, today = LEARNING_SPRINT_S
 export function loadLearningState(storage, today = LEARNING_SPRINT_START) {
   try {
     const raw = storage?.getItem?.(LEARNING_STORAGE_KEY);
-    return normalizeLearningState(raw ? JSON.parse(raw) : {}, today);
-  } catch {
-    return createDefaultLearningState(today);
-  }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.version === LEARNING_SCHEMA_VERSION && parsed.courses) return normalizeLearningState(parsed, today);
+    }
+  } catch { /* 원문을 지우지 않고 남아 있는 전송 대기 사본을 확인합니다. */ }
+  try {
+    const owner = storage?.getItem?.(`${LEARNING_STORAGE_KEY}:owner`);
+    const key = owner ? `${LEARNING_STORAGE_KEY}:sync:${owner}` : `${LEARNING_STORAGE_KEY}:pending-cloud`;
+    const shared = JSON.parse(storage?.getItem?.(key) || 'null')?.local;
+    if (shared?.version === 1 && shared.courses && shared.studyLogs && shared.youthProgram?.events) {
+      return normalizeLearningState({ ...shared, studyLogs: Object.values(shared.studyLogs), youthProgram: { ...shared.youthProgram, events: Object.values(shared.youthProgram.events) } }, today);
+    }
+  } catch { /* 복원 가능한 사본이 없을 때만 빈 화면 상태로 시작합니다. */ }
+  return createDefaultLearningState(today);
 }
 
 export function saveLearningState(storage, state, today = LEARNING_SPRINT_START, onError = () => {}) {

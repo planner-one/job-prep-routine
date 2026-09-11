@@ -1,40 +1,72 @@
-import { serializeLearningBackup } from './learning-transfer.js?v=15';
-import { LEARNING_STORAGE_KEY } from './learning-core.js?v=15';
-import { sharedLearningState, applySharedLearningState, createLearningSyncEngine } from './learning-sync-core.js?v=15';
+import { serializeLearningBackup } from './learning-transfer.js?v=16';
+import { LEARNING_STORAGE_KEY, createDefaultLearningState } from './learning-core.js?v=16';
+import { sharedLearningState, applySharedLearningState, createLearningSyncEngine, equalSyncValue } from './learning-sync-core.js?v=16';
 
 const OWNER_KEY = `${LEARNING_STORAGE_KEY}:owner`;
+const PENDING_KEY = `${LEARNING_STORAGE_KEY}:pending-cloud`;
 export function setupLearningSync(root, storage, today, getState, applyState) {
   const el = selector => root.querySelector(selector);
-  const status = message => { el('#learning-sync-status').textContent = message; };
+  let storageError = false;
+  const status = (message, kind = 'attention') => {
+    if (storageError && kind !== 'error') return;
+    el('#learning-sync-status').textContent = message;
+    const indicator = el('#learning-sync-indicator');
+    if (indicator) {
+      indicator.textContent = { attention: '연결 확인 필요', local: '이 기기에만 저장', login: '접속코드 입력', pending: '서버 저장 중', synced: '서버 저장 완료', offline: '오프라인 · 전송 대기', conflict: '기록 충돌 확인', error: '저장 실패', connecting: '연결 중' }[kind];
+      indicator.dataset.state = kind;
+    }
+  };
   let engine = null, userId = '', epoch = 0, timer = 0;
   let remoteCache = null;
   let busy = false;
+  let initialLocal, staticOnly = false, otherTab = false;
+  function storageFailed() {
+    storageError = true;
+    status('기기에 저장하지 못했습니다. 새로고침 전에 학습 기록에서 파일로 백업해 주세요.', 'error');
+    el('.learning-sync').open = true;
+  }
   function stop() { engine?.stop(); engine = null; clearTimeout(timer); }
   function changed(state) {
-    if (!engine) return;
+    if (staticOnly || otherTab) return;
+    storageError = false;
     try {
-      engine.update(sharedLearningState(state, today));
+      const local = sharedLearningState(state, today);
+      if (!engine) {
+        const pending = JSON.parse(storage.getItem(PENDING_KEY) || 'null');
+        storage.setItem(PENDING_KEY, JSON.stringify({ base: pending?.base || { revision: 0, data: initialLocal }, local }));
+        status('이 기기에 저장됨 · 서버 미연결. 접속코드를 입력하면 전송 대기 기록을 연결합니다.', 'login');
+        return;
+      }
+      engine.update(local);
       clearTimeout(timer); timer = setTimeout(() => engine?.sync(), 400);
-    } catch { status('이 기기에는 저장됨 · 동기화 대기 기록 저장 실패. 새로고침 전에 백업해 주세요.'); }
+    } catch { stop(); storageFailed(); }
   }
   const location = globalThis.window?.location;
   if (location?.protocol !== 'https:' || location.hostname.endsWith('.github.io')) {
+    staticOnly = true;
     el('#learning-sync-retry').hidden = true;
-    status('이 주소는 기기에만 저장합니다. Vercel 주소에서 기기 동기화를 연결하세요.');
-    return { changed };
+    el('#learning-sync-production')?.removeAttribute?.('hidden');
+    status('이 주소는 기기에만 저장합니다. 기록을 백업한 뒤 아래 운영 주소에서 연결하세요.', 'local');
+    return { changed, storageFailed };
   }
+  initialLocal = sharedLearningState(getState(), today);
   async function request(action, method = 'GET', body) {
-    const response = await fetch(`/api/learning?action=${action}`, {
-      method, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(25_000),
-      ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25_000);
+    let response;
+    try {
+      response = await fetch(`/api/learning?action=${action}`, {
+        method, credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
+        ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+      });
+    } finally { clearTimeout(timeout); }
     if (response.status === 409) return null;
     if (response.status === 401 && action !== 'login') {
       ++epoch; stop(); userId = '';
       el('#learning-sync-login').hidden = false;
       el('#learning-sync-logout').hidden = true;
       el('#learning-sync-first').hidden = true;
-      status('접속코드를 다시 입력해 주세요. 전송 대기 기록은 이 기기에 보관 중입니다.');
+      status('접속코드를 다시 입력해 주세요. 전송 대기 기록은 이 기기에 보관 중입니다.', 'login');
     }
     if (!response.ok) throw new Error(`sync-${response.status}`);
     return response.json();
@@ -66,12 +98,13 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
       }
       el('#learning-sync-backup').hidden = false;
     }
-    function showState(shared) { applyState(applySharedLearningState(getState(), shared, today)); }
+    function showState(shared) { applyState(applySharedLearningState(getState(), shared, today)); storageError = false; }
     function activate(uid, base, local) {
       backupLocal();
       storage.setItem(cacheKey(uid), JSON.stringify({ base, local }));
       storage.setItem(OWNER_KEY, uid);
       showState(local);
+      storage.removeItem(PENDING_KEY);
       stop();
       engine = createLearningSyncEngine({
         base, local, read: () => read(uid), write: (revision, data) => write(uid, revision, data),
@@ -79,7 +112,7 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
         onState: showState,
         onStatus(kind, count) {
           const messages = { pending: '이 기기에 저장됨 · 서버 반영 중', synced: '서버 저장 완료 · 다른 기기는 약 5초마다 확인', offline: '연결 지연 · 이 기기 기록 보관 중, 연결되면 재시도', conflict: `같은 항목 ${count || 0}개를 두 기기에서 다르게 수정했습니다.` };
-          status(messages[kind]);
+          status(messages[kind], kind);
           el('#learning-sync-conflict').hidden = kind !== 'conflict';
         },
       });
@@ -94,8 +127,8 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
       el('#learning-sync-first').hidden = true;
       el('#learning-sync-login').hidden = Boolean(uid);
       el('#learning-sync-logout').hidden = !uid;
-      if (!uid) { status('노트북과 모바일에서 같은 개인 접속코드를 입력하세요.'); return; }
-      status('서버 기록 확인 중…');
+      if (!uid) { status('서버 미연결 · 노트북과 모바일에서 같은 개인 접속코드를 한 번 입력하세요. 체크는 이 기기에만 저장됩니다.', 'login'); return; }
+      status('서버 기록 확인 중…', 'connecting');
       try {
         const remote = await read(uid);
         if (ticket !== epoch) return;
@@ -104,23 +137,38 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
           const local = storage.getItem(OWNER_KEY) === uid ? sharedLearningState(getState(), today) : cached.local;
           activate(uid, cached.base, local); return;
         }
+        if (remote) {
+          const local = sharedLearningState(getState(), today);
+          const pending = JSON.parse(storage.getItem(PENDING_KEY) || 'null');
+          if (pending?.base) { activate(uid, pending.base, local); return; }
+          const empty = sharedLearningState(createDefaultLearningState(today), today);
+          if (equalSyncValue(initialLocal, empty)) {
+            activate(uid, { revision: 0, data: empty }, local); return;
+          }
+          if (equalSyncValue(local, remote.data)) { activate(uid, remote, local); return; }
+        }
         el('#learning-sync-first').hidden = false;
         el('#learning-sync-seed').hidden = Boolean(remote);
         el('#learning-sync-download').hidden = !remote;
-        status(remote ? '저장된 기록이 있습니다. 불러오면 이 기기의 기존 기록은 복구용으로 보관됩니다.' : '아직 서버 기록이 없습니다. 체크·삭제 기록이 있는 노트북에서 먼저 시작하세요.');
+        status(remote ? '연결 전에 작성한 기록이 있습니다. 아래에서 합치면 체크·메모를 보존하고 충돌은 따로 확인합니다.' : '아직 서버 기록이 없습니다. 체크·삭제 기록이 있는 노트북에서 먼저 시작하세요.');
       } catch { status('서버 연결 실패 · DB 연결과 접속코드를 확인해 주세요. 기존 기록은 유지합니다.'); }
     }
+    let checking = false;
     async function checkSession() {
-      const result = await request('status');
-      if (!result.configured) {
-        ++epoch; stop(); userId = '';
-        el('#learning-sync-login').hidden = true;
-        el('#learning-sync-logout').hidden = true;
-        el('#learning-sync-first').hidden = true;
-        status('Vercel 배포됨 · Neon DB와 개인 접속코드 설정 대기. 기록은 이 기기에 보관 중');
-        return;
-      }
-      await sessionChanged(result.authenticated);
+      if (checking || busy || otherTab) return;
+      checking = true;
+      try {
+        const result = await request('status');
+        if (!result.configured) {
+          ++epoch; stop(); userId = '';
+          el('#learning-sync-login').hidden = true;
+          el('#learning-sync-logout').hidden = true;
+          el('#learning-sync-first').hidden = true;
+          status('Vercel 배포됨 · Neon DB와 개인 접속코드 설정 대기. 기록은 이 기기에 보관 중');
+          return;
+        }
+        await sessionChanged(result.authenticated);
+      } finally { checking = false; }
     }
     el('#learning-sync-login').addEventListener('submit', async event => {
       event.preventDefault(); if (busy) return; busy = true;
@@ -155,7 +203,11 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
           if (ticket !== epoch) return;
           if (!result) { await sessionChanged(true); return; }
           activate(uid, result, local);
-        } else if (remote) { activate(uid, remote, remote.data); }
+        } else if (remote) {
+          // 기준 이력이 없는 이전 로컬 기록은 빈 상태와 비교해 합칩니다.
+          // 서버의 체크 해제·삭제를 빈 모바일 값으로 덮어쓰지 않습니다.
+          activate(uid, { revision: 0, data: sharedLearningState(createDefaultLearningState(today), today) }, sharedLearningState(getState(), today));
+        }
       } catch { status('기록 연결을 완료하지 못했습니다. 노트북 기록은 유지됩니다.'); }
       finally { busy = false; root.inert = false; }
     }
@@ -170,23 +222,29 @@ export function setupLearningSync(root, storage, today, getState, applyState) {
     });
     el('#learning-sync-seed').addEventListener('click', () => initial(true));
     el('#learning-sync-download').addEventListener('click', () => initial(false));
-    el('#learning-sync-retry').addEventListener('click', () => engine ? engine.sync() : checkSession().catch(() => status('연결을 다시 확인해 주세요.')));
+    const reconnect = () => {
+      if (otherTab || busy) return;
+      return engine ? engine.sync() : checkSession().catch(() => status('서버 연결 지연 · 이 기기의 기록을 보관하며 다시 연결합니다.', 'offline'));
+    };
+    el('#learning-sync-retry').addEventListener('click', () => otherTab ? window.location.reload() : reconnect());
     el('#learning-sync-local').addEventListener('click', () => engine?.resolve('local'));
     el('#learning-sync-remote').addEventListener('click', () => engine?.resolve('remote'));
     // 열린 화면만 5초마다 확인합니다. 버전이 같으면 기록 본문을 다시 전송하지 않습니다.
-    setInterval(() => { if (document.visibilityState === 'visible') engine?.sync(); }, 5_000);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') engine?.sync(); });
-    window.addEventListener('online', () => engine?.sync());
+    setInterval(() => { if (document.visibilityState === 'visible') reconnect(); }, 5_000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reconnect(); });
+    window.addEventListener('online', reconnect);
+    window.addEventListener('pageshow', reconnect);
     window.addEventListener('storage', event => {
       if (event.key === LEARNING_STORAGE_KEY) {
         // 같은 브라우저의 다른 탭에서 편집 중이면 오래된 탭의 저장을 차단합니다.
-        stop(); root.classList.add('learning-sync-other-tab');
+        otherTab = true; stop(); root.classList.add('learning-sync-other-tab');
         el('.learning-content').inert = true; el('.learning-course-sidebar').inert = true;
         status('다른 탭에서 기록이 바뀌었습니다. 새로고침 후 이어서 사용해 주세요.');
+        el('#learning-sync-retry').textContent = '최신 기록으로 새로고침';
       }
     });
     await checkSession();
   }
-  boot().catch(() => status('동기화 서버 연결 실패 · 이 기기의 기록은 유지됩니다.'));
-  return { changed };
+  boot().catch(() => status('서버 연결 지연 · 이 기기의 기록을 보관하며 다시 연결합니다.', 'offline'));
+  return { changed, storageFailed };
 }

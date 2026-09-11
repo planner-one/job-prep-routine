@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLearningSyncEngine, mergeLearningChanges, sharedLearningState, applySharedLearningState, equalSyncValue } from '../src/learning-sync-core.js';
-import { createDefaultLearningState, updateCourseProgress, setCourseDeleted } from '../src/learning-core.js';
+import { createDefaultLearningState, updateCourseProgress, setCourseDeleted, loadLearningState, saveLearningState, LEARNING_STORAGE_KEY } from '../src/learning-core.js';
 import { COURSES } from '../src/learning-data.js';
 import { setupLearningSync } from '../src/learning-sync.js';
 
@@ -10,7 +10,7 @@ const copy = value => structuredClone(value);
 const initial = () => sharedLearningState(createDefaultLearningState(today), today);
 test('로컬·정적 주소에서는 사용자 기록을 읽거나 바꾸거나 전송하지 않는다', () => {
   const nodes = new Map();
-  const root = { querySelector: selector => { if (!nodes.has(selector)) nodes.set(selector, {}); return nodes.get(selector); } };
+  const root = { querySelector: selector => { if (!nodes.has(selector)) nodes.set(selector, { dataset: {} }); return nodes.get(selector); } };
   const forbidden = () => { throw new Error('미연결 상태에서는 호출하면 안 됨'); };
   const sync = setupLearningSync(root, { getItem: forbidden, setItem: forbidden }, today, forbidden, forbidden);
   sync.changed({ courses: {} });
@@ -108,4 +108,113 @@ test('중지한 연결의 늦은 응답은 다른 계정에 적용되지 않는�
   const a = device({ ...backend, read }, base);
   const work = a.engine.sync(); a.engine.stop(); release(base); await work;
   assert.equal(a.saved.length, 0);
+});
+
+
+// 실제 시작·새로고침 순서를 개인 기록과 분리한 자료로 검증합니다.
+function lifecycle(t, { row = { revision: 1, data: initial() }, state = createDefaultLearningState(today), cached, offline = false, pending } = {}) {
+  const entries = new Map([[LEARNING_STORAGE_KEY, JSON.stringify(state)]]);
+  if (cached) {
+    entries.set(`${LEARNING_STORAGE_KEY}:owner`, 'vercel-neon-personal-v1');
+    entries.set(`${LEARNING_STORAGE_KEY}:sync:vercel-neon-personal-v1`, JSON.stringify(cached));
+  }
+  if (pending) entries.set(`${LEARNING_STORAGE_KEY}:pending-cloud`, JSON.stringify(pending));
+  const storage = { getItem: key => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value), removeItem: key => entries.delete(key) };
+  const listeners = new Map(), nodes = new Map();
+  const node = key => {
+    if (!nodes.has(key)) nodes.set(key, { hidden: true, dataset: {}, classList: { add() {}, toggle() {} }, addEventListener: (type, callback) => listeners.set(`${key}:${type}`, callback) });
+    return nodes.get(key);
+  };
+  let current = state, connectionOffline = offline, requests = [], interval;
+  const root = { querySelector: node, classList: { add() {} } };
+  t.mock.method(globalThis, 'setInterval', callback => { interval = callback; return 1; });
+  t.mock.method(globalThis, 'clearInterval', () => {});
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (connectionOffline) throw new Error('offline');
+    requests.push([url, options.method]);
+    if (url.includes('action=status')) return { ok: true, status: 200, json: async () => ({ configured: true, authenticated: true }) };
+    if (options.method === 'PUT') {
+      const body = JSON.parse(options.body);
+      if (body.revision !== row.revision) return { status: 409, ok: false };
+      row = { revision: row.revision + 1, data: copy(body.data) };
+    }
+    return { ok: true, status: 200, json: async () => copy(row) };
+  });
+  const windowBefore = globalThis.window, documentBefore = globalThis.document;
+  globalThis.window = { location: { protocol: 'https:', hostname: 'job-prep-routine.vercel.app' }, addEventListener: (event, fn) => listeners.set(event, fn) };
+  globalThis.document = { visibilityState: 'visible', addEventListener: (event, fn) => listeners.set(event, fn) };
+  t.after(() => { globalThis.window = windowBefore; globalThis.document = documentBefore; });
+  const sync = setupLearningSync(root, storage, today, () => current, next => { current = saveLearningState(storage, next, today); });
+  return { sync, storage, node, requests, entries, current: () => current, row: () => row,
+    online: () => { connectionOffline = false; return listeners.get('online')?.(); },
+    tick: () => interval?.(),
+  };
+}
+const settle = async () => { for (let i = 0; i < 50; i++) await Promise.resolve(); };
+test('새 모바일에서 인증되어 있으면 추가 버튼 없이 서버 기록을 불러온다', async t => {
+  const row = { revision: 3, data: initial() }; row.data.courses[COURSES[0].id].inPlan = true;
+  const app = lifecycle(t, { row }); await settle();
+  assert.equal(app.current().courses[COURSES[0].id]?.inPlan, true);
+  assert.equal(app.node('#learning-sync-first').hidden, true);
+  assert.equal(app.requests.filter(([, method]) => method === 'PUT').length, 0);
+});
+test('최초 접속이 오프라인이어도 온라인 복귀 시 인증·서버 연결을 자동 재시도한다', async t => {
+  const row = { revision: 4, data: initial() }; row.data.courses[COURSES[1].id].inPlan = true;
+  const app = lifecycle(t, { row, offline: true }); await settle();
+  await app.online(); await settle();
+  assert.equal(app.current().courses[COURSES[1].id]?.inPlan, true);
+});
+test('모바일 저장 원문이 없거나 손상되면 남아 있는 동기화 대기 체크를 복구한다', () => {
+  const local = initial(); local.courses[COURSES[0].id].inPlan = true;
+  const key = `${LEARNING_STORAGE_KEY}:sync:vercel-neon-personal-v1`;
+  for (const raw of [null, '{damaged']) {
+    const values = new Map([[LEARNING_STORAGE_KEY, raw], [`${LEARNING_STORAGE_KEY}:owner`, 'vercel-neon-personal-v1'], [key, JSON.stringify({ base: { revision: 1, data: initial() }, local })]]);
+    const state = loadLearningState({ getItem: key => values.get(key) ?? null }, today);
+    assert.equal(state.courses[COURSES[0].id]?.inPlan, true);
+  }
+});
+test('전송 전 새로고침해도 기기의 체크 해제와 다른 기기의 체크가 모두 저장된다', async t => {
+  const base = { revision: 1, data: initial() }; base.data.courses[COURSES[0].id].inPlan = true;
+  const local = copy(base.data); local.courses[COURSES[0].id].inPlan = false;
+  const row = copy(base); row.revision = 2; row.data.courses[COURSES[1].id].inPlan = true;
+  const state = applySharedLearningState(createDefaultLearningState(today), local, today);
+  const app = lifecycle(t, { row, state, cached: { base, local } }); await settle();
+  assert.equal(app.row().data.courses[COURSES[0].id].inPlan, false);
+  assert.equal(app.row().data.courses[COURSES[1].id].inPlan, true);
+  assert.equal(loadLearningState(app.storage, today).courses[COURSES[1].id].inPlan, true);
+});
+
+
+test('연결 전에 수정한 체크 해제도 새로고침·첫 서버 연결 후 보존한다', async t => {
+  const before = initial(); before.courses[COURSES[0].id].inPlan = true;
+  const local = copy(before); local.courses[COURSES[0].id].inPlan = false;
+  const row = { revision: 5, data: copy(before) }; row.data.courses[COURSES[1].id].inPlan = true;
+  const state = applySharedLearningState(createDefaultLearningState(today), local, today);
+  const app = lifecycle(t, { row, state, pending: { base: { revision: 0, data: before }, local } }); await settle();
+  assert.equal(app.row().data.courses[COURSES[0].id].inPlan, false);
+  assert.equal(app.row().data.courses[COURSES[1].id].inPlan, true);
+  assert.equal(app.storage.getItem(`${LEARNING_STORAGE_KEY}:pending-cloud`), null);
+});
+test('기기 저장 실패는 목록 상단에 남으며 주기 조회의 성공 문구로 가려지지 않는다', async t => {
+  const app = lifecycle(t); await settle();
+  app.sync.storageFailed(); await app.tick(); await settle();
+  assert.equal(app.node('#learning-sync-indicator').dataset.state, 'error');
+  assert.equal(app.node('.learning-sync').open, true);
+});
+
+test('서버 체크를 기기에 적용하다 실패해도 이전 원문을 서버에 되돌리지 않는다', async () => {
+  const backend = server(initial()), base = await backend.read(), checkpoints = [];
+  const remote = copy(base.data); remote.courses[COURSES[0].id].inPlan = true;
+  await backend.write(base.revision, remote);
+  let failed = true, applied;
+  const engine = createLearningSyncEngine({ base, local: base.data, ...backend,
+    persist: value => checkpoints.push(copy(value)), onStatus: () => {},
+    onState: value => { if (failed) throw new Error('기기 저장 실패'); applied = value; },
+  });
+  await engine.sync();
+  assert.equal(checkpoints.length, 0);
+  assert.equal(engine.snapshot().base.revision, base.revision);
+  failed = false; await engine.sync();
+  assert.equal(applied.courses[COURSES[0].id].inPlan, true);
+  assert.equal((await backend.read()).revision, 2);
 });

@@ -1,13 +1,13 @@
-import { setupLearningSync } from './learning-sync.js?v=15';
-import { setupLearningTransfer } from './learning-transfer.js?v=15';
-import { COURSE_CURRICULA } from './learning-curriculum.js?v=15';
-import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=15';
+import { setupLearningSync } from './learning-sync.js?v=16';
+import { setupLearningTransfer } from './learning-transfer.js?v=16';
+import { COURSE_CURRICULA } from './learning-curriculum.js?v=16';
+import { COURSES, LEARNING_MODE_LABELS, ROUTINE_STEPS } from './learning-data.js?v=16';
 import {
   STUDY_CHECKS, orderedLearningCourses, selectedCourseSummary, moveLearningCourse, courseWorkSummary, updateStudyCheck, updateUnitChecks, setYouthProgram, addYouthEvent, updateYouthEvent, removeYouthEvent,
   courseProgressFor, loadLearningState, saveLearningState, stageLabelsForCourse,
   updateCourseProgress, selectLearningCourse, setCourseDeleted, addStudyLog, rescheduleStudyReview,
   recordStudyReview, learningReviewQueue, recordLearningReview, updateReviewDraft, addLearningDays,
-} from './learning-core.js?v=15';
+} from './learning-core.js?v=16';
 import { logicalDateString, scheduleLogicalDayRollover } from './routine-core.js';
 
 const STAGES = ['watched', 'processed', 'verified'];
@@ -63,6 +63,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     state = saveLearningState(storage, next, today, () => { saved = false; });
     announce('이 기기에 저장됨');
     if (saved) sync?.changed(state);
+    else sync?.storageFailed();
   }
   function renderCounts() {
     el('#learning-total-count').textContent = activeCourses().length;
@@ -437,7 +438,7 @@ export function createLearningApp(root, storage, now = () => new Date()) {
     const selection = field ? [active.selectionStart, active.selectionEnd] : null;
     let failed = false;
     const next = saveLearningState(storage, incoming, today, () => { failed = true; });
-    if (failed) throw new Error('기기 저장 실패');
+    if (failed) { sync?.storageFailed(); throw new Error('기기 저장 실패'); }
     state = next;
     renderCourses(); renderDetail();
     if (view === 'overview') renderOverview();
